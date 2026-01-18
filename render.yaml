@@ -31,7 +31,4 @@ services:
     startCommand: npm run start
     envVars:
       - key: NEXT_PUBLIC_API_URL
-        fromService:
-          name: pranjay-backend
-          type: web
-          property: url
+        value: https://pranjay-backend.onrender.com
