@@ -2,7 +2,7 @@
 Pranjay Backend - Environment Configuration
 """
 from functools import lru_cache
-from typing import List
+from typing import List, Optional
 
 from pydantic_settings import BaseSettings
 
@@ -14,14 +14,14 @@ class Settings(BaseSettings):
     app_name: str = "Pranjay"
     app_env: str = "development"
     debug: bool = True
-    secret_key: str
+    secret_key: str = "default-secret-key-change-in-production"
     api_version: str = "v1"
     
     # Database
-    database_url: str
+    database_url: str = "sqlite+aiosqlite:///./data/pranjay.db"
     
     # JWT
-    jwt_secret_key: str
+    jwt_secret_key: str = "default-jwt-secret-change-in-production"
     jwt_algorithm: str = "HS256"
     access_token_expire_minutes: int = 30
     refresh_token_expire_days: int = 7
@@ -30,18 +30,18 @@ class Settings(BaseSettings):
     otp_expire_minutes: int = 10
     otp_length: int = 6
     
-    # Email (Resend)
-    resend_api_key: str
+    # Email (Resend) - Optional for deployment without email
+    resend_api_key: Optional[str] = None
     email_from: str = "noreply@pranjay.com"
     admin_email: str = "admin@pranjay.com"
     
-    # Supabase Storage
-    supabase_url: str
-    supabase_key: str
+    # Supabase Storage - Optional for deployment without storage
+    supabase_url: Optional[str] = None
+    supabase_key: Optional[str] = None
     supabase_bucket: str = "products"
     
     # CORS
-    cors_origins: List[str] = ["http://localhost:3000"]
+    cors_origins: List[str] = ["http://localhost:3000", "https://pranjay-frontend.onrender.com"]
     
     # Rate Limiting
     rate_limit_per_minute: int = 60
