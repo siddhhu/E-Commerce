@@ -9,14 +9,24 @@ from sqlmodel import SQLModel
 
 from app.config import settings
 
-# Create async engine
+# Ensure we use the async driver
+db_url = settings.database_url
+if db_url and db_url.startswith("postgresql://"):
+    db_url = db_url.replace("postgresql://", "postgresql+asyncpg://", 1)
+
+# Create async engine with robust connection handling
+connect_args = {}
+if "sqlite" in db_url:
+    connect_args = {"check_same_thread": False}
+
 engine = create_async_engine(
-    settings.database_url,
+    db_url,
     echo=settings.debug,
     future=True,
-    pool_pre_ping=True,
+    pool_pre_ping=True,  # Critical for handling connection drops
     pool_size=10,
     max_overflow=20,
+    connect_args=connect_args
 )
 
 # Create async session factory
