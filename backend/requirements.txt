@@ -1,13 +1,32 @@
+# Pranjay Backend - Complete Requirements for Render Deployment
+# FastAPI & Server
 fastapi>=0.100.0
 uvicorn[standard]>=0.22.0
+python-multipart>=0.0.6
+
+# Database
 sqlmodel>=0.0.14
 sqlalchemy[asyncio]>=2.0.0
 asyncpg>=0.28.0
+
+# Environment & Settings
 python-dotenv>=1.0.0
 pydantic>=2.0.0
 pydantic-settings>=2.0.0
+
+# Authentication & Security
 python-jose[cryptography]>=3.3.0
 passlib[bcrypt]>=1.7.4
+
+# Utilities
 python-slugify>=8.0.0
-python-multipart>=0.0.6
+
+# HTTP Client (pinned to avoid conflicts)
 httpx>=0.24.0,<0.26
+
+# Email Service
+resend>=0.5.0,<2.0
+
+# Data Processing (for bulk upload)
+pandas>=2.0.0
+openpyxl>=3.0.0
