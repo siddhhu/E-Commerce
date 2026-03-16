@@ -19,10 +19,10 @@ export default function OrderDetailPage() {
     const router = useRouter();
     const [order, setOrder] = useState<Order | null>(null);
     const [isLoading, setIsLoading] = useState(true);
-    const { isAuthenticated, isLoading: isAuthLoading } = useAuthStore();
+    const { isAuthenticated, isLoading: isAuthLoading, _hasHydrated } = useAuthStore();
 
     useEffect(() => {
-        if (!isAuthLoading && !isAuthenticated) {
+        if (_hasHydrated && !isAuthLoading && !isAuthenticated) {
             router.push(`/login?redirect=/orders/${params.id}`);
             return;
         }

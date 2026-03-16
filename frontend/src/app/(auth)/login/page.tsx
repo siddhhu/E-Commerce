@@ -201,64 +201,71 @@ function LoginForm() {
                 </CardHeader>
 
                 <CardContent>
-                    {step === 'phone' ? (
-                        <form onSubmit={handleSendOtp} className="space-y-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="phone">Phone Number</Label>
-                                <div className="relative">
-                                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                    <Input
-                                        id="phone"
-                                        type="tel"
-                                        placeholder="9876543210"
-                                        className="pl-10"
-                                        value={phone}
-                                        onChange={(e) => setPhone(e.target.value.replace(/\D/g, ''))}
-                                        required
-                                    />
-                                </div>
-                            </div>
-                            
-                            <div id="recaptcha-wrapper" className="flex justify-center my-4"></div>
-                            
-                            <Button type="submit" className="w-full" disabled={isLoading}>
-                                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                Send OTP
-                            </Button>
-                        </form>
-                    ) : (
-                        <form onSubmit={handleVerifyOtp} className="space-y-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="otp">Verification Code</Label>
+                    <form 
+                        onSubmit={handleSendOtp} 
+                        className={`space-y-4 ${step !== 'phone' ? 'hidden' : ''}`}
+                    >
+                        <div className="space-y-2">
+                            <Label htmlFor="phone">Phone Number</Label>
+                            <div className="relative">
+                                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                                 <Input
-                                    id="otp"
-                                    type="text"
-                                    placeholder="123456"
-                                    className="text-center text-2xl tracking-[0.5em]"
-                                    maxLength={6}
-                                    value={otp}
-                                    onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
+                                    id="phone"
+                                    type="tel"
+                                    placeholder="9876543210"
+                                    className="pl-10"
+                                    value={phone}
+                                    onChange={(e) => setPhone(e.target.value.replace(/\D/g, ''))}
                                     required
                                 />
                             </div>
-                            <Button type="submit" className="w-full" disabled={isLoading}>
-                                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                Verify
-                            </Button>
-                            <Button
-                                type="button"
-                                variant="ghost"
-                                className="w-full"
-                                onClick={() => {
-                                    setStep('phone');
-                                    setOtp('');
-                                }}
-                            >
-                                <ArrowLeft className="mr-2 h-4 w-4" />
-                                Use different number
-                            </Button>
-                        </form>
-                    )}
+                        </div>
+                        
+                        <div 
+                            id="recaptcha-wrapper" 
+                            className="flex justify-center my-4"
+                        ></div>
+                        
+                        <Button type="submit" className="w-full" disabled={isLoading}>
+                            {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            Send OTP
+                        </Button>
+                    </form>
+
+                    <form 
+                        onSubmit={handleVerifyOtp} 
+                        className={`space-y-4 ${step !== 'otp' ? 'hidden' : ''}`}
+                    >
+                        <div className="space-y-2">
+                            <Label htmlFor="otp">Verification Code</Label>
+                            <Input
+                                id="otp"
+                                type="text"
+                                placeholder="123456"
+                                className="text-center text-2xl tracking-[0.5em]"
+                                maxLength={6}
+                                value={otp}
+                                onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
+                                required
+                            />
+                        </div>
+                        <Button type="submit" className="w-full" disabled={isLoading}>
+                            {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            Verify
+                        </Button>
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            className="w-full"
+                            onClick={() => {
+                                setStep('phone');
+                                setOtp('');
+                            }}
+                        >
+                            <ArrowLeft className="mr-2 h-4 w-4" />
+                            Use different number
+                        </Button>
+                    </form>
                 </CardContent>
 
                 <CardFooter className="flex flex-col space-y-4">

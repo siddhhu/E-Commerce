@@ -8,6 +8,7 @@ interface AuthState {
     refreshToken: string | null;
     isAuthenticated: boolean;
     isLoading: boolean;
+    _hasHydrated: boolean;
 
     // Actions
     setUser: (user: User) => void;
@@ -15,6 +16,7 @@ interface AuthState {
     logout: () => void;
     refreshTokens: () => Promise<boolean>;
     adminLogin: (email: string, password: string) => Promise<boolean>;
+    setHasHydrated: (state: boolean) => void;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -25,6 +27,7 @@ export const useAuthStore = create<AuthState>()(
             refreshToken: null,
             isAuthenticated: false,
             isLoading: false,
+            _hasHydrated: false,
 
             setUser: (user) => {
                 set({ user, isAuthenticated: true });
@@ -105,6 +108,10 @@ export const useAuthStore = create<AuthState>()(
                     throw error;
                 }
             },
+
+            setHasHydrated: (state) => {
+                set({ _hasHydrated: state });
+            },
         }),
         {
             name: 'pranjay-auth',
@@ -114,6 +121,22 @@ export const useAuthStore = create<AuthState>()(
                 refreshToken: state.refreshToken,
                 isAuthenticated: state.isAuthenticated,
             }),
+            onRehydrateStorage: (state) => {
+                return (rehydratedState, error) => {
+                    if (error) {
+                        console.error('An error occurred during hydration', error);
+                    } else if (rehydratedState) {
+                        // Sync tokens to localStorage for API client on hydration
+                        if (typeof window !== 'undefined' && rehydratedState.accessToken) {
+                            localStorage.setItem('access_token', rehydratedState.accessToken);
+                            if (rehydratedState.refreshToken) {
+                                localStorage.setItem('refresh_token', rehydratedState.refreshToken);
+                            }
+                        }
+                        rehydratedState.setHasHydrated(true);
+                    }
+                };
+            },
         }
     )
 );

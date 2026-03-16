@@ -26,7 +26,7 @@ export default function CheckoutPage() {
     const { toast } = useToast();
     const { items, getSubtotal, getTax, getTotal, clearCart } = useCartStore();
     const { addOrder, orders } = useOrderStore();
-    const { isAuthenticated, isLoading: isAuthLoading } = useAuthStore();
+    const { isAuthenticated, isLoading: isAuthLoading, _hasHydrated } = useAuthStore();
 
     const [paymentMethod, setPaymentMethod] = useState<'cod' | 'online'>('cod');
     const [isProcessing, setIsProcessing] = useState(false);
@@ -61,14 +61,15 @@ export default function CheckoutPage() {
     };
 
     useEffect(() => {
-        if (!isAuthLoading && !isAuthenticated) {
+        if (_hasHydrated && !isAuthLoading && !isAuthenticated) {
             toast({
                 title: 'Authentication Required',
                 description: 'Please login to complete your checkout.',
             });
             router.push('/login?redirect=/checkout');
+            return;
         }
-    }, [isAuthenticated, isAuthLoading, router, toast]);
+    }, [isAuthenticated, isAuthLoading, _hasHydrated, router, toast]);
 
     const handlePlaceOrder = async () => {
         if (!validateForm()) return;

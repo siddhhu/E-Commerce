@@ -16,11 +16,11 @@ import { formatPrice, formatDate } from '@/lib/utils';
 export default function OrdersPage() {
     const [orders, setOrders] = useState<Order[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const { isAuthenticated, isLoading: isAuthLoading } = useAuthStore();
+    const { isAuthenticated, isLoading: isAuthLoading, _hasHydrated } = useAuthStore();
     const router = useRouter();
 
     useEffect(() => {
-        if (!isAuthLoading && !isAuthenticated) {
+        if (_hasHydrated && !isAuthLoading && !isAuthenticated) {
             router.push('/login?redirect=/orders');
             return;
         }
