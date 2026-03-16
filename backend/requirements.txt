@@ -33,3 +33,6 @@ openpyxl>=3.0.0
 
 # Firebase Admin (for OTP)
 firebase-admin>=6.2.0
+
+# Payment Gateway
+razorpay>=1.3.0
