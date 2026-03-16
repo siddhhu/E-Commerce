@@ -1,0 +1,31 @@
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Python
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+**/*.pyd
+.env
+data/*.db
+*.log
+firebase-adminsdk.json
+venv/
+.venv/
+
+# Node
+**/node_modules/
+**/.next/
+.env.local
+tsconfig.tsbuildinfo
+
+# Build
+dist/
+build/
