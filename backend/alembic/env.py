@@ -18,8 +18,13 @@ from sqlmodel import SQLModel
 # Alembic Config object
 config = context.config
 
-# Set sqlalchemy.url from environment
-config.set_main_option("sqlalchemy.url", settings.database_url.replace("+asyncpg", ""))
+# Set sqlalchemy.url from environment - ensure asyncpg is used for PostgreSQL
+db_url = settings.database_url
+if db_url.startswith("postgresql://"):
+    db_url = db_url.replace("postgresql://", "postgresql+asyncpg://", 1)
+elif db_url.startswith("postgres://"):
+    db_url = db_url.replace("postgres://", "postgresql+asyncpg://", 1)
+config.set_main_option("sqlalchemy.url", db_url)
 
 # Interpret the config file for Python logging
 if config.config_file_name is not None:
