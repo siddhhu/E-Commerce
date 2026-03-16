@@ -20,7 +20,7 @@ class BulkUploadService:
     OPTIONAL_COLUMNS = [
         "description", "short_description", "b2b_price",
         "stock_quantity", "min_order_quantity", "unit",
-        "category_id", "brand_id", "is_featured"
+        "category_id", "brand_id", "is_featured", "image_url"
     ]
     
     def __init__(self, session: AsyncSession):
@@ -153,6 +153,8 @@ class BulkUploadService:
                 existing.brand_id = UUID(str(row["brand_id"]))
             if pd.notna(row.get("is_featured")):
                 existing.is_featured = bool(row["is_featured"])
+            if pd.notna(row.get("image_url")):
+                existing.image_url = str(row["image_url"])
             
             self.session.add(existing)
             return "updated"
@@ -182,7 +184,8 @@ class BulkUploadService:
             unit=row.get("unit", "pcs") if pd.notna(row.get("unit")) else "pcs",
             category_id=UUID(str(row["category_id"])) if pd.notna(row.get("category_id")) else None,
             brand_id=UUID(str(row["brand_id"])) if pd.notna(row.get("brand_id")) else None,
-            is_featured=bool(row.get("is_featured", False)) if pd.notna(row.get("is_featured")) else False
+            is_featured=bool(row.get("is_featured", False)) if pd.notna(row.get("is_featured")) else False,
+            image_url=str(row["image_url"]) if pd.notna(row.get("image_url")) else None
         )
         
         self.session.add(product)
@@ -207,7 +210,8 @@ class BulkUploadService:
             "unit": "pcs",
             "category_id": "",
             "brand_id": "",
-            "is_featured": False
+            "is_featured": False,
+            "image_url": "https://example.com/sample.jpg"
         }
         
         output = io.BytesIO()

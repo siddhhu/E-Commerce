@@ -18,7 +18,8 @@ export function ProductCard({
     onAddToCart,
     onAddToWishlist,
 }: ProductCardProps) {
-    const primaryImage = product.images?.find((img) => img.is_primary)?.image_url ||
+    const primaryImage = product.image_url ||
+        product.images?.find((img) => img.is_primary)?.image_url ||
         product.images?.[0]?.image_url ||
         '/placeholder.jpg';
 

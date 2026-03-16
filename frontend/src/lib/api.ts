@@ -331,6 +331,7 @@ export interface Product {
     attributes: Record<string, unknown>;
     is_active: boolean;
     is_featured: boolean;
+    image_url?: string;
     images: ProductImage[];
     created_at: string;
     updated_at: string;

@@ -26,6 +26,7 @@ export default function AdminAddProductPage() {
         stock_quantity: '',
         short_description: '',
         description: '',
+        image_url: '',
         is_active: true
     });
 
@@ -73,6 +74,7 @@ export default function AdminAddProductPage() {
                 stock_quantity: isNaN(stock) ? 0 : stock,
                 short_description: formData.short_description,
                 description: formData.description,
+                image_url: formData.image_url,
                 is_active: formData.is_active,
                 slug: formData.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '') || `product-${Date.now()}`
             });
@@ -209,12 +211,30 @@ export default function AdminAddProductPage() {
                             </CardContent>
                         </Card>
 
-                        <Card className="bg-slate-50 border-dashed">
+                        <Card>
                             <CardHeader>
-                                <CardTitle className="text-sm">Image Upload Note</CardTitle>
+                                <CardTitle>Product Image</CardTitle>
+                                <CardDescription>Add a primary image URL.</CardDescription>
                             </CardHeader>
-                            <CardContent className="text-xs text-slate-500 text-center pb-6">
-                                Please save the product first to generate an ID. You will be able to upload images from the product edit page afterwards.
+                            <CardContent className="space-y-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="image_url">Image URL</Label>
+                                    <Input 
+                                        id="image_url" name="image_url"
+                                        value={formData.image_url} onChange={handleChange} 
+                                        placeholder="https://example.com/image.jpg"
+                                    />
+                                    {formData.image_url && (
+                                        <div className="mt-2 relative aspect-square rounded-md overflow-hidden bg-slate-100 border">
+                                            <img 
+                                                src={formData.image_url} 
+                                                alt="Preview" 
+                                                className="object-contain w-full h-full"
+                                                onError={(e) => (e.currentTarget.src = 'https://placehold.co/400?text=Invalid+URL')}
+                                            />
+                                        </div>
+                                    )}
+                                </div>
                             </CardContent>
                         </Card>
                     </div>

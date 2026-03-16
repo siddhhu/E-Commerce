@@ -30,6 +30,7 @@ class ProductBase(SQLModel):
     unit: str = Field(default="pcs", max_length=50)
     is_active: bool = Field(default=True)
     is_featured: bool = Field(default=False)
+    image_url: Optional[str] = Field(default=None, max_length=500)
 
 
 class Product(ProductBase, table=True):
@@ -139,4 +140,5 @@ class ProductListRead(SQLModel):
     b2b_price: Optional[Decimal]
     stock_quantity: int
     is_featured: bool
+    image_url: Optional[str] = None
     primary_image: Optional[str] = None

@@ -31,6 +31,7 @@ export function Header() {
         { href: '/', label: 'Home' },
         { href: '/products', label: 'Products' },
         { href: '/orders', label: 'My Orders' },
+        { href: '/profile', label: 'Profile' },
     ];
 
     const handleSearch = (e: React.FormEvent) => {

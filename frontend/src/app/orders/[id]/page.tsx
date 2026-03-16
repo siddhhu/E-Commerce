@@ -240,14 +240,16 @@ export default function OrderDetailPage() {
                                         <div>
                                             <p className="font-medium">{order.payment_method}</p>
                                             <p className="text-sm text-muted-foreground">
-                                                {order.payment_status === 'cod' ? 'Pay on Delivery' : 'Paid'}
+                                                {order.payment_method === 'COD' ? 'Pay on Delivery' : 'Online Payment'}
                                             </p>
                                         </div>
                                         <span className={`px-3 py-1 rounded-full text-sm font-medium ${order.payment_status === 'paid'
                                             ? 'bg-green-100 text-green-700'
-                                            : 'bg-amber-100 text-amber-700'
+                                            : order.payment_status === 'pending'
+                                                ? 'bg-amber-100 text-amber-700'
+                                                : 'bg-slate-100 text-slate-700'
                                             }`}>
-                                            {order.payment_status === 'cod' ? 'COD' : order.payment_status}
+                                            {order.payment_status.toUpperCase()}
                                         </span>
                                     </div>
                                 </CardContent>

@@ -29,6 +29,7 @@ export default function AdminEditProductPage() {
         stock_quantity: '',
         short_description: '',
         description: '',
+        image_url: '',
         is_active: true
     });
 
@@ -45,6 +46,7 @@ export default function AdminEditProductPage() {
                     stock_quantity: product.stock_quantity?.toString() || '',
                     short_description: product.short_description || '',
                     description: product.description || '',
+                    image_url: product.image_url || '',
                     is_active: product.is_active
                 });
             } catch (error: any) {
@@ -78,6 +80,7 @@ export default function AdminEditProductPage() {
                 stock_quantity: parseInt(formData.stock_quantity, 10),
                 short_description: formData.short_description,
                 description: formData.description,
+                image_url: formData.image_url,
                 is_active: formData.is_active
             });
 
@@ -211,6 +214,33 @@ export default function AdminEditProductPage() {
                                 <Button type="submit" className="w-full gap-2" disabled={isSaving}>
                                     {isSaving ? "Saving..." : <><Save className="h-4 w-4"/> Save Changes</>}
                                 </Button>
+                            </CardContent>
+                        </Card>
+
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Product Image</CardTitle>
+                                <CardDescription>Update image URL.</CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="image_url">Image URL</Label>
+                                    <Input 
+                                        id="image_url" name="image_url"
+                                        value={formData.image_url} onChange={handleChange} 
+                                        placeholder="https://example.com/image.jpg"
+                                    />
+                                    {formData.image_url && (
+                                        <div className="mt-2 relative aspect-square rounded-md overflow-hidden bg-slate-100 border">
+                                            <img 
+                                                src={formData.image_url} 
+                                                alt="Preview" 
+                                                className="object-contain w-full h-full"
+                                                onError={(e) => (e.currentTarget.src = 'https://placehold.co/400?text=Invalid+URL')}
+                                            />
+                                        </div>
+                                    )}
+                                </div>
                             </CardContent>
                         </Card>
                     </div>
