@@ -16,7 +16,20 @@ class FirebaseService:
         """Initialize Firebase Admin SDK if not already initialized."""
         if not firebase_admin._apps:
             try:
-                # Use the path from settings
+                # 1. Try loading from Environment Variable (JSON string)
+                # This is preferred for Render/Cloud deployment
+                env_json = os.environ.get("FIREBASE_SERVICE_ACCOUNT_JSON")
+                if env_json:
+                    try:
+                        service_account_info = json.loads(env_json)
+                        cred = credentials.Certificate(service_account_info)
+                        firebase_admin.initialize_app(cred)
+                        print("Firebase initialized using environment variable JSON.")
+                        return
+                    except Exception as e:
+                        print(f"Failed to initialize Firebase from env var: {e}")
+
+                # 2. Fallback: Try loading from local file
                 cred_path = settings.firebase_service_account_path
                 
                 # If path is not absolute, make it relative to the backend root
@@ -27,8 +40,9 @@ class FirebaseService:
                 if os.path.exists(cred_path):
                     cred = credentials.Certificate(cred_path)
                     firebase_admin.initialize_app(cred)
+                    print(f"Firebase initialized from file: {cred_path}")
                 else:
-                    print(f"WARNING: Firebase credentials not found at {cred_path}. Firebase auth won't work.")
+                    print(f"WARNING: Firebase credentials not found (checked ENV and {cred_path}). OTP will not work.")
             except Exception as e:
                 print(f"Failed to initialize Firebase: {e}")
 
