@@ -22,11 +22,12 @@ connect_args = {}
 if "sqlite" in db_url:
     connect_args = {"check_same_thread": False}
 elif "postgresql" in db_url:
-    # Use standard SSL=True (uses default SSL context) which is more reliable
-    # across different environments than the "require" string.
+    # Managed Postgres services (Render, Supabase, Neon) often have proxies 
+    # that don't support asyncpg's prepared statements.
+    # Disabling the statement cache is a critical fix.
     connect_args = {
         "ssl": True,
-        "command_timeout": 60,
+        "statement_cache_size": 0,
     }
 
 engine = create_async_engine(
@@ -34,8 +35,9 @@ engine = create_async_engine(
     echo=settings.debug,
     future=True,
     pool_pre_ping=True,
-    pool_size=5,     # Reduced for free tier connection limits
-    max_overflow=10, # Reduced for free tier connection limits
+    pool_size=5,
+    max_overflow=10,
+    pool_recycle=300,  # Refresh connections every 5 minutes
     connect_args=connect_args
 )
 
