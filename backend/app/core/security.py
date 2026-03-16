@@ -10,37 +10,41 @@ from passlib.context import CryptContext
 
 from app.config import settings
 
-# Password hashing context - apply monkeypatch for bcrypt 4.0.0+ compatibility with passlib
+# Use bcrypt directly to avoid passlib compatibility issues on newer Python/Bcrypt versions
 import bcrypt
-if not hasattr(bcrypt, "__about__"):
-    bcrypt.__about__ = type("About", (object,), {"__version__": bcrypt.__version__})
-
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
 
 def hash_password(password: str) -> str:
     """Hash a password using bcrypt."""
-    return pwd_context.hash(password)
+    salt = bcrypt.gensalt()
+    hashed = bcrypt.hashpw(password.encode("utf-8"), salt)
+    return hashed.decode("utf-8")
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verify a password against its hash."""
-    return pwd_context.verify(plain_password, hashed_password)
+    try:
+        return bcrypt.checkpw(
+            plain_password.encode("utf-8"), 
+            hashed_password.encode("utf-8")
+        )
+    except Exception:
+        return False
 
 
 def generate_otp(length: int = 6) -> str:
     """Generate a random numeric OTP."""
+    import secrets
     return "".join([str(secrets.randbelow(10)) for _ in range(length)])
 
 
 def hash_otp(otp: str) -> str:
     """Hash an OTP for secure storage."""
-    return pwd_context.hash(otp)
+    return hash_password(otp)
 
 
 def verify_otp(plain_otp: str, hashed_otp: str) -> bool:
     """Verify an OTP against its hash."""
-    return pwd_context.verify(plain_otp, hashed_otp)
+    return verify_password(plain_otp, hashed_otp)
 
 
 def create_access_token(
