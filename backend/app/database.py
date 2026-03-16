@@ -21,6 +21,10 @@ if db_url:
 connect_args = {}
 if "sqlite" in db_url:
     connect_args = {"check_same_thread": False}
+elif "postgresql" in db_url:
+    # Most managed Postgres services (Render, Supabase, Neon) require SSL in production
+    # In asyncpg, ssl="require" or ssl=True can be used.
+    connect_args = {"ssl": True}
 
 engine = create_async_engine(
     db_url,
