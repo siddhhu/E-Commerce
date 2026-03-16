@@ -30,7 +30,10 @@ export default function AdminAddProductPage() {
     });
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-        const { name, value } = e.target;
+        const { name, value, type } = e.target;
+        
+        // For number inputs, if empty, keep as empty string to allow clearing
+        // but prevent NaN in state. Submitting empty string will be caught by required/validation.
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
@@ -38,17 +41,40 @@ export default function AdminAddProductPage() {
         e.preventDefault();
         setIsLoading(true);
 
+        // Validation
+        const mrp = parseFloat(formData.mrp);
+        const sellingPrice = parseFloat(formData.selling_price);
+        const stock = parseInt(formData.stock_quantity, 10);
+
+        if (isNaN(mrp) || mrp <= 0) {
+            toast({ title: "Invalid MRP", description: "MRP must be a positive number", variant: "destructive" });
+            setIsLoading(false);
+            return;
+        }
+
+        if (isNaN(sellingPrice) || sellingPrice <= 0) {
+            toast({ title: "Invalid Selling Price", description: "Selling price must be a positive number", variant: "destructive" });
+            setIsLoading(false);
+            return;
+        }
+
+        if (sellingPrice > mrp) {
+            toast({ title: "Pricing Error", description: "Selling price cannot be greater than MRP", variant: "destructive" });
+            setIsLoading(false);
+            return;
+        }
+
         try {
             await adminApi.createProduct({
                 name: formData.name,
                 sku: formData.sku,
-                mrp: parseFloat(formData.mrp),
-                selling_price: parseFloat(formData.selling_price),
-                stock_quantity: parseInt(formData.stock_quantity, 10),
+                mrp: mrp,
+                selling_price: sellingPrice,
+                stock_quantity: isNaN(stock) ? 0 : stock,
                 short_description: formData.short_description,
                 description: formData.description,
                 is_active: formData.is_active,
-                slug: formData.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '')
+                slug: formData.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '') || `product-${Date.now()}`
             });
 
             toast({ title: "Product created successfully!" });

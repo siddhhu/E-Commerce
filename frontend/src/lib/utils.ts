@@ -6,10 +6,13 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function formatPrice(price: number): string {
+    const numericPrice = typeof price === 'number' ? price : parseFloat(String(price));
+    if (isNaN(numericPrice)) return '₹ 0.00';
+    
     return new Intl.NumberFormat('en-IN', {
         style: 'currency',
         currency: 'INR',
-    }).format(price);
+    }).format(numericPrice);
 }
 
 export const formatCurrency = formatPrice;

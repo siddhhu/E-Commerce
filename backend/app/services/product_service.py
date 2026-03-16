@@ -111,6 +111,11 @@ class ProductService:
         if existing.scalar_one_or_none():
             raise ConflictException(f"Product with SKU {data.sku} already exists")
         
+        # Validate pricing
+        if data.selling_price > data.mrp:
+            from app.core.exceptions import ValidationException
+            raise ValidationException("Selling price cannot be greater than MRP")
+        
         # Auto-generate slug if not unique
         slug = data.slug or slugify(data.name)
         existing_slug = await self.session.execute(

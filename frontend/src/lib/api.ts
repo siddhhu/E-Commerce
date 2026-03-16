@@ -30,8 +30,24 @@ class ApiClient {
 
     private async handleResponse<T>(response: Response): Promise<T> {
         if (!response.ok) {
-            const error: ApiError = await response.json();
-            throw new Error(error.detail || 'An error occurred');
+            let errorMessage = 'An error occurred';
+            try {
+                const errorData = await response.json();
+                if (errorData.detail) {
+                    if (typeof errorData.detail === 'string') {
+                        errorMessage = errorData.detail;
+                    } else if (Array.isArray(errorData.detail)) {
+                        // FastAPI validation errors are an array of objects
+                        errorMessage = errorData.detail
+                            .map((err: any) => `${err.loc?.join('.') || 'error'}: ${err.msg}`)
+                            .join(', ');
+                    }
+                }
+            } catch (e) {
+                // If not JSON, use status text
+                errorMessage = response.statusText || errorMessage;
+            }
+            throw new Error(errorMessage);
         }
 
         // Handle 204 No Content
