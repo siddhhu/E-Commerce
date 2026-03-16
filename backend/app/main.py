@@ -19,7 +19,7 @@ from app.routers.admin import users as admin_users
 async def lifespan(app: FastAPI):
     """Application lifespan handler."""
     # Startup
-    await init_db()
+    # Tables are now managed by Alembic in startCommand
     yield
     # Shutdown
     await close_db()
@@ -83,20 +83,6 @@ async def root():
         "version": settings.api_version,
         "status": "running",
     }
-
-
-@app.get("/debug/schema")
-async def debug_schema():
-    """Diagnostic endpoint to check database schema."""
-    from sqlalchemy import text
-    from app.database import engine
-    try:
-        async with engine.connect() as conn:
-            result = await conn.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name = 'orders'"))
-            columns = [row[0] for row in result.all()]
-            return {"table": "orders", "columns": columns}
-    except Exception as e:
-        return {"error": str(e)}
 
 
 @app.get("/health")

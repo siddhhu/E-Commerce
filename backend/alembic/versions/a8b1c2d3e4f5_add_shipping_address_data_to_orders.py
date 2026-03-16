@@ -20,8 +20,8 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    # Add shipping_address_data column as JSON
-    op.add_column('orders', sa.Column('shipping_address_data', sa.JSON(), nullable=True))
+    # Add shipping_address_data column as JSON if it doesn't exist
+    op.execute('ALTER TABLE orders ADD COLUMN IF NOT EXISTS shipping_address_data JSONB')
 
 
 def downgrade() -> None:
