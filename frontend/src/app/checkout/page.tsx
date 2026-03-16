@@ -218,9 +218,25 @@ export default function CheckoutPage() {
                         <p className="text-muted-foreground mb-8">
                             Thank you for your order. We'll send you a confirmation email shortly.
                         </p>
-                        <div className="bg-muted rounded-lg p-4 mb-6">
-                            <p className="font-medium">Total: {formatPrice(orderPlaced.total_amount)}</p>
-                            <p className="text-sm text-muted-foreground">{orderPlaced.payment_method}</p>
+                        <div className="bg-muted rounded-lg p-4 mb-6 text-left">
+                            <div className="flex justify-between font-medium mb-3 pb-3 border-b border-slate-200">
+                                <span>Total: {formatPrice(orderPlaced.total_amount)}</span>
+                                <span className="text-primary">{orderPlaced.payment_method}</span>
+                            </div>
+                            <div className="space-y-1">
+                                <p className="text-sm font-semibold text-slate-700">Delivery Address:</p>
+                                <p className="text-sm text-slate-600">{orderPlaced.shipping_address.full_name}</p>
+                                <p className="text-sm text-slate-600">
+                                    {orderPlaced.shipping_address.address_line1}
+                                    {orderPlaced.shipping_address.address_line2 && <>, {orderPlaced.shipping_address.address_line2}</>}
+                                </p>
+                                <p className="text-sm text-slate-600">
+                                    {orderPlaced.shipping_address.city}, {orderPlaced.shipping_address.state} - {orderPlaced.shipping_address.postal_code}
+                                </p>
+                                <p className="text-sm text-slate-600 font-medium pt-1">
+                                    Phone: {orderPlaced.shipping_address.phone}
+                                </p>
+                            </div>
                         </div>
                         <div className="flex flex-col sm:flex-row gap-3 justify-center">
                             <Link href={`/orders/${orderPlaced.id}`}>

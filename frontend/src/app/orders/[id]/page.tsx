@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
-import { CheckCircle2, Package, Truck, MapPin, ArrowLeft, ShoppingBag } from 'lucide-react';
+import { CheckCircle2, Package, Truck, MapPin, ArrowLeft, ShoppingBag, Phone } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -207,10 +207,26 @@ export default function OrderDetailPage() {
                                     </CardTitle>
                                 </CardHeader>
                                 <CardContent>
-                                    <p className="font-medium">Delivery Address details saved in the system.</p>
-                                    <p className="text-muted-foreground mt-2">
-                                        Usually we would fetch the detailed address from the address ID stored on the order via an expanded API request.
-                                    </p>
+                                    {order.shipping_address_data ? (
+                                        <div className="space-y-1">
+                                            <p className="font-medium text-slate-800">{order.shipping_address_data.full_name}</p>
+                                            <p className="text-sm text-muted-foreground leading-relaxed">
+                                                {order.shipping_address_data.address_line1}
+                                                {order.shipping_address_data.address_line2 && <>, {order.shipping_address_data.address_line2}</>}
+                                            </p>
+                                            <p className="text-sm text-muted-foreground">
+                                                {order.shipping_address_data.city}, {order.shipping_address_data.state} - {order.shipping_address_data.postal_code}
+                                            </p>
+                                            <div className="flex items-center gap-2 mt-3 pt-2 border-t border-slate-100">
+                                                <Phone className="h-3.5 w-3.5 text-primary" />
+                                                <span className="text-sm font-medium">{order.shipping_address_data.phone}</span>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="bg-amber-50 text-amber-700 p-3 rounded text-sm italic">
+                                            Address snapshot not available for this record.
+                                        </div>
+                                    )}
                                 </CardContent>
                             </Card>
 

@@ -65,6 +65,7 @@ class Order(OrderBase, table=True):
     id: UUID = Field(default_factory=uuid4, primary_key=True)
     user_id: Optional[UUID] = Field(default=None, foreign_key="users.id", index=True)
     shipping_address_id: Optional[UUID] = Field(default=None, foreign_key="addresses.id")
+    shipping_address_data: Optional[dict] = Field(default=None, sa_column=Column(JSON))
     order_metadata: dict = Field(default={}, sa_column=Column(JSON))
     placed_at: Optional[datetime] = Field(default=None)
     shipped_at: Optional[datetime] = Field(default=None)

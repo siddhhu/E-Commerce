@@ -201,7 +201,6 @@ function LoginForm() {
                 </CardHeader>
 
                 <CardContent>
-                    <div id="recaptcha-wrapper"></div>
                     {step === 'phone' ? (
                         <form onSubmit={handleSendOtp} className="space-y-4">
                             <div className="space-y-2">
@@ -219,6 +218,9 @@ function LoginForm() {
                                     />
                                 </div>
                             </div>
+                            
+                            <div id="recaptcha-wrapper" className="flex justify-center my-4"></div>
+                            
                             <Button type="submit" className="w-full" disabled={isLoading}>
                                 {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                 Send OTP
