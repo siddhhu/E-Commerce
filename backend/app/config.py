@@ -56,8 +56,7 @@ class Settings(BaseSettings):
         "https://pranjay-frontend.onrender.com",
         "https://pranjay-frontend.onrender.com/",
         "http://pranjay-frontend.onrender.com",
-        "http://pranjay-frontend.onrender.com/",
-        "*"
+        "http://pranjay-frontend.onrender.com/"
     ]
     
     # Firebase

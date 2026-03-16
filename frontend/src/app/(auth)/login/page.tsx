@@ -101,6 +101,17 @@ function LoginForm() {
                 title: 'OTP Sent',
                 description: 'Check your phone for the verification code.',
             });
+            
+            // Explicitly clear recaptcha to remove it from the page
+            if (window.recaptchaVerifier) {
+                try {
+                    window.recaptchaVerifier.clear();
+                    window.recaptchaVerifier = null;
+                } catch (e) {
+                    console.error('Error clearing recaptcha after send:', e);
+                }
+            }
+            
             setStep('otp');
         } catch (error: any) {
             console.error('SMS Send Error:', error);

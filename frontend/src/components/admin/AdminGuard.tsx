@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 import { AdminSidebar } from '@/components/admin/Sidebar';
 
 export default function AdminGuard({ children }: { children: React.ReactNode }) {
-    const { user, isAuthenticated } = useAuthStore();
+    const { user, isAuthenticated, _hasHydrated } = useAuthStore();
     const pathname = usePathname();
     const router = useRouter();
     const [mounted, setMounted] = useState(false);
@@ -15,8 +15,13 @@ export default function AdminGuard({ children }: { children: React.ReactNode }) 
         setMounted(true);
     }, []);
 
-    if (!mounted) {
-        return <div className="min-h-screen bg-slate-50 flex items-center justify-center">Loading...</div>;
+    if (!mounted || !_hasHydrated) {
+        return <div className="min-h-screen bg-slate-50 flex items-center justify-center text-slate-500 font-medium">
+            <div className="flex flex-col items-center gap-4">
+                <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+                Initializing...
+            </div>
+        </div>;
     }
 
     const isLoginPage = pathname === '/admin/login';
