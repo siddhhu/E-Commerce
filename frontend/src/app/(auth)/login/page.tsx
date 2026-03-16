@@ -22,7 +22,9 @@ declare global {
     const grecaptcha: any;
 }
 
-export default function LoginPage() {
+import { Suspense } from 'react';
+
+function LoginForm() {
     const router = useRouter();
     const { toast } = useToast();
     const { setUser, setTokens } = useAuthStore();
@@ -271,5 +273,17 @@ export default function LoginPage() {
                 </CardFooter>
             </Card>
         </div>
+    );
+}
+
+export default function LoginPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen flex items-center justify-center bg-background p-4">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+        }>
+            <LoginForm />
+        </Suspense>
     );
 }

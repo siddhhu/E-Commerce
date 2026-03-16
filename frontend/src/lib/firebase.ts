@@ -2,12 +2,12 @@ import { initializeApp, getApps, getApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 
 const firebaseConfig = {
-    apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-    authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-    projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-    storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-    messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-    appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID
+    apiKey: "AIzaSyAfTsaEeiBGA05yRvg0ltwZYlbns9xDk38",
+    authDomain: "pranjay-ec.firebaseapp.com",
+    projectId: "pranjay-ec",
+    storageBucket: "pranjay-ec.firebasestorage.app",
+    messagingSenderId: "713668069063",
+    appId: "1:713668069063:web:cd1902252d00177dbb60e2"
 };
 
 // Initialize Firebase only if the API key is present
@@ -18,9 +18,8 @@ if (firebaseConfig.apiKey) {
     app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
     auth = getAuth(app);
 } else {
-    // During build time or if env variables are missing, provide a shell auth object
-    // or keep it undefined. client components check for this or only run on client.
-    console.warn("Firebase: API Key missing. Skipping initialization.");
+    // This part is now unreachable due to hardcoding, but kept for structure
+    console.warn("Firebase: API Key configuration missing.");
 }
 
 export { app, auth };
