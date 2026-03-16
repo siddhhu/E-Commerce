@@ -22,12 +22,17 @@ connect_args = {}
 if "sqlite" in db_url:
     connect_args = {"check_same_thread": False}
 elif "postgresql" in db_url:
-    # Managed Postgres services (Render, Supabase, Neon) often have proxies 
-    # that don't support asyncpg's prepared statements.
-    # Disabling the statement cache is a critical fix.
+    import ssl
+    # Managed Postgres often have proxies that kill idle connections or
+    # require very specific SSL handshakes.
+    ssl_context = ssl.create_default_context()
+    ssl_context.check_hostname = False
+    ssl_context.verify_mode = ssl.CERT_NONE
+    
     connect_args = {
-        "ssl": True,
+        "ssl": ssl_context,
         "statement_cache_size": 0,
+        "command_timeout": 60,
     }
 
 engine = create_async_engine(
@@ -64,15 +69,25 @@ async def get_session() -> AsyncGenerator[AsyncSession, None]:
 
 
 async def init_db() -> None:
-    """Initialize database tables."""
-    print("Database: Initializing tables...")
-    try:
-        async with engine.begin() as conn:
-            await conn.run_sync(SQLModel.metadata.create_all)
-        print("Database: Initialization complete.")
-    except Exception as e:
-        print(f"Database: Initialization failed: {e}")
-        raise e
+    """Initialize database tables with retries."""
+    import asyncio
+    max_retries = 3
+    retry_delay = 2
+    
+    for attempt in range(max_retries):
+        print(f"Database: Initializing tables (Attempt {attempt + 1}/{max_retries})...")
+        try:
+            async with engine.begin() as conn:
+                await conn.run_sync(SQLModel.metadata.create_all)
+            print("Database: Initialization complete.")
+            return
+        except Exception as e:
+            if attempt < max_retries - 1:
+                print(f"Database: Initialization attempt {attempt + 1} failed: {e}. Retrying in {retry_delay}s...")
+                await asyncio.sleep(retry_delay)
+            else:
+                print(f"Database: Initialization failed after {max_retries} attempts: {e}")
+                raise e
 
 
 async def close_db() -> None:
