@@ -22,8 +22,12 @@ connect_args = {}
 if "sqlite" in db_url:
     connect_args = {"check_same_thread": False}
 elif "postgresql" in db_url:
-    # Managed Postgres often requires "require" específicamente
-    connect_args = {"ssl": "require"}
+    # Use standard SSL=True (uses default SSL context) which is more reliable
+    # across different environments than the "require" string.
+    connect_args = {
+        "ssl": True,
+        "command_timeout": 60,
+    }
 
 engine = create_async_engine(
     db_url,
@@ -59,8 +63,14 @@ async def get_session() -> AsyncGenerator[AsyncSession, None]:
 
 async def init_db() -> None:
     """Initialize database tables."""
-    async with engine.begin() as conn:
-        await conn.run_sync(SQLModel.metadata.create_all)
+    print("Database: Initializing tables...")
+    try:
+        async with engine.begin() as conn:
+            await conn.run_sync(SQLModel.metadata.create_all)
+        print("Database: Initialization complete.")
+    except Exception as e:
+        print(f"Database: Initialization failed: {e}")
+        raise e
 
 
 async def close_db() -> None:
