@@ -113,7 +113,7 @@ export default function CheckoutPage() {
 
                 try {
                     const options = {
-                        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "rzp_test_RbGn6PJi0GV2AM",
+                        key: "rzp_test_SNyUMfsmuVqnJY",
                         amount: amountInPaise,
                         currency: "INR",
                         name: "Pranjay Cosmetics",
