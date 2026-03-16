@@ -202,9 +202,6 @@ export default function ProductDetailPage() {
                                 <div className="bg-accent/50 border border-accent rounded-lg p-4">
                                     <p className="text-sm font-medium">B2B Wholesale Price</p>
                                     <p className="text-2xl font-bold text-primary">{formatPrice(product.b2b_price)}</p>
-                                    <p className="text-xs text-muted-foreground mt-1">
-                                        Min. order: {product.min_order_quantity} {product.unit}
-                                    </p>
                                 </div>
                             )}
 

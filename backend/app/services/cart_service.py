@@ -85,11 +85,7 @@ class CartService:
                 f"Only {product.stock_quantity} units available in stock"
             )
         
-        # Check min order quantity
-        if quantity < product.min_order_quantity:
-            raise BadRequestException(
-                f"Minimum order quantity is {product.min_order_quantity}"
-            )
+        # No minimum quantity restriction as requested by user
         
         # Check if item already in cart
         result = await self.session.execute(
@@ -154,10 +150,7 @@ class CartService:
                 f"Only {product.stock_quantity} units available in stock"
             )
         
-        if quantity < product.min_order_quantity:
-            raise BadRequestException(
-                f"Minimum order quantity is {product.min_order_quantity}"
-            )
+        # No minimum quantity restriction as requested by user
         
         cart_item.quantity = quantity
         self.session.add(cart_item)

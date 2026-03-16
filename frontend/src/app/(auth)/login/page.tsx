@@ -60,7 +60,7 @@ function LoginForm() {
         if (!window.recaptchaVerifier) {
             try {
                 window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-wrapper', {
-                    'size': 'invisible',
+                    'size': 'normal',
                     'callback': (response: any) => {
                         // reCAPTCHA solved
                     },
