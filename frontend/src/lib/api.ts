@@ -158,7 +158,7 @@ export const authApi = {
             user: User;
         }>('/auth/refresh', { refresh_token: refreshToken }),
 
-    updateProfile: (data: { full_name?: string }) =>
+    updateProfile: (data: { full_name?: string; business_name?: string; gst_number?: string; user_type?: 'B2C' | 'B2B' }) =>
         api.patch<User>('/users/me', data),
 };
 
@@ -279,6 +279,46 @@ export const adminApi = {
     getProduct: (id: string) => api.get<Product>(`/admin/products/${id}`),
     createProduct: (data: Partial<Product>) => api.post<Product>('/admin/products', data),
     updateProduct: (id: string, data: Partial<Product>) => api.patch<Product>(`/admin/products/${id}`, data),
+    
+    // Banners
+    listBanners: (params?: { page?: number; page_size?: number; is_active?: boolean }) => {
+        const searchParams = new URLSearchParams();
+        if (params) {
+            Object.entries(params).forEach(([key, value]) => {
+                if (value !== undefined) searchParams.append(key, String(value));
+            });
+        }
+        return api.get<PaginatedBanners>(`/admin/banners?${searchParams}`);
+    },
+    getBanner: (id: string) => api.get<Banner>(`/admin/banners/${id}`),
+    createBanner: (data: Partial<Banner>) => api.post<Banner>('/admin/banners', data),
+    updateBanner: (id: string, data: Partial<Banner>) => api.patch<Banner>(`/admin/banners/${id}`, data),
+    deleteBanner: (id: string) => api.delete(`/admin/banners/${id}`),
+    
+    // Users
+    listUsers: (params?: { page?: number; page_size?: number; role?: string; is_active?: boolean }) => {
+        const searchParams = new URLSearchParams();
+        if (params) {
+            Object.entries(params).forEach(([key, value]) => {
+                if (value !== undefined) searchParams.append(key, String(value));
+            });
+        }
+        return api.get<PaginatedUsersAdmin>(`/admin/users?${searchParams}`);
+    },
+    getUser: (id: string) => api.get<User>(`/admin/users/${id}`),
+    verifyUser: (id: string, isVerified: boolean = true) => 
+        api.post<User>(`/admin/users/${id}/verify?is_verified=${isVerified}`),
+};
+
+export interface PaginatedUsersAdmin {
+    items: User[];
+    total: number;
+    page: number;
+    page_size: number;
+}
+
+export const bannerApi = {
+    list: () => api.get<Banner[]>('/banners'),
 };
 
 // Types
@@ -462,4 +502,22 @@ export interface RecentOrder {
     total_amount: number;
     status: string;
     created_at: string;
+}
+
+export interface Banner {
+    id: string;
+    title: string;
+    image_url: string;
+    link_url?: string;
+    is_active: boolean;
+    sort_order: number;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface PaginatedBanners {
+    items: Banner[];
+    total: number;
+    page: number;
+    page_size: number;
 }

@@ -106,3 +106,15 @@ async def reactivate_user(
     """Reactivate a user (super admin only)."""
     user_service = UserService(session)
     return await user_service.reactivate_user(user_id)
+
+
+@router.post("/{user_id}/verify", response_model=UserRead)
+async def verify_user(
+    user_id: UUID,
+    is_verified: bool = Query(True),
+    current_user: User = Depends(get_current_admin),
+    session: AsyncSession = Depends(get_session)
+):
+    """Verify/Approve a user (B2B)."""
+    user_service = UserService(session)
+    return await user_service.verify_user(user_id, is_verified)

@@ -59,17 +59,15 @@ function LoginForm() {
     const initRecaptcha = () => {
         if (!window.recaptchaVerifier) {
             try {
-                window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-wrapper', {
-                    'size': 'normal',
+                window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-anchor', {
+                    'size': 'invisible',
                     'callback': (response: any) => {
-                        // reCAPTCHA solved
+                        // Auto-resolved
                     },
                     'expired-callback': () => {
-                        toast({
-                            title: 'reCAPTCHA Expired',
-                            description: 'Please try again.',
-                            variant: 'destructive',
-                        });
+                        if (window.recaptchaVerifier) {
+                            try { window.recaptchaVerifier.clear(); window.recaptchaVerifier = null; } catch (e) {}
+                        }
                     }
                 });
             } catch (e) {
@@ -232,10 +230,8 @@ function LoginForm() {
                             </div>
                         </div>
                         
-                        <div 
-                            id="recaptcha-wrapper" 
-                            className="flex justify-center my-4"
-                        ></div>
+                        {/* Invisible reCAPTCHA anchor — must exist in DOM */}
+                        <div id="recaptcha-anchor" className="hidden"></div>
                         
                         <Button type="submit" className="w-full" disabled={isLoading}>
                             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

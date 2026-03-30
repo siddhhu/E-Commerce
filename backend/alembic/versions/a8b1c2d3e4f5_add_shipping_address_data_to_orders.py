@@ -20,9 +20,19 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    # Add shipping_address_data column as JSON if it doesn't exist
-    op.execute('ALTER TABLE orders ADD COLUMN IF NOT EXISTS shipping_address_data JSONB')
+    # Add shipping_address_data and gst_number columns if they don't exist
+    with op.batch_alter_table('orders', schema=None) as batch_op:
+        try:
+            batch_op.add_column(sa.Column('shipping_address_data', sa.JSON(), nullable=True))
+        except Exception:
+            pass  # Column already exists
+        try:
+            batch_op.add_column(sa.Column('gst_number', sa.String(length=15), nullable=True))
+        except Exception:
+            pass  # Column already exists
 
 
 def downgrade() -> None:
-    op.drop_column('orders', 'shipping_address_data')
+    with op.batch_alter_table('orders', schema=None) as batch_op:
+        batch_op.drop_column('shipping_address_data')
+        batch_op.drop_column('gst_number')

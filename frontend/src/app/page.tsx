@@ -17,6 +17,7 @@ import { useWishlistStore } from '@/store/wishlist-store';
 import { useAuthStore } from '@/store/auth-store';
 import { useToast } from '@/hooks/use-toast';
 import { formatPrice, getDiscountPercentage } from '@/lib/utils';
+import { BannerSlider } from '@/components/shop/BannerSlider';
 
 export default function HomePage() {
     const router = useRouter();
@@ -172,10 +173,13 @@ export default function HomePage() {
             <Header />
 
             <main className="flex-1">
-                {/* Hero Section */}
-                <section className="relative bg-gradient-to-br from-primary/10 via-background to-pink-100 py-20 lg:py-32">
+                {/* Hero / Banner Section */}
+                <section className="py-6 md:py-10">
                     <div className="container">
-                        <div className="grid lg:grid-cols-2 gap-12 items-center">
+                        <BannerSlider />
+                        
+                        {/* Fallback Hero if no banners (only shows if BannerSlider returns null) */}
+                        <div className="mt-10 lg:mt-16 grid lg:grid-cols-2 gap-12 items-center [&:has(+div)]:hidden">
                             <div className="space-y-6">
                                 <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight">
                                     Premium Cosmetics at{' '}
@@ -208,7 +212,7 @@ export default function HomePage() {
                                     )}
                                 </div>
                             </div>
-                            <div className="relative aspect-square lg:aspect-[4/3] rounded-2xl overflow-hidden">
+                            <div className="relative aspect-square lg:aspect-[4/3] rounded-2xl overflow-hidden shadow-2xl skew-y-1">
                                 <Image
                                     src="https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=800"
                                     alt="Premium Cosmetics Collection"

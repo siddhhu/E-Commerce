@@ -8,8 +8,8 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
 from app.database import close_db, init_db
-from app.routers import auth, cart, categories, checkout, orders, products, users, wishlist
-from app.routers.admin import bulk_upload, dashboard
+from app.routers import auth, banners, cart, categories, checkout, orders, products, users, wishlist
+from app.routers.admin import banners as admin_banners, bulk_upload, dashboard
 from app.routers.admin import orders as admin_orders
 from app.routers.admin import products as admin_products
 from app.routers.admin import users as admin_users
@@ -56,6 +56,7 @@ app.include_router(cart.router, prefix=f"{API_PREFIX}/cart", tags=["Cart"])
 app.include_router(wishlist.router, prefix=f"{API_PREFIX}/wishlist", tags=["Wishlist"])
 app.include_router(checkout.router, prefix=f"{API_PREFIX}/checkout", tags=["Checkout"])
 app.include_router(orders.router, prefix=f"{API_PREFIX}/orders", tags=["Orders"])
+app.include_router(banners.router, prefix=f"{API_PREFIX}/banners", tags=["Banners"])
 
 # Admin Routes
 app.include_router(
@@ -72,6 +73,9 @@ app.include_router(
 )
 app.include_router(
     bulk_upload.router, prefix=f"{API_PREFIX}/admin/bulk-upload", tags=["Admin - Bulk Upload"]
+)
+app.include_router(
+    admin_banners.router, prefix=f"{API_PREFIX}/admin/banners", tags=["Admin - Banners"]
 )
 
 

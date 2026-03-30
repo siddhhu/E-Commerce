@@ -113,3 +113,14 @@ class UserService:
         await self.session.refresh(user)
         
         return user
+
+    async def verify_user(self, user_id: UUID, is_verified: bool = True) -> User:
+        """Verify/Approve a user (B2B)."""
+        user = await self.get_user_by_id(user_id)
+        user.is_verified = is_verified
+        
+        self.session.add(user)
+        await self.session.commit()
+        await self.session.refresh(user)
+        
+        return user
