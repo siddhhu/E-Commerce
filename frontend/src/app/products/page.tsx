@@ -182,7 +182,7 @@ function ProductsContent() {
                                 <Card key={product.id} className="overflow-hidden hover:shadow-lg transition-all">
                                     <div className="flex">
                                         <div className="relative w-40 h-40 shrink-0">
-                                            <Link href={`/ products / ${product.slug} `}>
+                                            <Link href={`/products/${product.slug}`}>
                                                 <Image
                                                     src={product.primary_image || '/placeholder.jpg'}
                                                     alt={product.name}
@@ -193,7 +193,7 @@ function ProductsContent() {
                                         </div>
                                         <CardContent className="flex-1 p-4 flex flex-col justify-between">
                                             <div>
-                                                <Link href={`/ products / ${product.slug} `}>
+                                                <Link href={`/products/${product.slug}`}>
                                                     <h3 className="font-medium hover:text-primary transition-colors">
                                                         {product.name}
                                                     </h3>
@@ -226,7 +226,7 @@ function ProductsContent() {
                         return (
                             <Card key={product.id} className="group overflow-hidden hover:shadow-lg transition-all">
                                 <div className="relative aspect-square overflow-hidden bg-muted">
-                                    <Link href={`/ products / ${product.slug} `}>
+                                    <Link href={`/products/${product.slug}`}>
                                         <Image
                                             src={product.primary_image || '/placeholder.jpg'}
                                             alt={product.name}
@@ -251,7 +251,7 @@ function ProductsContent() {
                                 </div>
 
                                 <CardContent className="p-4">
-                                    <Link href={`/ products / ${product.slug} `}>
+                                    <Link href={`/products/${product.slug}`}>
                                         <h3 className="font-medium truncate hover:text-primary transition-colors">
                                             {product.name}
                                         </h3>

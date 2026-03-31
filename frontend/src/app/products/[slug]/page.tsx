@@ -122,7 +122,7 @@ export default function ProductDetailPage() {
     const handleBuyNow = () => {
         if (!product) return;
         addToCart(mapToStoreProduct(product), quantity);
-        router.push('/cart');
+        router.push('/checkout');
     };
 
     const handleToggleWishlist = () => {
