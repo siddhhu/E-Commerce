@@ -517,6 +517,13 @@ export default function CheckoutPage() {
                                             You will pay {formatPrice(getTotal())} on delivery
                                         </p>
                                     )}
+
+                                    <p className="text-xs text-center text-muted-foreground">
+                                        By placing this order, you agree to our{' '}
+                                        <a href="/terms" target="_blank" className="text-primary hover:underline font-medium">
+                                            Terms &amp; Conditions
+                                        </a>
+                                    </p>
                                 </CardContent>
                             </Card>
                         </div>

@@ -1,9 +1,6 @@
-databases:
-  - name: pranjay-db
-    databaseName: pranjay
-    user: pranjay_admin
-    region: singapore
-    plan: free
+# NOTE: Database is hosted on Supabase (free, always-on PostgreSQL).
+# Set DATABASE_URL manually in the Render dashboard for the backend service.
+# Format: postgresql://postgres:[PASSWORD]@db.[PROJECT].supabase.co:5432/postgres
 
 services:
   # ─── Backend API (FastAPI) ──────────────────────────────────────────────────
@@ -18,9 +15,7 @@ services:
     healthCheckPath: /health
     envVars:
       - key: DATABASE_URL
-        fromDatabase:
-          name: pranjay-db
-          property: connectionString
+        sync: false   # Set manually: your Supabase PostgreSQL connection string
       - key: SECRET_KEY
         generateValue: true
       - key: JWT_SECRET_KEY
@@ -57,9 +52,9 @@ services:
         sync: false   # Set manually in Render dashboard
       - key: RAZORPAY_KEY_SECRET
         sync: false   # Set manually in Render dashboard
-      # ── CORS: allow your domain + Render frontend URL ──
+      # ── CORS: allow your domain + Vercel frontend URL ──
       - key: CORS_ORIGINS
-        value: '["https://pranjay.com","https://www.pranjay.com","https://pranjay-frontend.onrender.com"]'
+        value: '["https://pranjay.com","https://www.pranjay.com","https://pranjay-frontend.vercel.app"]'
 
   # ─── Frontend (Next.js SSR) ─────────────────────────────────────────────────
   - type: web
