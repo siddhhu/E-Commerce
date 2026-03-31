@@ -22,6 +22,9 @@ class FirebaseService:
                 if env_json:
                     try:
                         service_account_info = json.loads(env_json)
+                        # Fix escaped newlines in the private key which Vercel often mangles
+                        if 'private_key' in service_account_info:
+                            service_account_info['private_key'] = service_account_info['private_key'].replace('\\n', '\n')
                         cred = credentials.Certificate(service_account_info)
                         firebase_admin.initialize_app(cred)
                         print("Firebase initialized using environment variable JSON.")
