@@ -172,10 +172,8 @@ function LoginForm() {
             // Redirect to the originally requested page, or home/admin/profile setup
             if (!response.user.full_name || response.user.full_name.trim() === '' || response.user.full_name === response.user.phone) {
                 router.push('/profile/setup');
-            } else if (redirectUrl !== '/') {
+            } else if (redirectUrl && redirectUrl !== '/') {
                 router.push(redirectUrl);
-            } else if (response.user.role === 'admin' || response.user.role === 'super_admin') {
-                router.push('/admin');
             } else {
                 router.push('/');
             }
