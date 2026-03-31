@@ -8,6 +8,7 @@ from app.models.address import Address
 from app.models.cart import CartItem
 from app.models.wishlist import WishlistItem
 from app.models.order import Order, OrderItem, OrderStatus, PaymentStatus
+from app.models.banner import Banner
 
 __all__ = [
     "User",
@@ -25,4 +26,6 @@ __all__ = [
     "OrderItem",
     "OrderStatus",
     "PaymentStatus",
+    "Banner",
 ]
+
