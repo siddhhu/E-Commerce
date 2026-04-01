@@ -1,6 +1,7 @@
 """
 Pranjay Backend - Database Configuration
 """
+import os
 from typing import AsyncGenerator
 
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
@@ -17,34 +18,46 @@ if db_url:
     elif db_url.startswith("postgres://"):
         db_url = db_url.replace("postgres://", "postgresql+asyncpg://", 1)
 
-# Create async engine with robust connection handling
+# Build connection args
 connect_args = {}
 if "sqlite" in db_url:
     connect_args = {"check_same_thread": False}
 elif "postgresql" in db_url:
     import ssl
-    # Managed Postgres often have proxies that kill idle connections or
-    # require very specific SSL handshakes.
     ssl_context = ssl.create_default_context()
     ssl_context.check_hostname = False
     ssl_context.verify_mode = ssl.CERT_NONE
-    
     connect_args = {
         "ssl": ssl_context,
-        "statement_cache_size": 0,
+        "statement_cache_size": 0,  # Required for Supabase pgBouncer pooler (port 6543)
         "command_timeout": 60,
     }
 
-engine = create_async_engine(
-    db_url,
-    echo=settings.debug,
-    future=True,
-    pool_pre_ping=True,
-    pool_size=5,
-    max_overflow=10,
-    pool_recycle=300,  # Refresh connections every 5 minutes
-    connect_args=connect_args
-)
+# Detect serverless environment (Vercel sets the VERCEL env var)
+is_serverless = bool(os.environ.get("VERCEL") or os.environ.get("AWS_LAMBDA_FUNCTION_NAME"))
+
+if is_serverless and "postgresql" in db_url:
+    # Vercel serverless functions are stateless — persistent connection pools cause
+    # "connection already closed" errors. NullPool opens/closes a connection per request.
+    from sqlalchemy.pool import NullPool
+    engine = create_async_engine(
+        db_url,
+        echo=False,
+        future=True,
+        poolclass=NullPool,
+        connect_args=connect_args,
+    )
+else:
+    engine = create_async_engine(
+        db_url,
+        echo=settings.debug,
+        future=True,
+        pool_pre_ping=True,
+        pool_size=5,
+        max_overflow=10,
+        pool_recycle=300,
+        connect_args=connect_args,
+    )
 
 # Create async session factory
 async_session_maker = sessionmaker(
@@ -73,7 +86,7 @@ async def init_db() -> None:
     import asyncio
     max_retries = 3
     retry_delay = 2
-    
+
     for attempt in range(max_retries):
         print(f"Database: Initializing tables (Attempt {attempt + 1}/{max_retries})...")
         try:
