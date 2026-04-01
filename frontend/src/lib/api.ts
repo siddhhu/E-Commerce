@@ -213,9 +213,20 @@ export const cartApi = {
     syncAll: async (items: { product_id: string; quantity: number }[]) => {
         // Clear backend cart first, then add all current frontend items
         await api.delete('/cart');
+        let synced = 0;
         for (const item of items) {
-            await api.post('/cart/items', item);
+            try {
+                await api.post('/cart/items', item);
+                synced++;
+            } catch (err) {
+                // Skip items with invalid/non-existent product IDs (e.g. stale dummy data)
+                console.warn('Skipping cart item that failed to sync:', item.product_id, err);
+            }
         }
+        if (synced === 0 && items.length > 0) {
+            throw new Error('None of the cart items could be added. Please remove old items and try again.');
+        }
+        return synced;
     }
 };
 
