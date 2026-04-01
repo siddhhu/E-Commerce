@@ -8,11 +8,28 @@ const nextConfig = {
             },
             {
                 protocol: 'https',
+                hostname: '*.supabase.in',
+            },
+            {
+                protocol: 'https',
                 hostname: 'res.cloudinary.com',
             },
             {
                 protocol: 'https',
                 hostname: 'images.unsplash.com',
+            },
+            {
+                // WooCommerce imported product images
+                protocol: 'https',
+                hostname: 'pranjay.com',
+            },
+            {
+                protocol: 'http',
+                hostname: 'pranjay.com',
+            },
+            {
+                protocol: 'https',
+                hostname: 'www.pranjay.com',
             },
         ],
     },
