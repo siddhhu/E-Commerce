@@ -9,7 +9,8 @@ class ApiClient {
     private baseUrl: string;
 
     constructor() {
-        this.baseUrl = `${API_BASE_URL}/api/${API_VERSION}`;
+        const cleanlyStrippedBase = API_BASE_URL.replace(/\/+$/, '');
+        this.baseUrl = `${cleanlyStrippedBase}/api/${API_VERSION}`;
     }
 
     private getHeaders(): HeadersInit {
