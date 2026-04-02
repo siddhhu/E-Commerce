@@ -83,8 +83,8 @@ class StorageService:
             except Exception as e:
                 print(f"REST Upload Exception: {e}")
 
-        # Return a placeholder URL if everything fails
-        return f"https://placeholder.com/{folder}/{file_name}"
+        # Return None if everything fails
+        return None
 
     async def delete_file(self, file_url: str) -> bool:
         """Delete a file from storage."""
@@ -168,22 +168,22 @@ class StorageService:
                 response = await client.get(url, follow_redirects=True)
                 response.raise_for_status()
                 
-                content = response.content
-                content_type = response.headers.get("content-type", "image/jpeg")
+                # Upload to Supabase
+                file_content = response.content
+                file_name = url.split("/")[-1]
+                content_type = response.headers.get("Content-Type", "image/jpeg")
                 
-                # Get filename from URL or use a default
-                file_name = url.split("/")[-1].split("?")[0] or "image.jpg"
+                # Ensure filename has extension
                 if "." not in file_name:
                     file_name += ".jpg"
                 
-                return await self.upload_file(
-                    content,
-                    file_name,
-                    content_type,
-                    folder=folder
-                )
+                new_url = await self.upload_file(file_content, file_name, content_type, folder)
+                
+                # If upload failed (returned None), keep original URL
+                return new_url if new_url else url
+                
         except Exception as e:
-            print(f"Error migrating image from {url}: {e}")
+            print(f"Migration error for {url}: {e}")
             return url
 
 
