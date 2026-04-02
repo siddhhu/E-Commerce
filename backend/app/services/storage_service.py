@@ -43,27 +43,49 @@ class StorageService:
         """
         Upload a file to Supabase storage.
         Returns the public URL.
+        Falls back to direct REST API if SDK is unavailable.
         """
-        if not self.is_available:
-            # Return a placeholder URL for development
-            return f"https://placeholder.com/{folder}/{file_name}"
-        
         # Generate unique filename
         ext = file_name.split(".")[-1] if "." in file_name else "jpg"
         unique_name = f"{folder}/{uuid.uuid4()}.{ext}"
-        
-        # Upload to Supabase
-        self.client.storage.from_(self.bucket).upload(
-            unique_name,
-            file_content,
-            {"content-type": content_type}
-        )
-        
-        # Get public URL
-        public_url = self.client.storage.from_(self.bucket).get_public_url(unique_name)
-        
-        return public_url
-    
+
+        # Try SDK first if available
+        if self.is_available:
+            try:
+                self.client.storage.from_(self.bucket).upload(
+                    unique_name,
+                    file_content,
+                    {"content-type": content_type}
+                )
+                return self.client.storage.from_(self.bucket).get_public_url(unique_name)
+            except Exception as e:
+                print(f"SDK Upload failed, trying REST fallback: {e}")
+
+        # REST API Fallback
+        if settings.supabase_url and settings.supabase_key:
+            try:
+                # Remove trailing slash from URL if present
+                base_url = settings.supabase_url.rstrip("/")
+                api_url = f"{base_url}/storage/v1/object/{self.bucket}/{unique_name}"
+                
+                headers = {
+                    "Authorization": f"Bearer {settings.supabase_key}",
+                    "apikey": settings.supabase_key,
+                    "Content-Type": content_type
+                }
+                
+                async with httpx.AsyncClient(timeout=30.0) as client:
+                    response = await client.post(api_url, content=file_content, headers=headers)
+                    if response.status_code == 200:
+                        return f"{base_url}/storage/v1/object/public/{self.bucket}/{unique_name}"
+                    else:
+                        print(f"REST Upload failed ({response.status_code}): {response.text}")
+            except Exception as e:
+                print(f"REST Upload Exception: {e}")
+
+        # Return a placeholder URL if everything fails
+        return f"https://placeholder.com/{folder}/{file_name}"
+
     async def delete_file(self, file_url: str) -> bool:
         """Delete a file from storage."""
         if not self.is_available:
@@ -138,7 +160,7 @@ class StorageService:
         if "supabase.co" in url or "supabase.in" in url:
             return url
 
-        if not self.is_available:
+        if not settings.supabase_url or not settings.supabase_key:
             return url
 
         try:
