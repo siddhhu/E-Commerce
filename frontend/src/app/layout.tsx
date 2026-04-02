@@ -6,8 +6,8 @@ import { Toaster } from '@/components/ui/toaster';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-    title: 'Pranjay - B2B Cosmetics Platform',
-    description: 'Your trusted B2B cosmetics ecommerce platform',
+    title: 'Pranjay - Wholesale Cosmetics Platform',
+    description: 'Your trusted wholesale cosmetics ecommerce platform',
 };
 
 export default function RootLayout({

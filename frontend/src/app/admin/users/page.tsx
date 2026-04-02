@@ -57,7 +57,7 @@ export default function AdminUsersPage() {
         <div className="space-y-6">
             <div>
                 <h1 className="text-3xl font-bold tracking-tight text-slate-900">User Management</h1>
-                <p className="text-slate-500 mt-1">View registrations, B2B details and manage verification.</p>
+                <p className="text-slate-500 mt-1">View registrations, account details and manage verification.</p>
             </div>
 
             {/* Detail Panel */}
@@ -115,7 +115,7 @@ export default function AdminUsersPage() {
                             <div className="mt-4 pt-4 border-t flex gap-3">
                                 {!selected.is_verified ? (
                                     <Button size="sm" className="bg-green-600 hover:bg-green-700" onClick={() => handleVerify(selected.id, true)}>
-                                        <ShieldCheck className="h-4 w-4 mr-1" /> Approve B2B
+                                        <ShieldCheck className="h-4 w-4 mr-1" /> Approve Account
                                     </Button>
                                 ) : (
                                     <Button size="sm" variant="outline" className="text-amber-600 border-amber-300" onClick={() => handleVerify(selected.id, false)}>
@@ -147,7 +147,7 @@ export default function AdminUsersPage() {
                             onChange={(e) => setTypeFilter(e.target.value)}
                         >
                             <option value="">All Types</option>
-                            <option value="B2B">B2B Only</option>
+                            <option value="B2B">Wholesale Only</option>
                             <option value="B2C">B2C Only</option>
                         </select>
                     </div>

@@ -11,6 +11,7 @@ from slugify import slugify
 
 from app.models.product import Product, ProductCreate
 from app.services.product_service import ProductService
+from app.services.storage_service import storage_service
 
 
 class BulkUploadService:
@@ -154,7 +155,11 @@ class BulkUploadService:
             if pd.notna(row.get("is_featured")):
                 existing.is_featured = bool(row["is_featured"])
             if pd.notna(row.get("image_url")):
-                existing.image_url = str(row["image_url"])
+                image_url = str(row["image_url"])
+                # Auto-migrate if it's an external URL
+                if image_url.startswith("http") and "supabase" not in image_url:
+                    image_url = await storage_service.upload_from_url(image_url)
+                existing.image_url = image_url
             
             self.session.add(existing)
             return "updated"
@@ -185,8 +190,14 @@ class BulkUploadService:
             category_id=UUID(str(row["category_id"])) if pd.notna(row.get("category_id")) else None,
             brand_id=UUID(str(row["brand_id"])) if pd.notna(row.get("brand_id")) else None,
             is_featured=bool(row.get("is_featured", False)) if pd.notna(row.get("is_featured")) else False,
-            image_url=str(row["image_url"]) if pd.notna(row.get("image_url")) else None
         )
+        
+        if pd.notna(row.get("image_url")):
+            image_url = str(row["image_url"])
+            # Auto-migrate if it's an external URL
+            if image_url.startswith("http") and "supabase" not in image_url:
+                image_url = await storage_service.upload_from_url(image_url)
+            product.image_url = image_url
         
         self.session.add(product)
         return "created"

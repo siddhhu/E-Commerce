@@ -5,7 +5,7 @@ import { ShieldCheck, ArrowLeft } from 'lucide-react';
 export const metadata: Metadata = {
     title: 'Terms & Conditions — Pranjay',
     description:
-        'Terms and conditions for sellers onboarding on the Pranjay B2B eCommerce platform.',
+        'Terms and conditions for sellers onboarding on the Pranjay wholesale eCommerce platform.',
 };
 
 const sections = [

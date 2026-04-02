@@ -197,10 +197,10 @@ export default function ProductDetailPage() {
                                 )}
                             </div>
 
-                            {/* B2B Price */}
+                            {/* Wholesale Price */}
                             {product.b2b_price && (
-                                <div className="bg-accent/50 border border-accent rounded-lg p-4">
-                                    <p className="text-sm font-medium">B2B Wholesale Price</p>
+                                <div className="mt-2 p-3 bg-accent rounded-lg">
+                                    <p className="text-sm font-medium">Dealer / Wholesale Price</p>
                                     <p className="text-2xl font-bold text-primary">{formatPrice(product.b2b_price)}</p>
                                 </div>
                             )}

@@ -13,7 +13,7 @@ export function Footer() {
                             </span>
                         </Link>
                         <p className="text-sm text-muted-foreground">
-                            Your trusted B2B cosmetics platform. Quality products at wholesale
+                            Your trusted wholesale cosmetics partner. Quality products at dealer
                             prices.
                         </p>
                     </div>

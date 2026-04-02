@@ -71,7 +71,7 @@ export default function CheckoutPage() {
         setGstSavedToProfile(false);
 
         if (upper.length === 0) {
-            setGstError('GST number is required for B2B orders');
+            setGstError('GST number is required for wholesale orders');
             setGstValid(false);
         } else if (upper.length < 15) {
             setGstError(`GST number must be 15 characters (${upper.length}/15)`);
@@ -106,7 +106,7 @@ export default function CheckoutPage() {
         if (!gstNumber) {
             toast({
                 title: 'GST Number Required',
-                description: 'Please enter your GST number to proceed with B2B checkout.',
+                description: 'Please enter your GST number to proceed with wholesale checkout.',
                 variant: 'destructive',
             });
             return false;
@@ -320,7 +320,7 @@ export default function CheckoutPage() {
                                     <CardTitle className="flex items-center gap-2 text-base">
                                         <Building2 className="h-5 w-5 text-primary" />
                                         Business GST Details
-                                        <span className="ml-auto text-xs font-normal bg-primary/10 text-primary px-2 py-0.5 rounded-full">Required for B2B</span>
+                                        <span className="ml-auto text-xs font-normal bg-primary/10 text-primary px-2 py-0.5 rounded-full">Required for Wholesale</span>
                                     </CardTitle>
                                 </CardHeader>
                                 <CardContent className="space-y-3">
@@ -333,7 +333,7 @@ export default function CheckoutPage() {
                                                 <button
                                                     type="button"
                                                     className="text-xs text-blue-600 underline mt-0.5"
-                                                    onClick={() => { setGstSavedToProfile(false); setGstNumber(''); setGstValid(false); setGstError('GST number is required for B2B orders'); }}
+                                                    onClick={() => { setGstSavedToProfile(false); setGstNumber(''); setGstValid(false); setGstError('GST number is required for wholesale orders'); }}
                                                 >
                                                     Use a different GST number
                                                 </button>

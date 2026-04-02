@@ -1,3 +1,4 @@
+import React, { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Heart, ShoppingCart } from 'lucide-react';
@@ -18,10 +19,14 @@ export function ProductCard({
     onAddToCart,
     onAddToWishlist,
 }: ProductCardProps) {
-    const primaryImage = product.image_url ||
+    const [imgError, setImgError] = useState(false);
+    
+    const primaryImage = imgError ? '/placeholder.jpg' : (
+        product.image_url ||
         product.images?.find((img) => img.is_primary)?.image_url ||
         product.images?.[0]?.image_url ||
-        '/placeholder.jpg';
+        '/placeholder.jpg'
+    );
 
     const discount = getDiscountPercentage(product.mrp, product.selling_price);
     const isOutOfStock = product.stock_quantity <= 0;
@@ -35,6 +40,7 @@ export function ProductCard({
                         alt={product.name}
                         fill
                         className="object-cover transition-transform duration-300 group-hover:scale-105"
+                        onError={() => setImgError(true)}
                     />
                 </Link>
 
@@ -97,7 +103,7 @@ export function ProductCard({
 
                     {product.b2b_price && (
                         <span className="text-xs bg-accent text-accent-foreground px-2 py-1 rounded">
-                            B2B: {formatPrice(product.b2b_price)}
+                            Wholesale: {formatPrice(product.b2b_price)}
                         </span>
                     )}
                 </div>

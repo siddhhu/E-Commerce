@@ -156,8 +156,8 @@ export default function HomePage() {
         },
         {
             icon: Sparkles,
-            title: 'B2B Pricing',
-            description: 'Exclusive wholesale rates',
+            title: 'Wholesale Pricing',
+            description: 'Exclusive dealer rates',
         },
     ];
 
@@ -188,7 +188,7 @@ export default function HomePage() {
                                     </span>
                                 </h1>
                                 <p className="text-lg text-muted-foreground max-w-md">
-                                    Your trusted B2B cosmetics platform. Access exclusive deals on
+                                    Your trusted wholesale cosmetics partner. Access exclusive deals on
                                     authentic products from top brands.
                                 </p>
                                 <div className="flex flex-wrap gap-4">
@@ -206,7 +206,7 @@ export default function HomePage() {
                                     ) : (
                                         <Link href="/login">
                                             <Button variant="outline" size="lg">
-                                                Get B2B Access
+                                                Get Wholesale Access
                                             </Button>
                                         </Link>
                                     )}
@@ -384,7 +384,7 @@ export default function HomePage() {
                 <section className="py-16 bg-primary text-primary-foreground">
                     <div className="container text-center">
                         <h2 className="text-2xl md:text-3xl font-bold mb-4">
-                            Ready to Start Your B2B Journey?
+                            Ready to Start Your Wholesale Journey?
                         </h2>
                         <p className="text-primary-foreground/80 max-w-md mx-auto mb-8">
                             Join thousands of retailers who trust Pranjay for their cosmetics

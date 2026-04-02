@@ -3,6 +3,7 @@ Storage Service - File uploads to Supabase Storage
 """
 import uuid
 from typing import Optional
+import httpx
 
 from app.config import settings
 
@@ -120,6 +121,48 @@ class StorageService:
             content_type,
             folder="brands"
         )
+
+    async def upload_from_url(
+        self,
+        url: str,
+        folder: str = "products"
+    ) -> str:
+        """
+        Download a file from a URL and upload it to Supabase.
+        Returns the original URL if download/upload fails or if it's already a Supabase URL.
+        """
+        if not url or not url.startswith("http"):
+            return url
+
+        # Check if already a Supabase URL
+        if "supabase.co" in url or "supabase.in" in url:
+            return url
+
+        if not self.is_available:
+            return url
+
+        try:
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                response = await client.get(url, follow_redirects=True)
+                response.raise_for_status()
+                
+                content = response.content
+                content_type = response.headers.get("content-type", "image/jpeg")
+                
+                # Get filename from URL or use a default
+                file_name = url.split("/")[-1].split("?")[0] or "image.jpg"
+                if "." not in file_name:
+                    file_name += ".jpg"
+                
+                return await self.upload_file(
+                    content,
+                    file_name,
+                    content_type,
+                    folder=folder
+                )
+        except Exception as e:
+            print(f"Error migrating image from {url}: {e}")
+            return url
 
 
 # Singleton instance

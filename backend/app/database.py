@@ -39,6 +39,14 @@ is_serverless = bool(os.environ.get("VERCEL") or os.environ.get("AWS_LAMBDA_FUNC
 if is_serverless and "postgresql" in db_url:
     # Vercel serverless functions are stateless — persistent connection pools cause
     # "connection already closed" errors. NullPool opens/closes a connection per request.
+    #
+    # CRITICAL: Vercel cannot open direct TCP connections to Supabase port 5432.
+    # Must use the Supabase Transaction Pooler on port 6543 instead.
+    # Auto-swap port 5432 → 6543 (Supabase pgBouncer transaction pooler).
+    if ":5432/" in db_url:
+        db_url = db_url.replace(":5432/", ":6543/")
+        print("Database: Serverless detected — switched to Supabase pooler (port 6543)")
+
     from sqlalchemy.pool import NullPool
     engine = create_async_engine(
         db_url,
