@@ -10,19 +10,21 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
-import { apiService, APIProduct } from '@/lib/api-service';
-import { dummyProducts, getFeaturedProducts as getDummyFeatured, categories, Product } from '@/lib/dummy-data';
+import { apiService, APIProduct as APIProductSummary } from '@/lib/api-service';
+import { dummyProducts, getFeaturedProducts as getDummyFeatured, categories, Product as StoreProduct } from '@/lib/dummy-data';
 import { useCartStore } from '@/store/cart-store';
 import { useWishlistStore } from '@/store/wishlist-store';
 import { useAuthStore } from '@/store/auth-store';
 import { useToast } from '@/hooks/use-toast';
 import { formatPrice, getDiscountPercentage } from '@/lib/utils';
 import { BannerSlider } from '@/components/shop/BannerSlider';
+import { ProductCard } from '@/components/products/ProductCard';
+import { Product as APIProduct } from '@/lib/api';
 
 export default function HomePage() {
     const router = useRouter();
     const { isAuthenticated, user } = useAuthStore();
-    const [featuredProducts, setFeaturedProducts] = useState<APIProduct[]>([]);
+    const [featuredProducts, setFeaturedProducts] = useState<APIProductSummary[]>([]);
     const [loading, setLoading] = useState(true);
 
     const { addItem: addToCart } = useCartStore();
@@ -59,17 +61,17 @@ export default function HomePage() {
         fetchFeaturedProducts();
     }, []);
 
-    const handleAddToCart = (product: APIProduct) => {
-        const storeProduct: Product = {
+    const handleAddToCart = (product: APIProductSummary) => {
+        const storeProduct: StoreProduct = {
             id: product.id,
             name: product.name,
             slug: product.slug,
             sku: product.sku,
             description: '',
-            short_description: product.short_description,
-            mrp: product.mrp,
-            selling_price: product.selling_price,
-            b2b_price: product.b2b_price,
+            short_description: product.short_description || '',
+            mrp: Number(product.mrp),
+            selling_price: Number(product.selling_price),
+            b2b_price: product.b2b_price ? Number(product.b2b_price) : 0,
             stock_quantity: product.stock_quantity,
             min_order_quantity: 1,
             unit: 'pcs',
@@ -96,17 +98,17 @@ export default function HomePage() {
         });
     };
 
-    const handleToggleWishlist = (product: APIProduct) => {
-        const storeProduct: Product = {
+    const handleToggleWishlist = (product: APIProductSummary) => {
+        const storeProduct: StoreProduct = {
             id: product.id,
             name: product.name,
             slug: product.slug,
             sku: product.sku,
             description: '',
-            short_description: product.short_description,
-            mrp: product.mrp,
-            selling_price: product.selling_price,
-            b2b_price: product.b2b_price,
+            short_description: product.short_description || '',
+            mrp: Number(product.mrp),
+            selling_price: Number(product.selling_price),
+            b2b_price: product.b2b_price ? Number(product.b2b_price) : 0,
             stock_quantity: product.stock_quantity,
             min_order_quantity: 1,
             unit: 'pcs',
@@ -274,64 +276,41 @@ export default function HomePage() {
                         ) : (
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                                 {featuredProducts.map((product) => {
-                                    const discount = getDiscountPercentage(product.mrp, product.selling_price);
-                                    const inWishlist = isInWishlist(product.id);
+                                    // Map APIProductSummary to APIProduct expected by ProductCard
+                                    const cardProduct: APIProduct = {
+                                        id: product.id,
+                                        name: product.name,
+                                        slug: product.slug,
+                                        sku: product.sku,
+                                        short_description: product.short_description || '',
+                                        mrp: Number(product.mrp),
+                                        selling_price: Number(product.selling_price),
+                                        b2b_price: product.b2b_price ? Number(product.b2b_price) : undefined,
+                                        stock_quantity: product.stock_quantity,
+                                        min_order_quantity: 1,
+                                        unit: 'pcs',
+                                        is_active: true,
+                                        is_featured: product.is_featured,
+                                        image_url: product.primary_image || undefined,
+                                        images: product.primary_image ? [{ 
+                                            id: 'p1', 
+                                            product_id: product.id, 
+                                            image_url: product.primary_image, 
+                                            is_primary: true,
+                                            sort_order: 0
+                                        }] : [],
+                                        attributes: {},
+                                        created_at: '',
+                                        updated_at: ''
+                                    };
 
                                     return (
-                                        <Card key={product.id} className="group overflow-hidden hover:shadow-lg transition-all">
-                                            <div className="relative aspect-square overflow-hidden bg-muted">
-                                                <Link href={`/products/${product.slug}`}>
-                                                    <Image
-                                                        src={product.primary_image || '/placeholder.jpg'}
-                                                        alt={product.name}
-                                                        fill
-                                                        className="object-cover transition-transform duration-300 group-hover:scale-105"
-                                                    />
-                                                </Link>
-
-                                                {discount > 0 && (
-                                                    <span className="absolute top-2 left-2 bg-primary text-primary-foreground text-xs font-semibold px-2 py-1 rounded">
-                                                        {discount}% OFF
-                                                    </span>
-                                                )}
-
-                                                <button
-                                                    className={`absolute top-2 right-2 h-8 w-8 rounded-full flex items-center justify-center transition-all ${inWishlist ? 'bg-primary text-white' : 'bg-white/80 hover:bg-white'
-                                                        }`}
-                                                    onClick={() => handleToggleWishlist(product)}
-                                                >
-                                                    <Heart className={`h-4 w-4 ${inWishlist ? 'fill-current' : ''}`} />
-                                                </button>
-                                            </div>
-
-                                            <CardContent className="p-4">
-                                                <Link href={`/products/${product.slug}`}>
-                                                    <h3 className="font-medium truncate hover:text-primary transition-colors">
-                                                        {product.name}
-                                                    </h3>
-                                                </Link>
-
-                                                <div className="mt-3 flex items-center gap-2">
-                                                    <span className="text-lg font-bold text-primary">
-                                                        {formatPrice(product.selling_price)}
-                                                    </span>
-                                                    {discount > 0 && (
-                                                        <span className="text-sm text-muted-foreground line-through">
-                                                            {formatPrice(product.mrp)}
-                                                        </span>
-                                                    )}
-                                                </div>
-
-                                                <Button
-                                                    className="w-full mt-4"
-                                                    size="sm"
-                                                    onClick={() => handleAddToCart(product)}
-                                                >
-                                                    <ShoppingCart className="h-4 w-4 mr-2" />
-                                                    Add to Cart
-                                                </Button>
-                                            </CardContent>
-                                        </Card>
+                                        <ProductCard 
+                                            key={product.id} 
+                                            product={cardProduct}
+                                            onAddToCart={() => handleAddToCart(product)}
+                                            onAddToWishlist={() => handleToggleWishlist(product)}
+                                        />
                                     );
                                 })}
                             </div>

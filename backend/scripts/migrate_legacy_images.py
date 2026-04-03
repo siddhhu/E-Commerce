@@ -23,10 +23,6 @@ async def migrate_images():
     """Main migration function."""
     print("🚀 Starting legacy image migration to Supabase...")
     
-    if not storage_service.is_available:
-        print("❌ Storage service not available. Check your SUPABASE_URL and SUPABASE_KEY.")
-        return
-
     async with async_session_maker() as session:
         # 1. Migrate Product's primary image_url
         print("\n🔍 Scanning products for legacy image_urls...")

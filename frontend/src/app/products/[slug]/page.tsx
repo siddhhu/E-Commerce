@@ -79,8 +79,9 @@ export default function ProductDetailPage() {
         );
     }
 
+    const [imgError, setImgError] = useState(false);
     const discount = getDiscountPercentage(product.mrp, product.selling_price);
-    const primaryImage = product.images[0]?.image_url;
+    const primaryImage = imgError ? '/placeholder.jpg' : (product.images[0]?.image_url || '/placeholder.jpg');
     const inWishlist = isInWishlist(product.id);
 
     const mapToStoreProduct = (p: APIProduct): Product => ({
@@ -164,6 +165,7 @@ export default function ProductDetailPage() {
                                     fill
                                     className="object-cover"
                                     priority
+                                    onError={() => setImgError(true)}
                                 />
                                 {discount > 0 && (
                                     <span className="absolute top-4 left-4 bg-primary text-primary-foreground text-sm font-semibold px-3 py-1 rounded">

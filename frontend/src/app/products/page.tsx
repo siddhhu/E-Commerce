@@ -14,8 +14,9 @@ import { useCartStore } from '@/store/cart-store';
 import { useWishlistStore } from '@/store/wishlist-store';
 import { useToast } from '@/hooks/use-toast';
 import { formatPrice, getDiscountPercentage } from '@/lib/utils';
-import { productsApi, ProductSummary } from '@/lib/api';
-import { Product } from '@/lib/dummy-data';
+import { productsApi, ProductSummary, Product as APIProduct } from '@/lib/api';
+import { Product as StoreProduct } from '@/lib/dummy-data';
+import { ProductCard } from '@/components/products/ProductCard';
 
 function ProductsContent() {
     const searchParams = useSearchParams();
@@ -24,6 +25,9 @@ function ProductsContent() {
     const router = useRouter();
     const [products, setProducts] = useState<ProductSummary[]>([]);
     const [loading, setLoading] = useState(true);
+    const [loadingMore, setLoadingMore] = useState(false);
+    const [page, setPage] = useState(1);
+    const [total, setTotal] = useState(0);
     const [error, setError] = useState<string | null>(null);
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
@@ -32,28 +36,49 @@ function ProductsContent() {
     const { toast } = useToast();
 
     useEffect(() => {
-        async function fetchProducts() {
-            setLoading(true);
-            setError(null);
-            try {
-                const response = await productsApi.list({
-                    page_size: 20,
-                    category_id: categoryId || undefined,
-                });
-                setProducts(response.items);
-            } catch (err) {
-                console.error('Failed to fetch products from API:', err);
-                setError('Failed to load products. Please try again later.');
-            } finally {
-                setLoading(false);
-            }
-        }
-
-        fetchProducts();
+        // Reset state when category changes
+        setPage(1);
+        setProducts([]);
+        fetchProducts(1, true);
     }, [categoryId]);
 
+    async function fetchProducts(pageNum: number, isInitial: boolean = false) {
+        if (isInitial) {
+            setLoading(true);
+        } else {
+            setLoadingMore(true);
+        }
+        setError(null);
+        try {
+            const response = await productsApi.list({
+                page: pageNum,
+                page_size: 20,
+                category_id: categoryId || undefined,
+            });
+            
+            if (isInitial) {
+                setProducts(response.items);
+            } else {
+                setProducts(prev => [...prev, ...response.items]);
+            }
+            setTotal(response.total);
+        } catch (err) {
+            console.error('Failed to fetch products from API:', err);
+            setError('Failed to load products. Please try again later.');
+        } finally {
+            setLoading(false);
+            setLoadingMore(false);
+        }
+    }
+
+    const handleLoadMore = () => {
+        const nextPage = page + 1;
+        setPage(nextPage);
+        fetchProducts(nextPage);
+    };
+
     const handleAddToCart = (product: ProductSummary) => {
-        const storeProduct: Product = {
+        const storeProduct: StoreProduct = {
             id: product.id,
             name: product.name,
             slug: product.slug,
@@ -90,7 +115,7 @@ function ProductsContent() {
     };
 
     const handleToggleWishlist = (product: ProductSummary) => {
-        const storeProduct: Product = {
+        const storeProduct: StoreProduct = {
             id: product.id,
             name: product.name,
             slug: product.slug,
@@ -174,10 +199,36 @@ function ProductsContent() {
                     : "space-y-4"
                 }>
                     {products.map((product) => {
-                        const discount = getDiscountPercentage(product.mrp, product.selling_price);
-                        const inWishlist = isInWishlist(product.id);
+                        // Map ProductSummary to the Product type expected by ProductCard
+                        const cardProduct: APIProduct = {
+                            id: product.id,
+                            name: product.name,
+                            slug: product.slug,
+                            sku: product.sku,
+                            short_description: product.short_description || '',
+                            mrp: Number(product.mrp),
+                            selling_price: Number(product.selling_price),
+                            b2b_price: product.b2b_price ? Number(product.b2b_price) : undefined,
+                            stock_quantity: product.stock_quantity,
+                            min_order_quantity: 1,
+                            unit: 'pcs',
+                            is_active: true,
+                            is_featured: product.is_featured,
+                            image_url: product.primary_image || undefined,
+                            images: product.primary_image ? [{ 
+                                id: 'p1', 
+                                product_id: product.id, 
+                                image_url: product.primary_image, 
+                                is_primary: true,
+                                sort_order: 0
+                            }] : [],
+                            attributes: {},
+                            created_at: '',
+                            updated_at: ''
+                        };
 
                         if (viewMode === 'list') {
+                            const discount = getDiscountPercentage(product.mrp, product.selling_price);
                             return (
                                 <Card key={product.id} className="overflow-hidden hover:shadow-lg transition-all">
                                     <div className="flex">
@@ -188,6 +239,10 @@ function ProductsContent() {
                                                     alt={product.name}
                                                     fill
                                                     className="object-cover"
+                                                    // Simple fallback for list view
+                                                    onError={(e) => {
+                                                        (e.target as HTMLImageElement).src = '/placeholder.jpg';
+                                                    }}
                                                 />
                                             </Link>
                                         </div>
@@ -224,62 +279,36 @@ function ProductsContent() {
                         }
 
                         return (
-                            <Card key={product.id} className="group overflow-hidden hover:shadow-lg transition-all">
-                                <div className="relative aspect-square overflow-hidden bg-muted">
-                                    <Link href={`/products/${product.slug}`}>
-                                        <Image
-                                            src={product.primary_image || '/placeholder.jpg'}
-                                            alt={product.name}
-                                            fill
-                                            className="object-cover transition-transform duration-300 group-hover:scale-105"
-                                        />
-                                    </Link>
-
-                                    {discount > 0 && (
-                                        <span className="absolute top-2 left-2 bg-primary text-primary-foreground text-xs font-semibold px-2 py-1 rounded">
-                                            {discount}% OFF
-                                        </span>
-                                    )}
-
-                                    <button
-                                        className={`absolute top - 2 right - 2 h - 8 w - 8 rounded - full flex items - center justify - center transition - all ${inWishlist ? 'bg-primary text-white' : 'bg-white/80 hover:bg-white'
-                                            } `}
-                                        onClick={() => handleToggleWishlist(product)}
-                                    >
-                                        <Heart className={`h - 4 w - 4 ${inWishlist ? 'fill-current' : ''} `} />
-                                    </button>
-                                </div>
-
-                                <CardContent className="p-4">
-                                    <Link href={`/products/${product.slug}`}>
-                                        <h3 className="font-medium truncate hover:text-primary transition-colors">
-                                            {product.name}
-                                        </h3>
-                                    </Link>
-
-                                    <div className="mt-3 flex items-center gap-2">
-                                        <span className="text-lg font-bold text-primary">
-                                            {formatPrice(product.selling_price)}
-                                        </span>
-                                        {discount > 0 && (
-                                            <span className="text-sm text-muted-foreground line-through">
-                                                {formatPrice(product.mrp)}
-                                            </span>
-                                        )}
-                                    </div>
-
-                                    <Button
-                                        className="w-full mt-4"
-                                        size="sm"
-                                        onClick={() => handleAddToCart(product)}
-                                    >
-                                        <ShoppingCart className="h-4 w-4 mr-2" />
-                                        Add to Cart
-                                    </Button>
-                                </CardContent>
-                            </Card>
+                            <ProductCard 
+                                key={product.id} 
+                                product={cardProduct}
+                                onAddToCart={() => handleAddToCart(product)}
+                                onAddToWishlist={() => handleToggleWishlist(product)}
+                            />
                         );
                     })}
+                </div>
+            )}
+
+            {/* Load More */}
+            {!loading && products.length < total && (
+                <div className="flex justify-center mt-12 mb-8">
+                    <Button 
+                        variant="outline" 
+                        size="lg" 
+                        onClick={handleLoadMore}
+                        disabled={loadingMore}
+                        className="min-w-[200px]"
+                    >
+                        {loadingMore ? (
+                            <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Loading...
+                            </>
+                        ) : (
+                            'Load More Products'
+                        )}
+                    </Button>
                 </div>
             )}
 
