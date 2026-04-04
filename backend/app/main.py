@@ -50,9 +50,17 @@ app.add_middleware(
 )
 
 # Local uploads (used when Supabase is not configured)
-uploads_dir = Path(os.getenv("UPLOADS_DIR", "uploads"))
-uploads_dir.mkdir(parents=True, exist_ok=True)
-app.mount("/uploads", StaticFiles(directory=str(uploads_dir)), name="uploads")
+uploads_dir_env = os.getenv("UPLOADS_DIR")
+enable_local_uploads = os.getenv("ENABLE_LOCAL_UPLOADS", "0").lower() in {"1", "true", "yes"}
+if uploads_dir_env or enable_local_uploads:
+    uploads_dir = Path(uploads_dir_env or "uploads")
+    try:
+        uploads_dir.mkdir(parents=True, exist_ok=True)
+        app.mount("/uploads", StaticFiles(directory=str(uploads_dir)), name="uploads")
+    except OSError:
+        # Some platforms (e.g., Vercel) have a read-only filesystem at runtime.
+        # If local uploads aren't available, just skip mounting.
+        pass
 
 # Global exception handler — ensures CORS headers are present even on unhandled 500s
 # Without this, Vercel can intercept crashes and return raw 500s with no CORS headers
