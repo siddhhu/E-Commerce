@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { ShoppingCart, Heart, Menu, Search, X, ChevronDown } from 'lucide-react';
 import { useState, useEffect } from 'react';
-import Image from 'next/image';
 
 import { categoriesApi, CategoryRead } from '@/lib/api';
 
@@ -72,14 +71,10 @@ export function Header() {
             <div className="container flex h-16 items-center justify-between">
                 {/* Logo */}
                 <Link href="/" className="flex items-center">
-                    <div className="relative h-10 w-44 logo-glow">
-                        <Image
-                            src="/logo.png"
-                            alt="Pranjay Logo"
-                            fill
-                            className="object-contain"
-                            priority
-                        />
+                    <div className="logo-glow">
+                        <span className="text-2xl font-extrabold tracking-tight bg-gradient-to-r from-primary to-pink-500 bg-clip-text text-transparent">
+                            Pranjay
+                        </span>
                     </div>
                 </Link>
 

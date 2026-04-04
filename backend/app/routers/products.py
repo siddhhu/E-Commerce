@@ -71,6 +71,9 @@ async def list_products(
             primary_image = primary.image_url if primary else (
                 product.images[0].image_url if product.images else None
             )
+
+        if not primary_image and getattr(product, "image_url", None):
+            primary_image = product.image_url
         
         items.append(ProductListRead(
             id=product.id,
@@ -83,6 +86,7 @@ async def list_products(
             b2b_price=product.b2b_price,
             stock_quantity=product.stock_quantity,
             is_featured=product.is_featured,
+            image_url=getattr(product, "image_url", None),
             primary_image=primary_image
         ))
     
@@ -119,6 +123,9 @@ async def get_featured_products(
             primary_image = primary.image_url if primary else (
                 product.images[0].image_url if product.images else None
             )
+
+        if not primary_image and getattr(product, "image_url", None):
+            primary_image = product.image_url
         
         items.append(ProductListRead(
             id=product.id,
@@ -131,6 +138,7 @@ async def get_featured_products(
             b2b_price=product.b2b_price,
             stock_quantity=product.stock_quantity,
             is_featured=product.is_featured,
+            image_url=getattr(product, "image_url", None),
             primary_image=primary_image
         ))
     
