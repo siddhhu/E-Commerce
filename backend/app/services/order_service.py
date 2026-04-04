@@ -19,6 +19,7 @@ from app.models.address import Address
 from app.services.email_service import email_service
 from app.services.payment_service import PaymentService
 from app.models.order import PaymentMethod
+from fastapi import BackgroundTasks
 
 
 class OrderService:
@@ -112,7 +113,8 @@ class OrderService:
         user_id: UUID,
         shipping_address_id: UUID,
         payment_method: str,
-        notes: Optional[str] = None
+        notes: Optional[str] = None,
+        background_tasks: Optional[BackgroundTasks] = None
     ) -> Order:
         """Create order from user's cart items."""
         # Verify shipping address belongs to user
@@ -136,15 +138,18 @@ class OrderService:
         if not cart_items:
             raise BadRequestException("Cart is empty")
         
-        # Validate stock and calculate totals
+        # Validate stock and calculate totals (BATCH FETCH)
+        product_ids = [item.product_id for item in cart_items]
+        product_result = await self.session.execute(
+            select(Product).where(Product.id.in_(product_ids))
+        )
+        products = {p.id: p for p in product_result.scalars().all()}
+        
         order_items = []
         subtotal = Decimal("0")
         
         for cart_item in cart_items:
-            product_result = await self.session.execute(
-                select(Product).where(Product.id == cart_item.product_id)
-            )
-            product = product_result.scalar_one_or_none()
+            product = products.get(cart_item.product_id)
             
             if not product or not product.is_active:
                 raise BadRequestException(f"Product not available: {cart_item.product_id}")
@@ -251,31 +256,34 @@ class OrderService:
             await self.session.rollback()
             raise e
         
-        # Send notification emails (async, don't block)
-        try:
-            # Get user email
-            from app.models.user import User
-            user_result = await self.session.execute(
-                select(User).where(User.id == user_id)
-            )
-            user = user_result.scalar_one()
-            
-            await email_service.send_order_confirmation_email(
-                user.email,
-                order.order_number,
-                float(order.total_amount),
-                len(order_items)
-            )
-            
-            await email_service.send_order_notification_to_admin(
-                order.order_number,
-                user.email,
-                user.full_name or user.email,
-                float(order.total_amount),
-                len(order_items)
-            )
-        except Exception as e:
-            print(f"Error sending order emails: {e}")
+        # Send notification emails (OFFLOADED TO BACKGROUND TASKS)
+        if background_tasks:
+            try:
+                # Get user email
+                from app.models.user import User
+                user_result = await self.session.execute(
+                    select(User).where(User.id == user_id)
+                )
+                user = user_result.scalar_one()
+                
+                background_tasks.add_task(
+                    email_service.send_order_confirmation_email,
+                    user.email,
+                    order.order_number,
+                    float(order.total_amount),
+                    len(order_items)
+                )
+                
+                background_tasks.add_task(
+                    email_service.send_order_notification_to_admin,
+                    order.order_number,
+                    user.email,
+                    user.full_name or user.email,
+                    float(order.total_amount),
+                    len(order_items)
+                )
+            except Exception as e:
+                print(f"Error scheduling order emails: {e}")
         
         return order
     

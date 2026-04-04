@@ -9,9 +9,9 @@ export function Footer() {
                     {/* Brand */}
                     <div className="space-y-4">
                         <Link href="/" className="flex items-center">
-                            <div className="relative h-16 w-64 -ml-4">
+                            <div className="relative h-10 w-44 -ml-4 logo-glow">
                                 <Image
-                                    src="/logo.jpg"
+                                    src="/logo.png"
                                     alt="Pranjay Logo"
                                     fill
                                     className="object-contain"

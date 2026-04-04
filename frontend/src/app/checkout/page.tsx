@@ -177,25 +177,24 @@ export default function CheckoutPage() {
         setIsProcessing(true);
 
         try {
-            // 1. Sync cart with backend
-            await cartApi.syncAll(items.map(item => ({ product_id: item.product.id, quantity: item.quantity })));
-
-            // 2. Save address
-            const savedAddress = await usersApi.createAddress({ ...address, country: 'India', is_default: true });
-
-            // 3. Save Documentation to profile if it's new
+            // 1 & 2. Parallel Tasks: Sync cart and Create/Save Address
+            // Note: Profile update is also independent and can be parallelized
+            
+            const addressTask = usersApi.createAddress({ ...address, country: 'India', is_default: true });
+            const syncTask = cartApi.syncAll(items.map(item => ({ product_id: item.product.id, quantity: item.quantity })));
+            
+            // Start profile update task if needed
+            let profileTask = Promise.resolve();
             if (docValid && docNumber && !docSavedToProfile) {
-                try {
-                    const updateData: any = {};
-                    updateData[docType === 'shop_license' ? 'shop_license' : docType] = docNumber;
-                    const updatedUser = await authApi.updateProfile(updateData);
-                    setUser(updatedUser);
-                } catch (e) {
-                    console.error('Could not save document to profile:', e);
-                }
+                const updateData: any = {};
+                updateData[docType === 'shop_license' ? 'shop_license' : docType] = docNumber;
+                profileTask = authApi.updateProfile(updateData).then(u => setUser(u));
             }
 
-            // 4. Create order
+            // Wait for address and basic tasks (sync/profile)
+            const [savedAddress] = await Promise.all([addressTask, syncTask, profileTask]);
+
+            // 4. Create order (needs address ID)
             const createdOrder = await ordersApi.checkout({
                 shipping_address_id: savedAddress.id,
                 payment_method: paymentMethod,

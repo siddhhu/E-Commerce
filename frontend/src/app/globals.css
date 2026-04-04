@@ -75,3 +75,22 @@
 ::-webkit-scrollbar-thumb:hover {
   @apply bg-muted-foreground/50;
 }
+
+/* Premium Glassmorphism Utility */
+.glass-header {
+  background: rgba(255, 255, 255, 0.76) !important;
+  backdrop-filter: blur(12px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(12px) saturate(180%);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.03);
+}
+
+.logo-glow {
+  filter: drop-shadow(0 0 8px rgba(184, 134, 11, 0.1));
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.logo-glow:hover {
+  filter: drop-shadow(0 0 12px rgba(184, 134, 11, 0.25));
+  transform: scale(1.02);
+}

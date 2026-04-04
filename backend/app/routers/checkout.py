@@ -4,7 +4,7 @@ Checkout Router - Checkout endpoints
 from typing import Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic import BaseModel
 
@@ -27,6 +27,7 @@ class CheckoutRequest(BaseModel):
 @router.post("", response_model=OrderRead, status_code=201)
 async def checkout(
     data: CheckoutRequest,
+    background_tasks: Optional[BackgroundTasks] = None,
     current_user: User = Depends(get_current_active_user),
     session: AsyncSession = Depends(get_session)
 ):
@@ -40,7 +41,8 @@ async def checkout(
         user_id=current_user.id,
         shipping_address_id=data.shipping_address_id,
         payment_method=data.payment_method,
-        notes=data.notes
+        notes=data.notes,
+        background_tasks=background_tasks
     )
     
     return order

@@ -72,9 +72,9 @@ export function Header() {
             <div className="container flex h-16 items-center justify-between">
                 {/* Logo */}
                 <Link href="/" className="flex items-center">
-                    <div className="relative h-14 w-56">
+                    <div className="relative h-10 w-44 logo-glow">
                         <Image
-                            src="/logo.jpg"
+                            src="/logo.png"
                             alt="Pranjay Logo"
                             fill
                             className="object-contain"
