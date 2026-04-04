@@ -13,7 +13,8 @@ from fastapi.staticfiles import StaticFiles
 from app.config import settings
 from app.database import close_db, init_db
 from app.routers import auth, banners, cart, categories, checkout, orders, products, users, wishlist
-from app.routers.admin import banners as admin_banners, bulk_upload, dashboard, migrate_images
+# from app.routers.admin import banners as admin_banners, bulk_upload, dashboard, migrate_images
+from app.routers.admin import banners as admin_banners, bulk_upload, dashboard
 from app.routers.admin import orders as admin_orders
 from app.routers.admin import products as admin_products
 from app.routers.admin import users as admin_users
@@ -97,9 +98,9 @@ app.include_router(
 app.include_router(
     admin_banners.router, prefix=f"{API_PREFIX}/admin/banners", tags=["Admin - Banners"]
 )
-app.include_router(
-    migrate_images.router, prefix=f"{API_PREFIX}/admin/migrate", tags=["Admin - Migration"]
-)
+# app.include_router(
+#     migrate_images.router, prefix=f"{API_PREFIX}/admin/migrate", tags=["Admin - Migration"]
+# )
 
 
 @app.get("/")
