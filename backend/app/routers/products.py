@@ -65,15 +65,12 @@ async def list_products(
     # Transform to list read format
     items = []
     for product in products:
-        primary_image = None
-        if product.images:
+        primary_image = getattr(product, "image_url", None)
+        if not primary_image and product.images:
             primary = next((img for img in product.images if img.is_primary), None)
             primary_image = primary.image_url if primary else (
                 product.images[0].image_url if product.images else None
             )
-
-        if not primary_image and getattr(product, "image_url", None):
-            primary_image = product.image_url
         
         items.append(ProductListRead(
             id=product.id,
@@ -117,15 +114,12 @@ async def get_featured_products(
     
     items = []
     for product in products:
-        primary_image = None
-        if product.images:
+        primary_image = getattr(product, "image_url", None)
+        if not primary_image and product.images:
             primary = next((img for img in product.images if img.is_primary), None)
             primary_image = primary.image_url if primary else (
                 product.images[0].image_url if product.images else None
             )
-
-        if not primary_image and getattr(product, "image_url", None):
-            primary_image = product.image_url
         
         items.append(ProductListRead(
             id=product.id,
