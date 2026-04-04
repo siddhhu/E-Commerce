@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { ShoppingCart, Heart, Menu, Search, X, ChevronDown } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 
 import { categoriesApi, CategoryRead } from '@/lib/api';
 
@@ -70,10 +71,16 @@ export function Header() {
         <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
             <div className="container flex h-16 items-center justify-between">
                 {/* Logo */}
-                <Link href="/" className="flex items-center space-x-2">
-                    <span className="text-2xl font-bold bg-gradient-to-r from-primary to-pink-500 bg-clip-text text-transparent">
-                        Pranjay
-                    </span>
+                <Link href="/" className="flex items-center">
+                    <div className="relative h-14 w-56">
+                        <Image
+                            src="/logo.jpg"
+                            alt="Pranjay Logo"
+                            fill
+                            className="object-contain"
+                            priority
+                        />
+                    </div>
                 </Link>
 
                 {/* Desktop Navigation */}

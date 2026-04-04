@@ -18,8 +18,8 @@ if TYPE_CHECKING:
 
 class UserType(str, enum.Enum):
     """User type enum."""
-    SELLER = "seller"
-    CUSTOMER = "customer"
+    seller = "seller"
+    customer = "customer"
 
 
 class UserRole(str, enum.Enum):
@@ -39,7 +39,7 @@ class UserBase(SQLModel):
     pan: Optional[str] = Field(default=None, max_length=10)
     aadhaar: Optional[str] = Field(default=None, max_length=12)
     shop_license: Optional[str] = Field(default=None, max_length=50)
-    user_type: UserType = Field(default=UserType.SELLER)
+    user_type: UserType = Field(default=UserType.seller)
     role: UserRole = Field(default=UserRole.CUSTOMER)
     is_active: bool = Field(default=True)
     is_verified: bool = Field(default=False)
@@ -72,7 +72,7 @@ class UserCreate(SQLModel):
     pan: Optional[str] = None
     aadhaar: Optional[str] = None
     shop_license: Optional[str] = None
-    user_type: UserType = UserType.SELLER
+    user_type: UserType = UserType.seller
 
 
 class UserUpdate(SQLModel):

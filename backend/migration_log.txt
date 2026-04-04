@@ -1,0 +1,136 @@
+Exception ignored in: <function SyncGoTrueClient.__del__ at 0x10dcd5b20>
+Traceback (most recent call last):
+  File "/Users/siddharthk/.pyenv/versions/3.11.7/lib/python3.11/site-packages/supabase_auth/_sync/gotrue_client.py", line 1268, in __del__
+    if self._refresh_token_timer:
+       ^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'SyncSupabaseAuthClient' object has no attribute '_refresh_token_timer'
+Warning: Could not initialize Supabase client: Client.__init__() got an unexpected keyword argument 'proxy'
+🚀 Starting manual image fix for 15 products...
+2026-04-04 00:04:59,727 INFO sqlalchemy.engine.Engine select pg_catalog.version()
+2026-04-04 00:04:59,727 INFO sqlalchemy.engine.Engine [raw sql] ()
+2026-04-04 00:05:00,250 INFO sqlalchemy.engine.Engine select current_schema()
+2026-04-04 00:05:00,250 INFO sqlalchemy.engine.Engine [raw sql] ()
+2026-04-04 00:05:00,944 INFO sqlalchemy.engine.Engine show standard_conforming_strings
+2026-04-04 00:05:00,944 INFO sqlalchemy.engine.Engine [raw sql] ()
+2026-04-04 00:05:01,468 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-04-04 00:05:01,496 INFO sqlalchemy.engine.Engine SELECT products.name, products.slug, products.sku, products.description, products.short_description, products.mrp, products.selling_price, products.b2b_price, products.stock_quantity, products.min_order_quantity, products.unit, products.is_active, products.is_featured, products.image_url, products.id, products.category_id, products.brand_id, products.attributes, products.created_at, products.updated_at 
+FROM products 
+WHERE products.sku = $1::VARCHAR
+2026-04-04 00:05:01,496 INFO sqlalchemy.engine.Engine [generated in 0.00018s] ('WC-4210',)
+  🔄 Migrating WC-4210 from: https://rukmini1.flixcart.com/image/1500/1500/xif0q/moisturizer-cream/s/l/q/300-aloevera-moisturising-beauty-gel-150g-each-pack-of-2-nature-original-imah44sygkpvfys7.jpeg
+REST Upload failed (400): {"statusCode":"404","error":"Bucket not found","message":"Bucket not found"}
+    ❌ Failed to migrate WC-4210
+2026-04-04 00:05:03,597 INFO sqlalchemy.engine.Engine SELECT products.name, products.slug, products.sku, products.description, products.short_description, products.mrp, products.selling_price, products.b2b_price, products.stock_quantity, products.min_order_quantity, products.unit, products.is_active, products.is_featured, products.image_url, products.id, products.category_id, products.brand_id, products.attributes, products.created_at, products.updated_at 
+FROM products 
+WHERE products.sku = $1::VARCHAR
+2026-04-04 00:05:03,597 INFO sqlalchemy.engine.Engine [cached since 2.102s ago] ('WC-4214',)
+  🔄 Migrating WC-4214 from: https://m.media-amazon.com/images/I/618hZAUSFaL._AC_UF350,350_QL80_.jpg
+REST Upload failed (400): {"statusCode":"404","error":"Bucket not found","message":"Bucket not found"}
+    ❌ Failed to migrate WC-4214
+2026-04-04 00:05:04,726 INFO sqlalchemy.engine.Engine SELECT products.name, products.slug, products.sku, products.description, products.short_description, products.mrp, products.selling_price, products.b2b_price, products.stock_quantity, products.min_order_quantity, products.unit, products.is_active, products.is_featured, products.image_url, products.id, products.category_id, products.brand_id, products.attributes, products.created_at, products.updated_at 
+FROM products 
+WHERE products.sku = $1::VARCHAR
+2026-04-04 00:05:04,726 INFO sqlalchemy.engine.Engine [cached since 3.231s ago] ('WC-4258',)
+  🔄 Migrating WC-4258 from: https://m.media-amazon.com/images/I/71D0YyM19jL._AC_UF1000,1000_QL80_.jpg
+Migration error for https://m.media-amazon.com/images/I/71D0YyM19jL._AC_UF1000,1000_QL80_.jpg: Client error '404 Not Found' for url 'https://m.media-amazon.com/images/I/71D0YyM19jL._AC_UF1000,1000_QL80_.jpg'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404
+    ❌ Failed to migrate WC-4258
+2026-04-04 00:05:05,196 INFO sqlalchemy.engine.Engine SELECT products.name, products.slug, products.sku, products.description, products.short_description, products.mrp, products.selling_price, products.b2b_price, products.stock_quantity, products.min_order_quantity, products.unit, products.is_active, products.is_featured, products.image_url, products.id, products.category_id, products.brand_id, products.attributes, products.created_at, products.updated_at 
+FROM products 
+WHERE products.sku = $1::VARCHAR
+2026-04-04 00:05:05,197 INFO sqlalchemy.engine.Engine [cached since 3.701s ago] ('WC-4209',)
+  🔄 Migrating WC-4209 from: https://rukmini1.flixcart.com/image/1500/1500/xif0q/face-wash/g/n/c/65-flawless-papaya-gel-nature-s-essence-original-imaghfsjghbhkzzy.jpeg
+Migration error for https://rukmini1.flixcart.com/image/1500/1500/xif0q/face-wash/g/n/c/65-flawless-papaya-gel-nature-s-essence-original-imaghfsjghbhkzzy.jpeg: Client error '404 Not Found' for url 'https://rukmini1.flixcart.com/image/1500/1500/xif0q/face-wash/g/n/c/65-flawless-papaya-gel-nature-s-essence-original-imaghfsjghbhkzzy.jpeg'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404
+    ❌ Failed to migrate WC-4209
+2026-04-04 00:05:05,691 INFO sqlalchemy.engine.Engine SELECT products.name, products.slug, products.sku, products.description, products.short_description, products.mrp, products.selling_price, products.b2b_price, products.stock_quantity, products.min_order_quantity, products.unit, products.is_active, products.is_featured, products.image_url, products.id, products.category_id, products.brand_id, products.attributes, products.created_at, products.updated_at 
+FROM products 
+WHERE products.sku = $1::VARCHAR
+2026-04-04 00:05:05,691 INFO sqlalchemy.engine.Engine [cached since 4.195s ago] ('WC-4260',)
+  🔄 Migrating WC-4260 from: https://shahnaz.in/cdn/shop/products/DiamondKit_11zon.jpg
+Migration error for https://shahnaz.in/cdn/shop/products/DiamondKit_11zon.jpg: Client error '404 Not Found' for url 'https://shahnaz.in/cdn/shop/products/DiamondKit_11zon.jpg'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404
+    ❌ Failed to migrate WC-4260
+2026-04-04 00:05:06,163 INFO sqlalchemy.engine.Engine SELECT products.name, products.slug, products.sku, products.description, products.short_description, products.mrp, products.selling_price, products.b2b_price, products.stock_quantity, products.min_order_quantity, products.unit, products.is_active, products.is_featured, products.image_url, products.id, products.category_id, products.brand_id, products.attributes, products.created_at, products.updated_at 
+FROM products 
+WHERE products.sku = $1::VARCHAR
+2026-04-04 00:05:06,163 INFO sqlalchemy.engine.Engine [cached since 4.668s ago] ('WC-4263',)
+  🔄 Migrating WC-4263 from: https://images.tirabeauty.com/system/it-be/lakme-absolute-argan-oil-radiance-oil-in-gel-50g-1.jpg
+Migration error for https://images.tirabeauty.com/system/it-be/lakme-absolute-argan-oil-radiance-oil-in-gel-50g-1.jpg: Client error '404 Not Found' for url 'https://images.tirabeauty.com/system/it-be/lakme-absolute-argan-oil-radiance-oil-in-gel-50g-1.jpg'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404
+    ❌ Failed to migrate WC-4263
+2026-04-04 00:05:06,610 INFO sqlalchemy.engine.Engine SELECT products.name, products.slug, products.sku, products.description, products.short_description, products.mrp, products.selling_price, products.b2b_price, products.stock_quantity, products.min_order_quantity, products.unit, products.is_active, products.is_featured, products.image_url, products.id, products.category_id, products.brand_id, products.attributes, products.created_at, products.updated_at 
+FROM products 
+WHERE products.sku = $1::VARCHAR
+2026-04-04 00:05:06,610 INFO sqlalchemy.engine.Engine [cached since 5.115s ago] ('WC-4206',)
+  🔄 Migrating WC-4206 from: https://m.media-amazon.com/images/I/71lU1Z+W8KL._SL1500_.jpg
+Migration error for https://m.media-amazon.com/images/I/71lU1Z+W8KL._SL1500_.jpg: Client error '404 Not Found' for url 'https://m.media-amazon.com/images/I/71lU1Z+W8KL._SL1500_.jpg'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404
+    ❌ Failed to migrate WC-4206
+2026-04-04 00:05:06,948 INFO sqlalchemy.engine.Engine SELECT products.name, products.slug, products.sku, products.description, products.short_description, products.mrp, products.selling_price, products.b2b_price, products.stock_quantity, products.min_order_quantity, products.unit, products.is_active, products.is_featured, products.image_url, products.id, products.category_id, products.brand_id, products.attributes, products.created_at, products.updated_at 
+FROM products 
+WHERE products.sku = $1::VARCHAR
+2026-04-04 00:05:06,948 INFO sqlalchemy.engine.Engine [cached since 5.453s ago] ('WC-4262',)
+  🔄 Migrating WC-4262 from: https://images.tirabeauty.com/system/it-be/lakme-absolute-argan-oil-radiance-oil-in-cream-50g-1.jpg
+Migration error for https://images.tirabeauty.com/system/it-be/lakme-absolute-argan-oil-radiance-oil-in-cream-50g-1.jpg: Client error '404 Not Found' for url 'https://images.tirabeauty.com/system/it-be/lakme-absolute-argan-oil-radiance-oil-in-cream-50g-1.jpg'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404
+    ❌ Failed to migrate WC-4262
+2026-04-04 00:05:07,358 INFO sqlalchemy.engine.Engine SELECT products.name, products.slug, products.sku, products.description, products.short_description, products.mrp, products.selling_price, products.b2b_price, products.stock_quantity, products.min_order_quantity, products.unit, products.is_active, products.is_featured, products.image_url, products.id, products.category_id, products.brand_id, products.attributes, products.created_at, products.updated_at 
+FROM products 
+WHERE products.sku = $1::VARCHAR
+2026-04-04 00:05:07,358 INFO sqlalchemy.engine.Engine [cached since 5.863s ago] ('WC-4261',)
+  🔄 Migrating WC-4261 from: https://shahnaz.in/cdn/shop/products/GoldKit_11zon.jpg
+Migration error for https://shahnaz.in/cdn/shop/products/GoldKit_11zon.jpg: Client error '404 Not Found' for url 'https://shahnaz.in/cdn/shop/products/GoldKit_11zon.jpg'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404
+    ❌ Failed to migrate WC-4261
+2026-04-04 00:05:07,866 INFO sqlalchemy.engine.Engine SELECT products.name, products.slug, products.sku, products.description, products.short_description, products.mrp, products.selling_price, products.b2b_price, products.stock_quantity, products.min_order_quantity, products.unit, products.is_active, products.is_featured, products.image_url, products.id, products.category_id, products.brand_id, products.attributes, products.created_at, products.updated_at 
+FROM products 
+WHERE products.sku = $1::VARCHAR
+2026-04-04 00:05:07,867 INFO sqlalchemy.engine.Engine [cached since 6.371s ago] ('WC-4208',)
+  🔄 Migrating WC-4208 from: https://m.media-amazon.com/images/I/61H+k8t+qIL._SL1500_.jpg
+Migration error for https://m.media-amazon.com/images/I/61H+k8t+qIL._SL1500_.jpg: Client error '404 Not Found' for url 'https://m.media-amazon.com/images/I/61H+k8t+qIL._SL1500_.jpg'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404
+    ❌ Failed to migrate WC-4208
+2026-04-04 00:05:08,308 INFO sqlalchemy.engine.Engine SELECT products.name, products.slug, products.sku, products.description, products.short_description, products.mrp, products.selling_price, products.b2b_price, products.stock_quantity, products.min_order_quantity, products.unit, products.is_active, products.is_featured, products.image_url, products.id, products.category_id, products.brand_id, products.attributes, products.created_at, products.updated_at 
+FROM products 
+WHERE products.sku = $1::VARCHAR
+2026-04-04 00:05:08,308 INFO sqlalchemy.engine.Engine [cached since 6.813s ago] ('WC-4215',)
+  🔄 Migrating WC-4215 from: https://m.media-amazon.com/images/I/61P-J8C-Y4S._SL1500_.jpg
+Migration error for https://m.media-amazon.com/images/I/61P-J8C-Y4S._SL1500_.jpg: Client error '404 Not Found' for url 'https://m.media-amazon.com/images/I/61P-J8C-Y4S._SL1500_.jpg'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404
+    ❌ Failed to migrate WC-4215
+2026-04-04 00:05:08,689 INFO sqlalchemy.engine.Engine SELECT products.name, products.slug, products.sku, products.description, products.short_description, products.mrp, products.selling_price, products.b2b_price, products.stock_quantity, products.min_order_quantity, products.unit, products.is_active, products.is_featured, products.image_url, products.id, products.category_id, products.brand_id, products.attributes, products.created_at, products.updated_at 
+FROM products 
+WHERE products.sku = $1::VARCHAR
+2026-04-04 00:05:08,690 INFO sqlalchemy.engine.Engine [cached since 7.194s ago] ('WC-4212',)
+  🔄 Migrating WC-4212 from: https://m.media-amazon.com/images/I/71Yy-E0XQUL._SL1500_.jpg
+Migration error for https://m.media-amazon.com/images/I/71Yy-E0XQUL._SL1500_.jpg: Client error '404 Not Found' for url 'https://m.media-amazon.com/images/I/71Yy-E0XQUL._SL1500_.jpg'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404
+    ❌ Failed to migrate WC-4212
+2026-04-04 00:05:09,041 INFO sqlalchemy.engine.Engine SELECT products.name, products.slug, products.sku, products.description, products.short_description, products.mrp, products.selling_price, products.b2b_price, products.stock_quantity, products.min_order_quantity, products.unit, products.is_active, products.is_featured, products.image_url, products.id, products.category_id, products.brand_id, products.attributes, products.created_at, products.updated_at 
+FROM products 
+WHERE products.sku = $1::VARCHAR
+2026-04-04 00:05:09,041 INFO sqlalchemy.engine.Engine [cached since 7.545s ago] ('WC-4211',)
+  🔄 Migrating WC-4211 from: https://m.media-amazon.com/images/I/61+t-H51D7L._SL1500_.jpg
+Migration error for https://m.media-amazon.com/images/I/61+t-H51D7L._SL1500_.jpg: Client error '404 Not Found' for url 'https://m.media-amazon.com/images/I/61+t-H51D7L._SL1500_.jpg'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404
+    ❌ Failed to migrate WC-4211
+2026-04-04 00:05:09,386 INFO sqlalchemy.engine.Engine SELECT products.name, products.slug, products.sku, products.description, products.short_description, products.mrp, products.selling_price, products.b2b_price, products.stock_quantity, products.min_order_quantity, products.unit, products.is_active, products.is_featured, products.image_url, products.id, products.category_id, products.brand_id, products.attributes, products.created_at, products.updated_at 
+FROM products 
+WHERE products.sku = $1::VARCHAR
+2026-04-04 00:05:09,386 INFO sqlalchemy.engine.Engine [cached since 7.89s ago] ('WC-4205',)
+  🔄 Migrating WC-4205 from: https://m.media-amazon.com/images/I/61u9-pGf7vL._SL1500_.jpg
+Migration error for https://m.media-amazon.com/images/I/61u9-pGf7vL._SL1500_.jpg: Client error '404 Not Found' for url 'https://m.media-amazon.com/images/I/61u9-pGf7vL._SL1500_.jpg'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404
+    ❌ Failed to migrate WC-4205
+2026-04-04 00:05:09,811 INFO sqlalchemy.engine.Engine SELECT products.name, products.slug, products.sku, products.description, products.short_description, products.mrp, products.selling_price, products.b2b_price, products.stock_quantity, products.min_order_quantity, products.unit, products.is_active, products.is_featured, products.image_url, products.id, products.category_id, products.brand_id, products.attributes, products.created_at, products.updated_at 
+FROM products 
+WHERE products.sku = $1::VARCHAR
+2026-04-04 00:05:09,811 INFO sqlalchemy.engine.Engine [cached since 8.316s ago] ('WC-4255',)
+  🔄 Migrating WC-4255 from: https://m.media-amazon.com/images/I/718y6K-57hL._SL1500_.jpg
+Migration error for https://m.media-amazon.com/images/I/718y6K-57hL._SL1500_.jpg: Client error '404 Not Found' for url 'https://m.media-amazon.com/images/I/718y6K-57hL._SL1500_.jpg'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404
+    ❌ Failed to migrate WC-4255
+2026-04-04 00:05:10,214 INFO sqlalchemy.engine.Engine COMMIT
+
+🎉 Manual fix complete!
