@@ -49,6 +49,13 @@ export default function ProductDetailPage() {
         fetchProduct();
     }, [params.slug]);
 
+    useEffect(() => {
+        if (!product) return;
+        const minQty = Math.max(1, product.min_order_quantity || 1);
+        const maxQty = Math.max(minQty, product.stock_quantity || minQty);
+        setQuantity((q) => Math.min(Math.max(q, minQty), maxQty));
+    }, [product]);
+
     if (loading) {
         return (
             <div className="min-h-screen flex flex-col">
@@ -83,6 +90,14 @@ export default function ProductDetailPage() {
     const discount = getDiscountPercentage(product.mrp, product.selling_price);
     const primaryImage = imgError ? '/placeholder.jpg' : (product.images[0]?.image_url || '/placeholder.jpg');
     const inWishlist = isInWishlist(product.id);
+
+    const minOrderQty = Math.max(1, product.min_order_quantity || 1);
+    const maxQty = Math.max(minOrderQty, product.stock_quantity || minOrderQty);
+    const effectiveQty = Math.min(Math.max(quantity, minOrderQty), maxQty);
+    const useWholesale = Boolean(product.b2b_price) && effectiveQty >= minOrderQty;
+    const unitPrice = useWholesale ? Number(product.b2b_price) : Number(product.selling_price);
+    const totalPrice = unitPrice * effectiveQty;
+    const remainingStock = Math.max(0, Number(product.stock_quantity) - effectiveQty);
 
     const mapToStoreProduct = (p: APIProduct): Product => ({
         id: p.id,
@@ -185,7 +200,7 @@ export default function ProductDetailPage() {
                             {/* Pricing */}
                             <div className="flex items-center gap-4">
                                 <span className="text-4xl font-bold text-primary">
-                                    {formatPrice(product.selling_price)}
+                                    {formatPrice(totalPrice)}
                                 </span>
                                 {discount > 0 && (
                                     <>
@@ -203,7 +218,10 @@ export default function ProductDetailPage() {
                             {product.b2b_price && (
                                 <div className="mt-2 p-3 bg-accent rounded-lg">
                                     <p className="text-sm font-medium">Dealer / Wholesale Price</p>
-                                    <p className="text-2xl font-bold text-primary">{formatPrice(product.b2b_price)}</p>
+                                    <p className="text-2xl font-bold text-primary">{formatPrice(Number(product.b2b_price))}</p>
+                                    <p className="text-xs text-muted-foreground mt-1">
+                                        Applied when quantity is at least {minOrderQty}
+                                    </p>
                                 </div>
                             )}
 
@@ -214,22 +232,25 @@ export default function ProductDetailPage() {
                                     <Button
                                         variant="outline"
                                         size="icon"
-                                        onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                                        onClick={() => setQuantity((q) => Math.max(minOrderQty, q - 1))}
                                     >
                                         <Minus className="h-4 w-4" />
                                     </Button>
-                                    <span className="w-12 text-center text-lg font-medium">{quantity}</span>
+                                    <span className="w-12 text-center text-lg font-medium">{effectiveQty}</span>
                                     <Button
                                         variant="outline"
                                         size="icon"
-                                        onClick={() => setQuantity(Math.min(product.stock_quantity, quantity + 1))}
+                                        onClick={() => setQuantity((q) => Math.min(maxQty, q + 1))}
                                     >
                                         <Plus className="h-4 w-4" />
                                     </Button>
                                     <span className="text-sm text-muted-foreground">
-                                        {product.stock_quantity} in stock
+                                        {remainingStock} in stock
                                     </span>
                                 </div>
+                                <p className="text-xs text-muted-foreground">
+                                    Unit price: {formatPrice(unitPrice)}
+                                </p>
                             </div>
 
                             {/* Actions */}
