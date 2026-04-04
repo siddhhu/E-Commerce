@@ -27,7 +27,7 @@ class CheckoutRequest(BaseModel):
 @router.post("", response_model=OrderRead, status_code=201)
 async def checkout(
     data: CheckoutRequest,
-    background_tasks: Optional[BackgroundTasks] = None,
+    background_tasks: BackgroundTasks,
     current_user: User = Depends(get_current_active_user),
     session: AsyncSession = Depends(get_session)
 ):

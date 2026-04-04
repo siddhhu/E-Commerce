@@ -80,9 +80,12 @@ export function Footer() {
                 </div>
 
                 <div className="mt-12 pt-8 border-t flex flex-col md:flex-row justify-between items-center gap-4">
-                    <p className="text-sm text-muted-foreground">
-                        © 2024 Pranjay. All rights reserved.
-                    </p>
+                    <div className="border-t border-slate-800 py-8 text-center text-sm text-slate-400">
+                        <p>© {new Date().getFullYear()} Pranjay. All rights reserved.</p>
+                        <p className="mt-2 text-primary/60 font-medium">
+                            Made with ❤️ by Siddharth
+                        </p>
+                    </div>
                     <div className="flex space-x-6 text-sm text-muted-foreground">
                         <Link href="/privacy" className="hover:text-primary transition-colors">
                             Privacy Policy

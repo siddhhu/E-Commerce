@@ -132,8 +132,12 @@ class ProductService:
         self.session.add(product)
         await self.session.commit()
         await self.session.refresh(product)
-        
-        return product
+
+        # Load relationships for response model
+        result = await self.session.execute(
+            select(Product).options(selectinload(Product.images)).where(Product.id == product.id)
+        )
+        return result.scalar_one()
     
     async def update_product(self, product_id: UUID, data: ProductUpdate) -> Product:
         """Update a product."""
@@ -146,8 +150,12 @@ class ProductService:
         self.session.add(product)
         await self.session.commit()
         await self.session.refresh(product)
-        
-        return product
+
+        # Load relationships for response model
+        result = await self.session.execute(
+            select(Product).options(selectinload(Product.images)).where(Product.id == product.id)
+        )
+        return result.scalar_one()
     
     async def delete_product(self, product_id: UUID) -> None:
         """Delete a product (soft delete by setting is_active=False)."""

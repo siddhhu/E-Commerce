@@ -305,6 +305,18 @@ class OrderService:
         self.session.add(order)
         await self.session.commit()
         await self.session.refresh(order)
+
+        # Load relationships for response model
+        result = await self.session.execute(
+            select(Order)
+            .where(Order.id == order.id)
+            .options(
+                selectinload(Order.items),
+                selectinload(Order.user),
+                selectinload(Order.shipping_address)
+            )
+        )
+        return result.scalar_one()
         
         # Send shipped notification
         if status == OrderStatus.SHIPPED:
@@ -339,8 +351,18 @@ class OrderService:
         self.session.add(order)
         await self.session.commit()
         await self.session.refresh(order)
-        
-        return order
+
+        # Load relationships for response model
+        result = await self.session.execute(
+            select(Order)
+            .where(Order.id == order.id)
+            .options(
+                selectinload(Order.items),
+                selectinload(Order.user),
+                selectinload(Order.shipping_address)
+            )
+        )
+        return result.scalar_one()
     
     async def cancel_order(self, order_id: UUID, user_id: Optional[UUID] = None) -> Order:
         """Cancel an order and restore stock."""
@@ -369,8 +391,18 @@ class OrderService:
         self.session.add(order)
         await self.session.commit()
         await self.session.refresh(order)
-        
-        return order
+
+        # Load relationships for response model
+        result = await self.session.execute(
+            select(Order)
+            .where(Order.id == order.id)
+            .options(
+                selectinload(Order.items),
+                selectinload(Order.user),
+                selectinload(Order.shipping_address)
+            )
+        )
+        return result.scalar_one()
     
     async def get_order_stats(self) -> dict:
         """Get order statistics for admin dashboard."""
