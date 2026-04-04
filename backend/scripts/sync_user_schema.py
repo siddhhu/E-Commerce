@@ -7,6 +7,9 @@ sys.path.append(str(Path.cwd()))
 
 from app.database import async_session
 from sqlalchemy import text
+from passlib.context import CryptContext
+
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 async def sync_schema():
     async with async_session() as session:
@@ -28,7 +31,22 @@ async def sync_schema():
                 if "already exists" in str(e):
                     print(f"  ⏭️  Value '{val}' already exists in enum usertype.")
                 else:
-                    print(f"  ❌ Error adding enum value '{val}': {e}")
+                    print(f"  ❌ Error adding enum value '{val}' to usertype: {e}")
+        
+        # 1.1 Update UserRole Enum Type
+        print("\n🔄 Updating 'userrole' enum type...")
+        role_values = ["CUSTOMER", "ADMIN", "SUPER_ADMIN", "customer", "admin", "super_admin"]
+        for val in role_values:
+            try:
+                await session.execute(text(f"ALTER TYPE userrole ADD VALUE '{val}';"))
+                await session.commit() 
+                print(f"  ✅ Added value '{val}' to enum userrole.")
+            except Exception as e:
+                await session.rollback()
+                if "already exists" in str(e):
+                    print(f"  ⏭️  Value '{val}' already exists in enum userrole.")
+                else:
+                    print(f"  ❌ Error adding enum value '{val}' to userrole: {e}")
 
         # 2. Add Missing Columns
         print("\n🔄 Adding missing columns to 'users' table...")
@@ -55,6 +73,22 @@ async def sync_schema():
             print("  ✅ 'user_type' data migrated successfully.")
         except Exception as e:
             print(f"  ❌ Error migrating 'user_type' data: {e}")
+            
+        # 4. Reset Admin Password
+        print("\n🔐 Resetting Admin credentials...")
+        try:
+            admin_email = "admin@pranjay.com"
+            new_password = "Pranjay2026"
+            hashed_password = pwd_context.hash(new_password)
+            
+            # Ensure admin user has ADMIN role (uppercase to match current DB)
+            await session.execute(text(
+                "UPDATE users SET hashed_password = :hash, role = 'ADMIN', is_active = true WHERE email = :email"
+            ), {"hash": hashed_password, "email": admin_email})
+            
+            print(f"  ✅ Password reset for '{admin_email}' to '{new_password}'.")
+        except Exception as e:
+            print(f"  ❌ Error resetting admin password: {e}")
         
         await session.commit()
         print("\n🎉 Schema and Data synchronization completed!")

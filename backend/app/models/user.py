@@ -24,9 +24,9 @@ class UserType(str, enum.Enum):
 
 class UserRole(str, enum.Enum):
     """User role enum."""
-    CUSTOMER = "customer"
-    ADMIN = "admin"
-    SUPER_ADMIN = "super_admin"
+    CUSTOMER = "CUSTOMER"
+    ADMIN = "ADMIN"
+    SUPER_ADMIN = "SUPER_ADMIN"
 
 
 class UserBase(SQLModel):
