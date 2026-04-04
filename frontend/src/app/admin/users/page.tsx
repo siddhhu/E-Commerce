@@ -78,7 +78,7 @@ export default function AdminUsersPage() {
                             </div>
                             <div>
                                 <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Account Type</p>
-                                <Badge variant={selected.user_type === 'B2B' ? 'secondary' : 'outline'} className="mt-0.5">
+                                <Badge variant={selected.user_type === 'seller' ? 'secondary' : 'outline'} className="mt-0.5">
                                     {selected.user_type}
                                 </Badge>
                             </div>
@@ -111,7 +111,7 @@ export default function AdminUsersPage() {
                                 </Badge>
                             </div>
                         </div>
-                        {selected.user_type === 'B2B' && (
+                        {selected.user_type === 'seller' && (
                             <div className="mt-4 pt-4 border-t flex gap-3">
                                 {!selected.is_verified ? (
                                     <Button size="sm" className="bg-green-600 hover:bg-green-700" onClick={() => handleVerify(selected.id, true)}>
@@ -147,8 +147,8 @@ export default function AdminUsersPage() {
                             onChange={(e) => setTypeFilter(e.target.value)}
                         >
                             <option value="">All Types</option>
-                            <option value="B2B">Wholesale Only</option>
-                            <option value="B2C">B2C Only</option>
+                            <option value="seller">Wholesale Only</option>
+                            <option value="customer">B2C Only</option>
                         </select>
                     </div>
                 </CardHeader>
@@ -192,7 +192,7 @@ export default function AdminUsersPage() {
                                                 )}
                                             </td>
                                             <td className="px-5 py-3">
-                                                {user.user_type === 'B2B' ? (
+                                                {user.user_type === 'seller' ? (
                                                     <div className="space-y-0.5">
                                                         <div className="flex items-center gap-1 text-slate-700 text-xs font-medium">
                                                             <Building2 className="h-3 w-3" />{user.business_name || <span className="italic text-slate-400">Not set</span>}
@@ -206,7 +206,7 @@ export default function AdminUsersPage() {
                                                 ) : <span className="text-slate-300 text-xs italic">—</span>}
                                             </td>
                                             <td className="px-5 py-3">
-                                                <Badge variant={user.user_type === 'B2B' ? 'secondary' : 'outline'} className="text-[10px]">
+                                                <Badge variant={user.user_type === 'seller' ? 'secondary' : 'outline'} className="text-[10px]">
                                                     {user.user_type}
                                                 </Badge>
                                             </td>
@@ -221,7 +221,7 @@ export default function AdminUsersPage() {
                                                         <div className={`h-1.5 w-1.5 rounded-full ${user.is_active ? 'bg-green-500' : 'bg-red-500'}`} />
                                                         <span className="text-xs">{user.is_active ? 'Active' : 'Inactive'}</span>
                                                     </div>
-                                                    {user.user_type === 'B2B' && (
+                                                    {user.user_type === 'seller' && (
                                                         <Badge variant={user.is_verified ? 'success' : 'warning'} className="text-[9px] w-fit">
                                                             {user.is_verified ? 'VERIFIED' : 'PENDING'}
                                                         </Badge>
@@ -229,12 +229,12 @@ export default function AdminUsersPage() {
                                                 </div>
                                             </td>
                                             <td className="px-5 py-3 text-right" onClick={(e) => e.stopPropagation()}>
-                                                {user.user_type === 'B2B' && !user.is_verified && (
+                                                {user.user_type === 'seller' && !user.is_verified && (
                                                     <Button size="sm" className="bg-green-600 hover:bg-green-700 h-7 text-xs" onClick={() => handleVerify(user.id, true)}>
                                                         <ShieldCheck className="h-3 w-3 mr-1" /> Approve
                                                     </Button>
                                                 )}
-                                                {user.user_type === 'B2B' && user.is_verified && (
+                                                {user.user_type === 'seller' && user.is_verified && (
                                                     <Button variant="outline" size="sm" className="h-7 text-xs text-amber-600 border-amber-200 hover:bg-amber-50" onClick={() => handleVerify(user.id, false)}>
                                                         <XCircle className="h-3 w-3 mr-1" /> Unverify
                                                     </Button>

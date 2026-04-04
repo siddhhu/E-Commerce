@@ -431,6 +431,10 @@ export interface ProductSummary {
 }
 
 export interface PaginatedProducts {
+    items: ProductSummary[];
+    total: number;
+    page: number;
+    page_size: number;
     pages: number;
 }
 

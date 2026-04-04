@@ -30,7 +30,7 @@ export default function ProfilePage() {
         full_name: user?.full_name || '',
         business_name: user?.business_name || '',
         gst_number: user?.gst_number || '',
-        user_type: user?.user_type || 'B2C'
+        user_type: user?.user_type || 'customer'
     });
 
     useEffect(() => {
@@ -44,7 +44,7 @@ export default function ProfilePage() {
                 full_name: user.full_name || '',
                 business_name: user.business_name || '',
                 gst_number: user.gst_number || '',
-                user_type: user.user_type || 'B2C'
+                user_type: user.user_type || 'customer'
             });
 
             const fetchRecentOrders = async () => {
@@ -136,7 +136,7 @@ export default function ProfilePage() {
                                     <h2 className="text-xl font-bold text-slate-900">{user.full_name || 'Customer'}</h2>
                                     <div className="flex items-center justify-center gap-2 mt-1">
                                         <p className="text-sm text-muted-foreground">{user.email}</p>
-                                        <Badge variant={user.user_type === 'B2B' ? 'secondary' : 'outline'} className="text-[10px] h-4">
+                                        <Badge variant={user.user_type === 'seller' ? 'secondary' : 'outline'} className="text-[10px] h-4">
                                             {user.user_type}
                                         </Badge>
                                     </div>
@@ -153,7 +153,7 @@ export default function ProfilePage() {
                             </Card>
 
                             {/* B2B Status Card */}
-                            {user.user_type === 'B2B' && (
+                            {user.user_type === 'seller' && (
                                 <Card className={`border-none shadow-sm ${user.is_verified ? 'bg-green-50' : 'bg-amber-50'}`}>
                                     <CardContent className="p-4">
                                         <div className="flex gap-3">
@@ -164,7 +164,7 @@ export default function ProfilePage() {
                                             )}
                                             <div>
                                                 <p className={`text-sm font-bold ${user.is_verified ? 'text-green-900' : 'text-amber-900'}`}>
-                                                    {user.is_verified ? 'Verified B2B Member' : 'B2B Verification Pending'}
+                                                    {user.is_verified ? 'Verified Wholesale Member' : 'Wholesale Verification Pending'}
                                                 </p>
                                                 <p className={`text-xs mt-0.5 ${user.is_verified ? 'text-green-700' : 'text-amber-700'}`}>
                                                     {user.is_verified 
@@ -229,8 +229,8 @@ export default function ProfilePage() {
                                                         <input 
                                                             type="checkbox" 
                                                             id="is_b2b"
-                                                            checked={formData.user_type === 'B2B'}
-                                                            onChange={(e) => setFormData({...formData, user_type: e.target.checked ? 'B2B' : 'B2C'})}
+                                                            checked={formData.user_type === 'seller'}
+                                                            onChange={(e) => setFormData({...formData, user_type: e.target.checked ? 'seller' : 'customer'})}
                                                             className="h-4 w-4 rounded border-slate-300 text-primary focus:ring-primary"
                                                         />
                                                         <Label htmlFor="is_b2b" className="text-base font-bold text-slate-900 cursor-pointer">
@@ -238,7 +238,7 @@ export default function ProfilePage() {
                                                         </Label>
                                                     </div>
 
-                                                    {formData.user_type === 'B2B' && (
+                                                    {formData.user_type === 'seller' && (
                                                         <div className="grid gap-4 bg-slate-50 p-4 rounded-xl border border-slate-100">
                                                             <div className="grid gap-2">
                                                                 <Label htmlFor="business_name">Business Name</Label>
@@ -250,7 +250,7 @@ export default function ProfilePage() {
                                                                         placeholder="e.g. Acme Cosmetics Ltd"
                                                                         value={formData.business_name}
                                                                         onChange={(e) => setFormData({...formData, business_name: e.target.value})}
-                                                                        required={formData.user_type === 'B2B'}
+                                                                        required={formData.user_type === 'seller'}
                                                                     />
                                                                 </div>
                                                             </div>
@@ -264,12 +264,12 @@ export default function ProfilePage() {
                                                                         placeholder="22AAAAA0000A1Z5"
                                                                         value={formData.gst_number}
                                                                         onChange={(e) => setFormData({...formData, gst_number: e.target.value.toUpperCase()})}
-                                                                        required={formData.user_type === 'B2B'}
+                                                                        required={formData.user_type === 'seller'}
                                                                     />
                                                                 </div>
                                                             </div>
                                                             <p className="text-[10px] text-slate-500 italic">
-                                                                Note: Switching to B2B will require admin verification before wholesale pricing is active.
+                                                                Note: Switching to Wholesale will require admin verification before wholesale pricing is active.
                                                             </p>
                                                         </div>
                                                     )}
@@ -289,8 +289,8 @@ export default function ProfilePage() {
                                 </Card>
                             ) : (
                                 <>
-                                    {/* Business Details View (if B2B) */}
-                                    {user.user_type === 'B2B' && (
+                                    {/* Business Details View (if seller) */}
+                                    {user.user_type === 'seller' && (
                                         <Card className="border-none shadow-sm overflow-hidden">
                                             <div className="bg-slate-900 px-6 py-4 flex justify-between items-center text-white">
                                                 <div className="flex items-center gap-2">
