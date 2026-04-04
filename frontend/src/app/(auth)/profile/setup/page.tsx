@@ -17,6 +17,8 @@ export default function ProfileSetupPage() {
     const { user, setUser, isAuthenticated, isLoading: isAuthLoading } = useAuthStore();
 
     const [name, setName] = useState('');
+    const [businessType, setBusinessType] = useState<'seller' | 'customer'>('seller');
+    const [businessName, setBusinessName] = useState('');
     const [isLoading, setIsLoading] = useState(false);
 
     useEffect(() => {
@@ -36,12 +38,16 @@ export default function ProfileSetupPage() {
 
         setIsLoading(true);
         try {
-            const updatedUser = await authApi.updateProfile({ full_name: name.trim() });
+            const updatedUser = await authApi.updateProfile({ 
+                full_name: name.trim(),
+                user_type: businessType,
+                business_name: businessName.trim() || undefined
+            });
             setUser(updatedUser);
 
             toast({
                 title: 'Profile Updated',
-                description: 'Welcome to Pranjay!',
+                description: `Welcome to Pranjay as a ${businessType}!`,
             });
 
             router.push('/');
@@ -73,22 +79,64 @@ export default function ProfileSetupPage() {
                     </div>
                     <CardTitle className="text-2xl">Complete Your Profile</CardTitle>
                     <CardDescription>
-                        Please tell us your full name to continue
+                        Help us personalize your experience
                     </CardDescription>
                 </CardHeader>
 
                 <CardContent>
                     <form onSubmit={handleSaveProfile} className="space-y-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="name">Full Name</Label>
-                            <Input
-                                id="name"
-                                type="text"
-                                placeholder="John Doe"
-                                value={name}
-                                onChange={(e) => setName(e.target.value)}
-                                required
-                            />
+                        <div className="space-y-4 pt-2">
+                            <div className="space-y-2">
+                                <Label htmlFor="name">Full Name</Label>
+                                <Input
+                                    id="name"
+                                    type="text"
+                                    placeholder="John Doe"
+                                    value={name}
+                                    onChange={(e) => setName(e.target.value)}
+                                    required
+                                />
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label>Business Type</Label>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <button
+                                        type="button"
+                                        onClick={() => setBusinessType('seller')}
+                                        className={`p-3 rounded-lg border-2 transition-all text-sm font-medium ${
+                                            businessType === 'seller' 
+                                            ? 'border-primary bg-primary/5 text-primary' 
+                                            : 'border-muted bg-background hover:border-muted-foreground/30'
+                                        }`}
+                                    >
+                                        Seller (Wholesale)
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setBusinessType('customer')}
+                                        className={`p-3 rounded-lg border-2 transition-all text-sm font-medium ${
+                                            businessType === 'customer' 
+                                            ? 'border-primary bg-primary/5 text-primary' 
+                                            : 'border-muted bg-background hover:border-muted-foreground/30'
+                                        }`}
+                                    >
+                                        Customer (Retail)
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="business_name">Business Name (Optional)</Label>
+                                <Input
+                                    id="business_name"
+                                    type="text"
+                                    placeholder="Your Shop Name"
+                                    value={businessName}
+                                    onChange={(e) => setBusinessName(e.target.value)}
+                                />
+                            </div>
+
                         </div>
                         <Button type="submit" className="w-full" disabled={isLoading}>
                             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

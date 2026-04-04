@@ -54,12 +54,35 @@ def strip_html(text: str) -> str:
     clean = re.sub(r"\s+", " ", clean).strip()
     return clean[:2000]  # cap to avoid DB issues
 
-def extract_images(images_field: str) -> list[str]:
-    """Parse comma-separated image URLs from the CSV Images column."""
+def extract_images(images_field: str, description: str = "", short_description: str = "") -> list[str]:
+    """Extract list of image URLs from CSV field and HTML descriptions."""
     if not images_field:
-        return []
-    urls = [u.strip() for u in images_field.split(",") if u.strip().startswith("http")]
-    return urls[:6]  # max 6 images per product
+        images_field = ""
+    
+    # 1. Primary images from column
+    primary_urls = [u.strip() for u in images_field.split(",") if u.strip().startswith("http")]
+    
+    # 2. Extract from descriptions (Regex for image URLs)
+    combined_desc = f"{description} {short_description}"
+    pattern = r'https?://[^\s<>"]+\.(?:jpg|jpeg|png|webp|gif)(?:\?[^\s<>"]*)?'
+    scraped_urls = re.findall(pattern, combined_desc)
+    
+    # 3. Combine and deduplicate
+    all_urls = []
+    seen = set()
+    
+    # Prioritize non-blocked domains (Smart Extraction)
+    for url in primary_urls + scraped_urls:
+        url_clean = url.split("?")[0] if "?" in url else url
+        if url_clean not in seen:
+            all_urls.append(url)
+            seen.add(url_clean)
+            
+    # Re-order: Move pranjay.com (blocked) to the end of the list
+    live_urls = [u for u in all_urls if "pranjay.com" not in u]
+    legacy_urls = [u for u in all_urls if "pranjay.com" in u]
+    
+    return (live_urls + legacy_urls)[:6]  # max 6 images per product
 
 def infer_category(name: str) -> str:
     """Guess category name from product name."""
@@ -194,8 +217,12 @@ async def migrate():
                 category_cache[cat_slug] = cat
             category = category_cache[cat_slug]
 
-            # Images
-            image_urls = extract_images(row.get("Images", ""))
+            # Images (Smart Extraction)
+            image_urls = extract_images(
+                row.get("Images", ""), 
+                row.get("Description", ""), 
+                row.get("Short description", "")
+            )
 
             # SKU from WC ID
             wc_id = row.get("ID", "").strip()
@@ -223,6 +250,7 @@ async def migrate():
                 unit="pcs",
                 is_active=in_stock and bool(image_urls if image_urls else True),
                 is_featured=is_featured,
+                image_url=image_urls[0] if image_urls else None,
                 category_id=category.id,
                 brand_id=None,
             )

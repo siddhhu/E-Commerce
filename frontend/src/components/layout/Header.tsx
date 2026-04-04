@@ -2,8 +2,10 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { ShoppingCart, Heart, Menu, Search, X } from 'lucide-react';
-import { useState } from 'react';
+import { ShoppingCart, Heart, Menu, Search, X, ChevronDown } from 'lucide-react';
+import { useState, useEffect } from 'react';
+
+import { categoriesApi, CategoryRead } from '@/lib/api';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,6 +19,9 @@ export function Header() {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [searchOpen, setSearchOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
+    const [categories, setCategories] = useState<CategoryRead[]>([]);
+    const [categoriesOpen, setCategoriesOpen] = useState(false);
+    
     const pathname = usePathname();
     const router = useRouter();
 
@@ -29,10 +34,21 @@ export function Header() {
 
     const navLinks = [
         { href: '/', label: 'Home' },
-        { href: '/products', label: 'Products' },
         { href: '/orders', label: 'My Orders' },
         { href: '/profile', label: 'Profile' },
     ];
+
+    useEffect(() => {
+        async function fetchCategories() {
+            try {
+                const data = await categoriesApi.list();
+                setCategories(data);
+            } catch (err) {
+                console.error('Failed to fetch categories:', err);
+            }
+        }
+        fetchCategories();
+    }, []);
 
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault();
@@ -62,6 +78,51 @@ export function Header() {
 
                 {/* Desktop Navigation */}
                 <nav className="hidden md:flex items-center space-x-6">
+                    {/* Custom Products Link with Dropdown */}
+                    <div className="relative group">
+                        <Link
+                            href="/products"
+                            className={cn(
+                                'flex items-center gap-1 text-sm font-medium transition-colors hover:text-primary py-4',
+                                pathname.startsWith('/products')
+                                    ? 'text-primary'
+                                    : 'text-muted-foreground'
+                            )}
+                        >
+                            Products
+                            <ChevronDown className="h-4 w-4 transition-transform group-hover:rotate-180" />
+                        </Link>
+                        
+                        {/* Dropdown Menu */}
+                        <div className="absolute left-0 top-full hidden group-hover:block pt-0">
+                            <div className="bg-background border rounded-lg shadow-xl min-w-[200px] py-2 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                                <Link 
+                                    href="/products"
+                                    className="block px-4 py-2 text-sm hover:bg-accent hover:text-accent-foreground transition-colors font-medium border-b"
+                                >
+                                    All Products
+                                </Link>
+                                <div className="max-h-[300px] overflow-y-auto">
+                                    {categories.length > 0 ? (
+                                        categories.map((category) => (
+                                            <Link
+                                                key={category.id}
+                                                href={`/products?category=${category.id}`}
+                                                className="block px-4 py-2 text-sm hover:bg-accent hover:text-accent-foreground transition-colors"
+                                            >
+                                                {category.name}
+                                            </Link>
+                                        ))
+                                    ) : (
+                                        <div className="px-4 py-2 text-sm text-muted-foreground italic">
+                                            Loading categories...
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     {navLinks.map((link) => (
                         <Link
                             key={link.href}
@@ -184,6 +245,44 @@ export function Header() {
             {mobileMenuOpen && (
                 <div className="md:hidden border-t">
                     <nav className="flex flex-col p-4 space-y-2">
+                        {/* Mobile Products with Categories */}
+                        <div className="flex flex-col">
+                            <button
+                                onClick={() => setCategoriesOpen(!categoriesOpen)}
+                                className={cn(
+                                    'flex items-center justify-between px-4 py-2 rounded-md text-sm font-medium transition-colors',
+                                    pathname.startsWith('/products')
+                                        ? 'bg-primary/10 text-primary'
+                                        : 'hover:bg-muted'
+                                )}
+                            >
+                                Products
+                                <ChevronDown className={cn("h-4 w-4 transition-transform", categoriesOpen && "rotate-180")} />
+                            </button>
+                            
+                            {categoriesOpen && (
+                                <div className="flex flex-col ml-4 mt-1 border-l pl-2 space-y-1">
+                                    <Link
+                                        href="/products"
+                                        className="px-4 py-2 rounded-md text-sm hover:bg-muted font-medium"
+                                        onClick={() => setMobileMenuOpen(false)}
+                                    >
+                                        All Products
+                                    </Link>
+                                    {categories.map((category) => (
+                                        <Link
+                                            key={category.id}
+                                            href={`/products?category=${category.id}`}
+                                            className="px-4 py-2 rounded-md text-sm hover:bg-muted"
+                                            onClick={() => setMobileMenuOpen(false)}
+                                        >
+                                            {category.name}
+                                        </Link>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
                         {navLinks.map((link) => (
                             <Link
                                 key={link.href}

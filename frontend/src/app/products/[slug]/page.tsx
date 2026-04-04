@@ -29,6 +29,7 @@ export default function ProductDetailPage() {
 
     const { addItem: addToCart } = useCartStore();
     const { addItem: addToWishlist, removeItem: removeFromWishlist, isInWishlist } = useWishlistStore();
+    const [imgError, setImgError] = useState(false);
 
     useEffect(() => {
         async function fetchProduct() {
@@ -79,7 +80,6 @@ export default function ProductDetailPage() {
         );
     }
 
-    const [imgError, setImgError] = useState(false);
     const discount = getDiscountPercentage(product.mrp, product.selling_price);
     const primaryImage = imgError ? '/placeholder.jpg' : (product.images[0]?.image_url || '/placeholder.jpg');
     const inWishlist = isInWishlist(product.id);

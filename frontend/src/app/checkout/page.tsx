@@ -23,9 +23,16 @@ import { formatPrice, cn } from '@/lib/utils';
 
 // Official Indian GST Number regex: 2-digit state + PAN (10 chars) + 1 entity digit + Z + 1 checksum
 const GST_REGEX = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
+const PAN_REGEX = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
+const AADHAAR_REGEX = /^[0-9]{12}$/;
 
-function validateGST(gst: string): boolean {
-    return GST_REGEX.test(gst.toUpperCase().trim());
+function validateDoc(type: string, value: string): boolean {
+    const v = value.toUpperCase().trim();
+    if (type === 'gst') return GST_REGEX.test(v);
+    if (type === 'pan') return PAN_REGEX.test(v);
+    if (type === 'aadhaar') return AADHAAR_REGEX.test(v);
+    if (type === 'shop_license') return v.length >= 5; // Basic length check
+    return true;
 }
 
 export default function CheckoutPage() {
@@ -48,40 +55,63 @@ export default function CheckoutPage() {
         postal_code: '',
     });
 
-    // GST — mandatory for B2B
-    const [gstNumber, setGstNumber] = useState('');
-    const [gstError, setGstError] = useState('');
-    const [gstValid, setGstValid] = useState(false);
-    const [gstSavedToProfile, setGstSavedToProfile] = useState(false);
+    // Business Verification — mandatory for Sellers, optional for Customers
+    const [docType, setDocType] = useState<'gst' | 'pan' | 'aadhaar' | 'shop_license'>('gst');
+    const [docNumber, setDocNumber] = useState('');
+    const [docError, setDocError] = useState('');
+    const [docValid, setDocValid] = useState(false);
+    const [docSavedToProfile, setDocSavedToProfile] = useState(false);
 
     const savedGst = user?.gst_number;
+    const savedPan = user?.pan;
+    const savedAadhaar = user?.aadhaar;
+    const savedShopLicense = user?.shop_license;
 
     // Auto-fill from profile on load
     useEffect(() => {
-        if (savedGst) {
-            setGstNumber(savedGst);
-            setGstValid(true);
-            setGstSavedToProfile(true);
+        if (user) {
+            if (user.gst_number) {
+                setDocType('gst');
+                setDocNumber(user.gst_number);
+                setDocValid(true);
+                setDocSavedToProfile(true);
+            } else if (user.pan) {
+                setDocType('pan');
+                setDocNumber(user.pan);
+                setDocValid(true);
+                setDocSavedToProfile(true);
+            } else if (user.aadhaar) {
+                setDocType('aadhaar');
+                setDocNumber(user.aadhaar);
+                setDocValid(true);
+                setDocSavedToProfile(true);
+            } else if (user.shop_license) {
+                setDocType('shop_license');
+                setDocNumber(user.shop_license);
+                setDocValid(true);
+                setDocSavedToProfile(true);
+            }
         }
-    }, [savedGst]);
+    }, [user]);
 
-    const handleGstChange = (value: string) => {
+    const handleDocChange = (type: typeof docType, value: string) => {
         const upper = value.toUpperCase().replace(/\s/g, '');
-        setGstNumber(upper);
-        setGstSavedToProfile(false);
+        setDocNumber(upper);
+        setDocSavedToProfile(false);
 
         if (upper.length === 0) {
-            setGstError('GST number is required for wholesale orders');
-            setGstValid(false);
-        } else if (upper.length < 15) {
-            setGstError(`GST number must be 15 characters (${upper.length}/15)`);
-            setGstValid(false);
-        } else if (!validateGST(upper)) {
-            setGstError('Invalid GST format. Example: 22AAAAA0000A1Z5');
-            setGstValid(false);
+            setDocValid(false);
+            if (user?.user_type === 'seller') {
+                setDocError(`${type.toUpperCase()} is required for sellers`);
+            } else {
+                setDocError('');
+            }
+        } else if (!validateDoc(type, upper)) {
+            setDocError(`Invalid ${type.toUpperCase()} format`);
+            setDocValid(false);
         } else {
-            setGstError('');
-            setGstValid(true);
+            setDocError('');
+            setDocValid(true);
         }
     };
 
@@ -102,23 +132,25 @@ export default function CheckoutPage() {
             }
         }
 
-        // GST is mandatory
-        if (!gstNumber) {
-            toast({
-                title: 'GST Number Required',
-                description: 'Please enter your GST number to proceed with wholesale checkout.',
-                variant: 'destructive',
-            });
-            return false;
-        }
+        // If seller, validation is mandatory
+        if (user?.user_type === 'seller') {
+            if (!docNumber) {
+                toast({
+                    title: 'Verification Required',
+                    description: 'Sellers must provide a valid business document to proceed.',
+                    variant: 'destructive',
+                });
+                return false;
+            }
 
-        if (!gstValid) {
-            toast({
-                title: 'Invalid GST Number',
-                description: 'Please enter a valid 15-character GST number (e.g., 22AAAAA0000A1Z5).',
-                variant: 'destructive',
-            });
-            return false;
+            if (!docValid) {
+                toast({
+                    title: 'Invalid Document',
+                    description: `Please enter a valid ${docType.toUpperCase()} number.`,
+                    variant: 'destructive',
+                });
+                return false;
+            }
         }
 
         return true;
@@ -151,13 +183,15 @@ export default function CheckoutPage() {
             // 2. Save address
             const savedAddress = await usersApi.createAddress({ ...address, country: 'India', is_default: true });
 
-            // 3. Save GST to profile if it's new
-            if (gstValid && gstNumber && gstNumber !== savedGst) {
+            // 3. Save Documentation to profile if it's new
+            if (docValid && docNumber && !docSavedToProfile) {
                 try {
-                    const updatedUser = await authApi.updateProfile({ gst_number: gstNumber, user_type: 'B2B' });
+                    const updateData: any = {};
+                    updateData[docType === 'shop_license' ? 'shop_license' : docType] = docNumber;
+                    const updatedUser = await authApi.updateProfile(updateData);
                     setUser(updatedUser);
                 } catch (e) {
-                    console.error('Could not save GST to profile:', e);
+                    console.error('Could not save document to profile:', e);
                 }
             }
 
@@ -173,7 +207,7 @@ export default function CheckoutPage() {
                 const amountInPaise = Math.round(getTotal() * 100);
                 try {
                     const options = {
-                        key: "rzp_test_SNyUMfsmuVqnJY",
+                        key: "rzp_live_SZO4iQslfD86WW",
                         amount: amountInPaise,
                         currency: "INR",
                         name: "Pranjay Cosmetics",
@@ -253,10 +287,10 @@ export default function CheckoutPage() {
                                 <span className="text-muted-foreground">Payment Method</span>
                                 <span className="font-medium">{orderPlaced.payment_method}</span>
                             </div>
-                            {gstNumber && (
+                            {docNumber && (
                                 <div className="flex justify-between text-sm">
-                                    <span className="text-muted-foreground">GST Invoice</span>
-                                    <span className="font-mono font-medium text-slate-700">{gstNumber}</span>
+                                    <span className="text-muted-foreground">{docType.toUpperCase()} Number</span>
+                                    <span className="font-mono font-medium text-slate-700">{docNumber}</span>
                                 </div>
                             )}
                             <div className="pt-2 border-t">
@@ -314,60 +348,80 @@ export default function CheckoutPage() {
                         {/* ── Left Column ── */}
                         <div className="lg:col-span-2 space-y-6">
 
-                            {/* 1. GST / B2B Invoice — MANDATORY */}
-                            <Card className={cn("border-2", gstValid ? "border-green-300 bg-green-50/30" : "border-orange-200 bg-orange-50/20")}>
+                            {/* 1. Business Verification */}
+                            <Card className={cn("border-2", docValid ? "border-green-300 bg-green-50/30" : (user?.user_type === 'seller' ? "border-orange-200 bg-orange-50/20" : "border-slate-200"))}>
                                 <CardHeader className="pb-3">
                                     <CardTitle className="flex items-center gap-2 text-base">
                                         <Building2 className="h-5 w-5 text-primary" />
-                                        Business GST Details
-                                        <span className="ml-auto text-xs font-normal bg-primary/10 text-primary px-2 py-0.5 rounded-full">Required for Wholesale</span>
+                                        Business Verification
+                                        {user?.user_type === 'seller' && (
+                                            <span className="ml-auto text-xs font-normal bg-primary/10 text-primary px-2 py-0.5 rounded-full">Mandatory for Sellers</span>
+                                        )}
                                     </CardTitle>
                                 </CardHeader>
-                                <CardContent className="space-y-3">
+                                <CardContent className="space-y-4">
                                     {/* Auto-fill banner */}
-                                    {gstSavedToProfile && savedGst && (
+                                    {docSavedToProfile && docNumber && (
                                         <div className="flex items-start gap-2 bg-blue-50 border border-blue-100 rounded-lg p-3 text-sm">
                                             <CheckCircle className="h-4 w-4 text-blue-500 mt-0.5 shrink-0" />
                                             <div>
-                                                <p className="font-semibold text-blue-800">GST auto-filled from your profile</p>
+                                                <p className="font-semibold text-blue-800">{docType.toUpperCase()} auto-filled from your profile</p>
                                                 <button
                                                     type="button"
                                                     className="text-xs text-blue-600 underline mt-0.5"
-                                                    onClick={() => { setGstSavedToProfile(false); setGstNumber(''); setGstValid(false); setGstError('GST number is required for wholesale orders'); }}
+                                                    onClick={() => { setDocSavedToProfile(false); setDocNumber(''); setDocValid(false); }}
                                                 >
-                                                    Use a different GST number
+                                                    Use a different document
                                                 </button>
                                             </div>
                                         </div>
                                     )}
 
-                                    {!gstSavedToProfile && (
-                                        <div className="space-y-1.5">
-                                            <Label htmlFor="gst_number">
-                                                GST Number <span className="text-red-500">*</span>
-                                            </Label>
-                                            <div className="relative">
-                                                <FileText className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                                                <Input
-                                                    id="gst_number"
-                                                    className={cn(
-                                                        "pl-10 pr-10 font-mono tracking-wider",
-                                                        gstError ? "border-red-400 focus-visible:ring-red-300" : gstValid ? "border-green-400 focus-visible:ring-green-300" : ""
-                                                    )}
-                                                    placeholder="22AAAAA0000A1Z5"
-                                                    maxLength={15}
-                                                    value={gstNumber}
-                                                    onChange={(e) => handleGstChange(e.target.value)}
-                                                    autoComplete="off"
-                                                />
-                                                <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                                                    {gstValid && <CheckCircle className="h-4 w-4 text-green-500" />}
-                                                    {gstError && gstNumber && <AlertCircle className="h-4 w-4 text-red-400" />}
-                                                </div>
+                                    {!docSavedToProfile && (
+                                        <div className="space-y-4">
+                                            <div className="space-y-2">
+                                                <Label>Select Document Type</Label>
+                                                <select 
+                                                    className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm focus:ring-2 focus:ring-primary outline-none"
+                                                    value={docType}
+                                                    onChange={(e) => {
+                                                        const newType = e.target.value as any;
+                                                        setDocType(newType);
+                                                        handleDocChange(newType, '');
+                                                    }}
+                                                >
+                                                    <option value="gst">GST (Goods and Services Tax)</option>
+                                                    <option value="pan">PAN (Permanent Account Number)</option>
+                                                    <option value="aadhaar">Aadhaar Card (12-digit)</option>
+                                                    <option value="shop_license">Shop License Number</option>
+                                                </select>
                                             </div>
-                                            {gstError && <p className="text-xs text-red-500">{gstError}</p>}
-                                            {gstValid && <p className="text-xs text-green-600 flex items-center gap-1"><CheckCircle className="h-3 w-3" />Valid GST — will be saved to your profile for future orders.</p>}
-                                            <p className="text-xs text-slate-400">Format: State Code (2) + PAN (10) + Entity (1) + Z + Check (1)</p>
+
+                                            <div className="space-y-1.5">
+                                                <Label htmlFor="doc_number">
+                                                    {docType.toUpperCase()} Number {user?.user_type === 'seller' && <span className="text-red-500">*</span>}
+                                                </Label>
+                                                <div className="relative">
+                                                    <FileText className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                                                    <Input
+                                                        id="doc_number"
+                                                        className={cn(
+                                                            "pl-10 pr-10 font-mono tracking-wider text-sm",
+                                                            docError ? "border-red-400 focus-visible:ring-red-300" : docValid ? "border-green-400 focus-visible:ring-green-300" : ""
+                                                        )}
+                                                        placeholder={`Enter ${docType.toUpperCase()} Number`}
+                                                        value={docNumber}
+                                                        onChange={(e) => handleDocChange(docType, e.target.value)}
+                                                        autoComplete="off"
+                                                    />
+                                                    <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                                                        {docValid && <CheckCircle className="h-4 w-4 text-green-500" />}
+                                                        {docError && docNumber && <AlertCircle className="h-4 w-4 text-red-400" />}
+                                                    </div>
+                                                </div>
+                                                {docError && <p className="text-[11px] text-red-500 font-medium">{docError}</p>}
+                                                {docValid && <p className="text-[11px] text-green-600 font-medium flex items-center gap-1"><CheckCircle className="h-3 w-3" />Verified — will be saved to your profile.</p>}
+                                            </div>
                                         </div>
                                     )}
                                 </CardContent>
@@ -483,10 +537,10 @@ export default function CheckoutPage() {
                                             <span className="text-muted-foreground">Shipping</span>
                                             <span className="text-green-600 font-medium">Free</span>
                                         </div>
-                                        {gstValid && gstNumber && (
+                                        {docValid && docNumber && (
                                             <div className="flex justify-between text-xs bg-blue-50 text-blue-700 px-2 py-1.5 rounded-lg">
-                                                <span className="font-medium">GST Invoice</span>
-                                                <span className="font-mono">{gstNumber}</span>
+                                                <span className="font-medium">{docType.toUpperCase()} Applied</span>
+                                                <span className="font-mono">{docNumber}</span>
                                             </div>
                                         )}
                                     </div>
@@ -496,10 +550,10 @@ export default function CheckoutPage() {
                                         <span className="text-primary">{formatPrice(getTotal())}</span>
                                     </div>
 
-                                    {!gstValid && (
+                                    {!docValid && user?.user_type === 'seller' && (
                                         <div className="flex items-start gap-2 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-3">
                                             <AlertCircle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
-                                            <span>Enter your GST number above to place your order</span>
+                                            <span>Enter your business verification details above to place your order</span>
                                         </div>
                                     )}
 
@@ -507,7 +561,7 @@ export default function CheckoutPage() {
                                         className="w-full"
                                         size="lg"
                                         onClick={handlePlaceOrder}
-                                        disabled={isProcessing || !gstValid}
+                                        disabled={isProcessing || (user?.user_type === 'seller' && !docValid)}
                                     >
                                         {isProcessing ? 'Processing...' : (paymentMethod === 'online' ? 'Pay Now' : 'Place Order')}
                                     </Button>

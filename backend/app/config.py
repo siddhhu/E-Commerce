@@ -41,8 +41,8 @@ class Settings(BaseSettings):
     supabase_bucket: str = "products"
     
     # Razorpay Settings
-    razorpay_key_id: str = "rzp_test_SNyUMfsmuVqnJY"
-    razorpay_key_secret: str = "gOMioxitJuRzcqIuFiDtGgpH"
+    razorpay_key_id: str = "rzp_live_SZO4iQslfD86WW"
+    razorpay_key_secret: str = "52UdSlDvZXkBYHOHaZURvGqy"
     
     # CORS
     cors_origins: List[str] = [

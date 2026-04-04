@@ -159,7 +159,15 @@ export const authApi = {
             user: User;
         }>('/auth/refresh', { refresh_token: refreshToken }),
 
-    updateProfile: (data: { full_name?: string; business_name?: string; gst_number?: string; user_type?: 'B2C' | 'B2B' }) =>
+    updateProfile: (data: { 
+        full_name?: string; 
+        business_name?: string; 
+        gst_number?: string; 
+        pan?: string;
+        aadhaar?: string;
+        shop_license?: string;
+        user_type?: 'seller' | 'customer' 
+    }) =>
         api.patch<User>('/users/me', data),
 };
 
@@ -193,6 +201,13 @@ export const productsApi = {
 
     getBySlug: (slug: string) =>
         api.get<Product>(`/products/${slug}`),
+};
+
+// Categories API
+export const categoriesApi = {
+    list: () => api.get<CategoryRead[]>('/categories'),
+    getTree: () => api.get<CategoryWithChildren[]>('/categories/tree'),
+    getBySlug: (slug: string) => api.get<CategoryWithChildren>(`/categories/${slug}`),
 };
 
 // Cart API
@@ -357,7 +372,10 @@ export interface User {
     full_name?: string;
     business_name?: string;
     gst_number?: string;
-    user_type: 'B2B' | 'B2C';
+    pan?: string;
+    aadhaar?: string;
+    shop_license?: string;
+    user_type: 'seller' | 'customer';
     role: 'customer' | 'admin' | 'super_admin';
     is_active: boolean;
     is_verified: boolean;
@@ -413,11 +431,23 @@ export interface ProductSummary {
 }
 
 export interface PaginatedProducts {
-    items: ProductSummary[];
-    total: number;
-    page: number;
-    page_size: number;
     pages: number;
+}
+
+export interface CategoryRead {
+    id: string;
+    name: string;
+    slug: string;
+    description?: string;
+    image_url?: string;
+    parent_id?: string;
+    sort_order: number;
+    is_active: boolean;
+    created_at: string;
+}
+
+export interface CategoryWithChildren extends CategoryRead {
+    children: CategoryRead[];
 }
 
 export interface CartItem {

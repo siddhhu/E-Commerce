@@ -18,8 +18,8 @@ if TYPE_CHECKING:
 
 class UserType(str, enum.Enum):
     """User type enum."""
-    B2B = "B2B"
-    B2C = "B2C"
+    SELLER = "seller"
+    CUSTOMER = "customer"
 
 
 class UserRole(str, enum.Enum):
@@ -36,7 +36,10 @@ class UserBase(SQLModel):
     full_name: Optional[str] = Field(default=None, max_length=255)
     business_name: Optional[str] = Field(default=None, max_length=255)
     gst_number: Optional[str] = Field(default=None, max_length=15)
-    user_type: UserType = Field(default=UserType.B2B)
+    pan: Optional[str] = Field(default=None, max_length=10)
+    aadhaar: Optional[str] = Field(default=None, max_length=12)
+    shop_license: Optional[str] = Field(default=None, max_length=50)
+    user_type: UserType = Field(default=UserType.SELLER)
     role: UserRole = Field(default=UserRole.CUSTOMER)
     is_active: bool = Field(default=True)
     is_verified: bool = Field(default=False)
@@ -66,7 +69,10 @@ class UserCreate(SQLModel):
     full_name: Optional[str] = None
     business_name: Optional[str] = None
     gst_number: Optional[str] = None
-    user_type: UserType = UserType.B2B
+    pan: Optional[str] = None
+    aadhaar: Optional[str] = None
+    shop_license: Optional[str] = None
+    user_type: UserType = UserType.SELLER
 
 
 class UserUpdate(SQLModel):
@@ -75,6 +81,9 @@ class UserUpdate(SQLModel):
     full_name: Optional[str] = None
     business_name: Optional[str] = None
     gst_number: Optional[str] = None
+    pan: Optional[str] = None
+    aadhaar: Optional[str] = None
+    shop_license: Optional[str] = None
     user_type: Optional[UserType] = None
 
 
