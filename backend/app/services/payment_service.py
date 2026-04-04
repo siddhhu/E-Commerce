@@ -3,6 +3,7 @@ import hashlib
 from typing import Dict, Any, Optional
 
 import razorpay
+from fastapi.concurrency import run_in_threadpool
 
 from app.config import settings
 
@@ -31,9 +32,8 @@ class PaymentService:
         
         # In a real async environment, we'd ideally use an async HTTP client,
         # but the razorpay officially supported python client is synchronous.
-        # For this prototype, we'll use it directly. In production with heavy load,
-        # wrap this in run_in_threadpool.
-        order = self.client.order.create(data=data)
+        # Offload to threadpool to avoid blocking the event loop.
+        order = await run_in_threadpool(self.client.order.create, data)
         return order
         
     def verify_payment_signature(self, razorpay_order_id: str, razorpay_payment_id: str, razorpay_signature: str) -> bool:

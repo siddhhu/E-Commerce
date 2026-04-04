@@ -45,6 +45,7 @@ export default function CheckoutPage() {
     const [paymentMethod, setPaymentMethod] = useState<'cod' | 'online'>('cod');
     const [isProcessing, setIsProcessing] = useState(false);
     const [orderPlaced, setOrderPlaced] = useState<Order | null>(null);
+    const [isRazorpayReady, setIsRazorpayReady] = useState(false);
     const [address, setAddress] = useState({
         full_name: '',
         phone: '',
@@ -171,6 +172,14 @@ export default function CheckoutPage() {
         if (!validateForm()) return;
         if (items.length === 0) {
             toast({ title: 'Cart Empty', description: 'Please add items to your cart first', variant: 'destructive' });
+            return;
+        }
+
+        if (paymentMethod === 'online' && (!(window as any).Razorpay || !isRazorpayReady)) {
+            toast({
+                title: 'Payment Loading',
+                description: 'Payment gateway is still loading. Please try again in a moment.',
+            });
             return;
         }
 
@@ -333,7 +342,11 @@ export default function CheckoutPage() {
     // ─── Main Checkout Page ─────────────────────────────────────────────────
     return (
         <div className="min-h-screen flex flex-col">
-            <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="lazyOnload" />
+            <Script
+                src="https://checkout.razorpay.com/v1/checkout.js"
+                strategy="afterInteractive"
+                onLoad={() => setIsRazorpayReady(true)}
+            />
             <Header />
 
             <main className="flex-1 py-8">
