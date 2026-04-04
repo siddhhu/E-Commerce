@@ -1,16 +1,19 @@
 """
 Pranjay Backend - FastAPI Application Entry Point
 """
+import os
+from pathlib import Path
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 
 from app.config import settings
 from app.database import close_db, init_db
 from app.routers import auth, banners, cart, categories, checkout, orders, products, users, wishlist
-from app.routers.admin import banners as admin_banners, bulk_upload, dashboard
+from app.routers.admin import banners as admin_banners, bulk_upload, dashboard, migrate_images
 from app.routers.admin import orders as admin_orders
 from app.routers.admin import products as admin_products
 from app.routers.admin import users as admin_users
@@ -44,6 +47,11 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Local uploads (used when Supabase is not configured)
+uploads_dir = Path(os.getenv("UPLOADS_DIR", "uploads"))
+uploads_dir.mkdir(parents=True, exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=str(uploads_dir)), name="uploads")
 
 # Global exception handler — ensures CORS headers are present even on unhandled 500s
 # Without this, Vercel can intercept crashes and return raw 500s with no CORS headers
@@ -88,6 +96,9 @@ app.include_router(
 )
 app.include_router(
     admin_banners.router, prefix=f"{API_PREFIX}/admin/banners", tags=["Admin - Banners"]
+)
+app.include_router(
+    migrate_images.router, prefix=f"{API_PREFIX}/admin/migrate", tags=["Admin - Migration"]
 )
 
 

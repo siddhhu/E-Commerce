@@ -1,9 +1,13 @@
 """
 Storage Service - File uploads to Supabase Storage
 """
+import os
 import uuid
+from pathlib import Path
 from typing import Optional
 import httpx
+
+from fastapi.concurrency import run_in_threadpool
 
 from app.config import settings
 
@@ -15,18 +19,6 @@ class StorageService:
         self.client = None
         self.bucket = settings.supabase_bucket
         self._initialized = False
-        
-        # Only initialize if Supabase credentials are provided
-        if settings.supabase_url and settings.supabase_key:
-            try:
-                from supabase import create_client, Client
-                self.client: Client = create_client(
-                    settings.supabase_url,
-                    settings.supabase_key
-                )
-                self._initialized = True
-            except Exception as e:
-                print(f"Warning: Could not initialize Supabase client: {e}")
     
     @property
     def is_available(self) -> bool:
@@ -48,18 +40,6 @@ class StorageService:
         # Generate unique filename
         ext = file_name.split(".")[-1] if "." in file_name else "jpg"
         unique_name = f"{folder}/{uuid.uuid4()}.{ext}"
-
-        # Try SDK first if available
-        if self.is_available:
-            try:
-                self.client.storage.from_(self.bucket).upload(
-                    unique_name,
-                    file_content,
-                    {"content-type": content_type}
-                )
-                return self.client.storage.from_(self.bucket).get_public_url(unique_name)
-            except Exception as e:
-                print(f"SDK Upload failed, trying REST fallback: {e}")
 
         # REST API Fallback
         if settings.supabase_url and settings.supabase_key:
@@ -83,8 +63,20 @@ class StorageService:
             except Exception as e:
                 print(f"REST Upload Exception: {e}")
 
-        # Return None if everything fails
-        return None
+        # Local filesystem fallback
+        try:
+            uploads_dir = Path(os.getenv("UPLOADS_DIR", "uploads"))
+            full_dir = uploads_dir / folder
+            await run_in_threadpool(full_dir.mkdir, True, True)
+
+            local_filename = f"{uuid.uuid4()}.{ext}"
+            full_path = full_dir / local_filename
+            await run_in_threadpool(full_path.write_bytes, file_content)
+
+            return f"/uploads/{folder}/{local_filename}"
+        except Exception as e:
+            print(f"Local upload fallback failed: {e}")
+            return None
 
     async def delete_file(self, file_url: str) -> bool:
         """Delete a file from storage."""
@@ -160,34 +152,52 @@ class StorageService:
         if "supabase.co" in url or "supabase.in" in url:
             return url
 
-        if not settings.supabase_url or not settings.supabase_key:
-            return url
+        def _candidate_urls(original: str) -> list[str]:
+            candidates = [original]
+            # Try toggling www/non-www for hotlink-protected hosts
+            if "://www." in original:
+                candidates.append(original.replace("://www.", "://", 1))
+            else:
+                candidates.append(original.replace("://", "://www.", 1))
+            # Also try https if http was provided
+            if original.startswith("http://"):
+                candidates.append("https://" + original[len("http://"):])
+            return list(dict.fromkeys(candidates))
 
         try:
             headers = {
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
                 "Accept": "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
                 "Accept-Language": "en-US,en;q=0.9",
-                "Referer": "https://www.google.com/",
+                # Many WP setups block hotlinking unless referer is same-site
+                "Referer": "https://pranjay.com/",
             }
+
+            last_err: Exception | None = None
             async with httpx.AsyncClient(timeout=30.0, follow_redirects=True) as client:
-                response = await client.get(url, headers=headers)
-                response.raise_for_status()
-                
-                # Upload to Supabase
-                file_content = response.content
-                file_name = url.split("/")[-1]
-                content_type = response.headers.get("Content-Type", "image/jpeg")
-                
-                # Ensure filename has extension
-                if "." not in file_name:
-                    file_name += ".jpg"
-                
-                new_url = await self.upload_file(file_content, file_name, content_type, folder)
-                
-                # If upload failed (returned None), keep original URL
-                return new_url if new_url else url
-                
+                for candidate in _candidate_urls(url):
+                    try:
+                        response = await client.get(candidate, headers=headers)
+                        response.raise_for_status()
+
+                        file_content = response.content
+                        file_name = candidate.split("/")[-1]
+                        content_type = response.headers.get("Content-Type", "image/jpeg")
+
+                        if "." not in file_name:
+                            file_name += ".jpg"
+
+                        # Upload to Supabase if configured; otherwise falls back to local filesystem
+                        new_url = await self.upload_file(file_content, file_name, content_type, folder)
+                        return new_url if new_url else url
+                    except Exception as e:
+                        last_err = e
+                        continue
+
+            if last_err:
+                raise last_err
+            return url
+
         except Exception as e:
             print(f"Migration error for {url}: {e}")
             return url

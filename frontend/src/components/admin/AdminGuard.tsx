@@ -25,7 +25,8 @@ export default function AdminGuard({ children }: { children: React.ReactNode }) 
     }
 
     const isLoginPage = pathname === '/admin/login';
-    const isAdmin = isAuthenticated && (user?.role === 'admin' || user?.role === 'super_admin');
+    const role = (user?.role || '').toString().toLowerCase();
+    const isAdmin = isAuthenticated && (role === 'admin' || role === 'super_admin');
 
     if (!isLoginPage && !isAdmin) {
         router.push('/admin/login');

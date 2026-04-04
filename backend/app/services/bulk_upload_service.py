@@ -9,7 +9,7 @@ import pandas as pd
 from sqlalchemy.ext.asyncio import AsyncSession
 from slugify import slugify
 
-from app.models.product import Product, ProductCreate
+from app.models.product import Product, ProductCreate, ProductImage
 from app.services.product_service import ProductService
 from app.services.storage_service import storage_service
 
@@ -27,6 +27,50 @@ class BulkUploadService:
     def __init__(self, session: AsyncSession):
         self.session = session
         self.product_service = ProductService(session)
+
+    def _normalize_dataframe(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Normalize known external CSV formats (e.g., WooCommerce export) to expected columns."""
+        if df is None or df.empty:
+            return df
+
+        # Build a case-insensitive map of columns
+        col_map = {str(c).strip().lower(): c for c in df.columns}
+
+        def rename_if_present(source_lower: str, dest: str, rename_map: dict[str, str]) -> None:
+            if source_lower in col_map:
+                rename_map[col_map[source_lower]] = dest
+
+        # WooCommerce -> internal mappings
+        rename_map: dict[str, str] = {}
+        rename_if_present("name", "name", rename_map)
+        rename_if_present("sku", "sku", rename_map)
+        rename_if_present("regular price", "mrp", rename_map)
+        rename_if_present("sale price", "selling_price", rename_map)
+        rename_if_present("description", "description", rename_map)
+        rename_if_present("short description", "short_description", rename_map)
+        rename_if_present("stock", "stock_quantity", rename_map)
+        rename_if_present("is featured?", "is_featured", rename_map)
+        # Keep the original casing expected by _process_row (it checks row.get("Images"))
+        rename_if_present("images", "Images", rename_map)
+
+        if rename_map:
+            df = df.rename(columns=rename_map)
+
+        # If selling_price is missing but mrp exists, fallback selling_price to mrp
+        if "selling_price" not in df.columns and "mrp" in df.columns:
+            df["selling_price"] = df["mrp"]
+        if "selling_price" in df.columns and "mrp" in df.columns:
+            # If selling_price is empty, fallback to mrp
+            df["selling_price"] = df["selling_price"].where(df["selling_price"].notna(), df["mrp"])
+
+        # SKU fallback: if SKU is empty, use WooCommerce ID as SKU
+        if "sku" in df.columns and "ID" in df.columns:
+            sku_series = df["sku"].astype(str).str.strip()
+            missing_sku = sku_series.isna() | (sku_series == "") | (sku_series.str.lower() == "nan")
+            if missing_sku.any():
+                df.loc[missing_sku, "sku"] = df.loc[missing_sku, "ID"].astype(str).str.strip()
+
+        return df
     
     async def process_csv(
         self,
@@ -38,6 +82,7 @@ class BulkUploadService:
         Returns summary of results.
         """
         df = pd.read_csv(io.BytesIO(file_content))
+        df = self._normalize_dataframe(df)
         return await self._process_dataframe(df, update_existing)
     
     async def process_excel(
@@ -54,6 +99,7 @@ class BulkUploadService:
             io.BytesIO(file_content),
             sheet_name=sheet_name or 0
         )
+        df = self._normalize_dataframe(df)
         return await self._process_dataframe(df, update_existing)
     
     async def _process_dataframe(
@@ -161,6 +207,10 @@ class BulkUploadService:
                     image_url = await storage_service.upload_from_url(image_url)
                 existing.image_url = image_url
             
+            # Handle WooCommerce 'Images' column (comma-separated URLs)
+            if pd.notna(row.get("Images")):
+                await self._process_product_images(existing.id, str(row["Images"]), existing)
+            
             self.session.add(existing)
             return "updated"
         
@@ -200,7 +250,56 @@ class BulkUploadService:
             product.image_url = image_url
         
         self.session.add(product)
+        await self.session.flush()  # Get product ID
+        
+        # Handle WooCommerce 'Images' column (comma-separated URLs)
+        if pd.notna(row.get("Images")):
+            await self._process_product_images(product.id, str(row["Images"]), product)
+        
         return "created"
+    
+    async def _process_product_images(
+        self,
+        product_id: UUID,
+        images_str: str,
+        product: Product
+    ) -> None:
+        """Process comma-separated image URLs from WooCommerce CSV."""
+        # Split by comma and clean URLs
+        image_urls = [url.strip() for url in images_str.split(",") if url.strip()]
+        
+        if not image_urls:
+            return
+        
+        # Download and create ProductImage records
+        for idx, url in enumerate(image_urls[:8]):  # Limit to 8 images
+            try:
+                # Download and store locally
+                local_url = await storage_service.upload_from_url(url, folder="products")
+
+                if not local_url:
+                    continue
+                if isinstance(local_url, str) and local_url.startswith("http"):
+                    continue
+                
+                # Create ProductImage record
+                product_image = ProductImage(
+                    product_id=product_id,
+                    image_url=local_url,
+                    alt_text=product.name,
+                    is_primary=(idx == 0),  # First image is primary
+                    sort_order=idx
+                )
+                self.session.add(product_image)
+                
+                # Also set product.image_url to first image as fallback
+                if idx == 0:
+                    product.image_url = local_url
+                    self.session.add(product)
+                    
+            except Exception as e:
+                print(f"Error processing image {url}: {e}")
+                continue
     
     def generate_template(self) -> bytes:
         """Generate a CSV template for bulk upload."""
