@@ -19,8 +19,8 @@ export default function CartPage() {
 
     const [imgErrors, setImgErrors] = useState<Record<string, boolean>>({});
 
-    const sellerGstName = 'Mahaganpati Pvt Ltd';
-    const sellerGstin = '27ABCDE1234F1Z5';
+    const sellerGstName = 'MAHAGANPATI';
+    const sellerGstin = '10ACEFM4547Q1ZY';
 
     if (items.length === 0) {
         return (
