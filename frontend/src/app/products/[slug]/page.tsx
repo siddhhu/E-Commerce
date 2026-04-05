@@ -131,6 +131,10 @@ export default function ProductDetailPage() {
         category_name: '', // We don't have this in APIProduct but it's okay for store
         brand_id: p.brand_id || '',
         brand_name: '',
+        image_url:
+            p.image_url ||
+            p.images?.find((img) => img.is_primary)?.image_url ||
+            p.images?.[0]?.image_url,
         images: p.images?.map(img => ({
             id: img.id,
             image_url: img.image_url,

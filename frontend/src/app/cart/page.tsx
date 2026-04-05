@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
@@ -15,6 +16,8 @@ import { formatPrice } from '@/lib/utils';
 export default function CartPage() {
     const router = useRouter();
     const { items, removeItem, updateQuantity, getSubtotal, getTax, getTotal, clearCart } = useCartStore();
+
+    const [imgErrors, setImgErrors] = useState<Record<string, boolean>>({});
 
     const sellerGstName = 'Mahaganpati Pvt Ltd';
     const sellerGstin = '27ABCDE1234F1Z5';
@@ -57,25 +60,27 @@ export default function CartPage() {
                                         {/* Product Image */}
                                         <div className="relative w-24 h-24 rounded-lg overflow-hidden bg-muted shrink-0">
                                             {(() => {
+                                                const imgError = Boolean(imgErrors[item.product.id]);
                                                 const imageUrl =
-                                                    item.product.image_url ||
-                                                    item.product.images?.find((img) => img.is_primary)?.image_url ||
-                                                    item.product.images?.[0]?.image_url ||
-                                                    '/placeholder.jpg';
-
-                                                // Avoid WordPress URLs that cause 502 via Next.js Image optimizer
-                                                const finalUrl =
-                                                    imageUrl.startsWith('http://pranjay.com') ||
-                                                    imageUrl.startsWith('https://pranjay.com')
+                                                    imgError
                                                         ? '/placeholder.jpg'
-                                                        : imageUrl;
+                                                        : (item.product.image_url ||
+                                                            item.product.images?.find((img) => img.is_primary)?.image_url ||
+                                                            item.product.images?.[0]?.image_url ||
+                                                            '/placeholder.jpg');
 
                                                 return (
                                             <Image
-                                                src={finalUrl}
+                                                src={imageUrl}
                                                 alt={item.product.name}
                                                 fill
                                                 className="object-cover"
+                                                onError={() =>
+                                                    setImgErrors((prev) => ({
+                                                        ...prev,
+                                                        [item.product.id]: true,
+                                                    }))
+                                                }
                                             />
                                                 );
                                             })()}

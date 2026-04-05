@@ -97,6 +97,7 @@ function ProductsContent() {
             category_name: '',
             brand_id: '',
             brand_name: '',
+            image_url: product.primary_image || undefined,
             images: product.primary_image ? [{ id: '1', image_url: product.primary_image, alt_text: product.name, is_primary: true }] : [],
         };
         addToCart(storeProduct, 1);
@@ -134,6 +135,7 @@ function ProductsContent() {
             category_name: '',
             brand_id: '',
             brand_name: '',
+            image_url: product.primary_image || undefined,
             images: product.primary_image ? [{ id: '1', image_url: product.primary_image, alt_text: product.name, is_primary: true }] : [],
         };
 
