@@ -63,9 +63,16 @@ export default function CartPage() {
                                                     item.product.images?.[0]?.image_url ||
                                                     '/placeholder.jpg';
 
+                                                // Avoid WordPress URLs that cause 502 via Next.js Image optimizer
+                                                const finalUrl =
+                                                    imageUrl.startsWith('http://pranjay.com') ||
+                                                    imageUrl.startsWith('https://pranjay.com')
+                                                        ? '/placeholder.jpg'
+                                                        : imageUrl;
+
                                                 return (
                                             <Image
-                                                src={imageUrl}
+                                                src={finalUrl}
                                                 alt={item.product.name}
                                                 fill
                                                 className="object-cover"
