@@ -17,6 +17,7 @@ export default function AdminBannersPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState('');
     const [isSaving, setIsSaving] = useState(false);
+    const [isUploadingImage, setIsUploadingImage] = useState(false);
 
     // Modal state
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -42,6 +43,18 @@ export default function AdminBannersPage() {
             setError(err.message || "Failed to load banners");
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    const handleBannerImageUpload = async (file: File) => {
+        setIsUploadingImage(true);
+        try {
+            const res = await adminApi.uploadBannerImage(file);
+            setFormData((prev) => ({ ...prev, image_url: res.image_url }));
+        } catch (err: any) {
+            alert(err.message || 'Failed to upload banner image');
+        } finally {
+            setIsUploadingImage(false);
         }
     };
 
@@ -219,6 +232,23 @@ export default function AdminBannersPage() {
                                     onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
                                     placeholder="https://example.com/banner.jpg"
                                 />
+                                <div className="mt-2">
+                                    <label className="block text-xs font-medium text-slate-500 mb-1">
+                                        Or upload image (JPG/PNG/WEBP, max 10MB)
+                                    </label>
+                                    <input
+                                        type="file"
+                                        accept="image/jpeg,image/png,image/webp"
+                                        disabled={isUploadingImage}
+                                        onChange={(e) => {
+                                            const f = e.target.files?.[0];
+                                            if (f) handleBannerImageUpload(f);
+                                        }}
+                                    />
+                                    {isUploadingImage && (
+                                        <div className="text-xs text-slate-500 mt-1">Uploading...</div>
+                                    )}
+                                </div>
                                 {formData.image_url && (
                                     <div className="mt-2 h-20 w-full relative border rounded overflow-hidden">
                                         <img src={formData.image_url} alt="Preview" className="w-full h-full object-cover" />

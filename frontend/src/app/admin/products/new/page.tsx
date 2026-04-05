@@ -16,6 +16,7 @@ export default function AdminAddProductPage() {
     const router = useRouter();
     const { toast } = useToast();
     const [isLoading, setIsLoading] = useState(false);
+    const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
     
     // Using a simple state object for the form
     const [formData, setFormData] = useState({
@@ -66,7 +67,7 @@ export default function AdminAddProductPage() {
         }
 
         try {
-            await adminApi.createProduct({
+            const created = await adminApi.createProduct({
                 name: formData.name,
                 sku: formData.sku,
                 mrp: mrp,
@@ -78,6 +79,10 @@ export default function AdminAddProductPage() {
                 is_active: formData.is_active,
                 slug: formData.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '') || `product-${Date.now()}`
             });
+
+            if (selectedImageFile) {
+                await adminApi.uploadProductImage(created.id, selectedImageFile, true);
+            }
 
             toast({ title: "Product created successfully!" });
             router.push('/admin/products');
@@ -224,6 +229,14 @@ export default function AdminAddProductPage() {
                                         value={formData.image_url} onChange={handleChange} 
                                         placeholder="https://example.com/image.jpg"
                                     />
+                                    <div className="pt-2">
+                                        <Label>Or upload from device (JPG/PNG/WEBP, max 10MB)</Label>
+                                        <Input
+                                            type="file"
+                                            accept="image/jpeg,image/png,image/webp"
+                                            onChange={(e) => setSelectedImageFile(e.target.files?.[0] || null)}
+                                        />
+                                    </div>
                                     {formData.image_url && (
                                         <div className="mt-2 relative aspect-square rounded-md overflow-hidden bg-slate-100 border">
                                             <img 

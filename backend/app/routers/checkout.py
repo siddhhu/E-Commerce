@@ -22,6 +22,8 @@ class CheckoutRequest(BaseModel):
     shipping_address_id: UUID
     payment_method: str
     notes: Optional[str] = None
+    promo_code: Optional[str] = None
+    invoice_url: Optional[str] = None
 
 
 @router.post("", response_model=OrderRead, status_code=201)
@@ -42,6 +44,8 @@ async def checkout(
         shipping_address_id=data.shipping_address_id,
         payment_method=data.payment_method,
         notes=data.notes,
+        promo_code=data.promo_code,
+        invoice_url=data.invoice_url,
         background_tasks=background_tasks
     )
     

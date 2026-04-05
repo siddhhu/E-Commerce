@@ -13,9 +13,11 @@ from fastapi.staticfiles import StaticFiles
 from app.config import settings
 from app.database import close_db, init_db
 from app.routers import auth, banners, cart, categories, checkout, orders, products, users, wishlist
+from app.routers import invoices, promo_codes
 # from app.routers.admin import banners as admin_banners, bulk_upload, dashboard, migrate_images
 from app.routers.admin import banners as admin_banners, bulk_upload, dashboard
 from app.routers.admin import orders as admin_orders
+from app.routers.admin import promo_codes as admin_promo_codes
 from app.routers.admin import products as admin_products
 from app.routers.admin import users as admin_users
 
@@ -86,6 +88,8 @@ app.include_router(wishlist.router, prefix=f"{API_PREFIX}/wishlist", tags=["Wish
 app.include_router(checkout.router, prefix=f"{API_PREFIX}/checkout", tags=["Checkout"])
 app.include_router(orders.router, prefix=f"{API_PREFIX}/orders", tags=["Orders"])
 app.include_router(banners.router, prefix=f"{API_PREFIX}/banners", tags=["Banners"])
+app.include_router(promo_codes.router, prefix=f"{API_PREFIX}/promo-codes", tags=["Promo Codes"])
+app.include_router(invoices.router, prefix=f"{API_PREFIX}/invoices", tags=["Invoices"])
 
 # Admin Routes
 app.include_router(
@@ -99,6 +103,9 @@ app.include_router(
 )
 app.include_router(
     admin_users.router, prefix=f"{API_PREFIX}/admin/users", tags=["Admin - Users"]
+)
+app.include_router(
+    admin_promo_codes.router, prefix=f"{API_PREFIX}/admin/promo-codes", tags=["Admin - Promo Codes"]
 )
 app.include_router(
     bulk_upload.router, prefix=f"{API_PREFIX}/admin/bulk-upload", tags=["Admin - Bulk Upload"]

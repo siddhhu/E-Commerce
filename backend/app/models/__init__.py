@@ -9,6 +9,7 @@ from app.models.cart import CartItem
 from app.models.wishlist import WishlistItem
 from app.models.order import Order, OrderItem, OrderStatus, PaymentStatus
 from app.models.banner import Banner
+from app.models.promo_code import PromoCode
 
 __all__ = [
     "User",
@@ -27,5 +28,6 @@ __all__ = [
     "OrderStatus",
     "PaymentStatus",
     "Banner",
+    "PromoCode",
 ]
 

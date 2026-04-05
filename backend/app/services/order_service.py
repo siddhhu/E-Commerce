@@ -16,10 +16,13 @@ from app.models.order import Order, OrderCreate, OrderItem, OrderStatus, OrderUp
 from app.models.product import Product
 from app.models.cart import CartItem
 from app.models.address import Address
+from app.models.user import User
 from app.services.email_service import email_service
 from app.services.payment_service import PaymentService
 from app.models.order import PaymentMethod
 from fastapi import BackgroundTasks
+from app.services.promo_code_service import PromoCodeService
+from app.models.user import UserType
 
 
 class OrderService:
@@ -114,6 +117,8 @@ class OrderService:
         shipping_address_id: UUID,
         payment_method: str,
         notes: Optional[str] = None,
+        promo_code: Optional[str] = None,
+        invoice_url: Optional[str] = None,
         background_tasks: Optional[BackgroundTasks] = None
     ) -> Order:
         """Create order from user's cart items."""
@@ -166,11 +171,29 @@ class OrderService:
                 "unit_price": product.selling_price,
                 "total_price": item_total
             })
-        
-        # Calculate order totals
+
+        # Enforce seller invoice
+        user_result = await self.session.execute(
+            select(User).where(User.id == user_id)
+        )
+        user = user_result.scalar_one_or_none()
+        if user and user.user_type == UserType.seller:
+            if not invoice_url:
+                raise BadRequestException("Invoice upload is required for sellers")
+
+        # Apply promo code (discount is applied on GST-inclusive subtotal)
+        discount_amount = Decimal("0")
+        normalized_promo_code: Optional[str] = None
+        if promo_code:
+            promo_service = PromoCodeService(self.session)
+            promo = await promo_service.validate_for_subtotal(promo_code, subtotal)
+            discount_amount = promo_service.compute_discount(promo, subtotal)
+            normalized_promo_code = promo.code
+
+        # Calculate order totals (GST-inclusive pricing model)
         shipping_amount = Decimal("0")  # Free shipping for now
-        tax_amount = subtotal * Decimal("0.18")  # 18% GST
-        total_amount = subtotal + shipping_amount + tax_amount
+        total_amount = max(Decimal("0"), subtotal - discount_amount + shipping_amount)
+        tax_amount = total_amount - (total_amount / Decimal("1.18"))
         
         # Create order
         try:
@@ -194,9 +217,12 @@ class OrderService:
                 payment_method=payment_method,
                 notes=notes,
                 subtotal=subtotal,
+                promo_code=normalized_promo_code,
+                discount_amount=discount_amount,
                 shipping_amount=shipping_amount,
                 tax_amount=tax_amount,
                 total_amount=total_amount,
+                invoice_url=invoice_url,
                 placed_at=datetime.utcnow()
             )
             
@@ -245,6 +271,16 @@ class OrderService:
                 await self.session.delete(cart_item)
             
             await self.session.commit()
+
+            # Mark promo as used after successful commit
+            if normalized_promo_code:
+                promo_service = PromoCodeService(self.session)
+                try:
+                    promo = await promo_service.get_by_code(normalized_promo_code)
+                    await promo_service.mark_used(promo)
+                except Exception:
+                    # Non-critical
+                    pass
             
             # Re-fetch order with items eagerly loaded to avoid async lazy load error during serialization
             result = await self.session.execute(
@@ -260,11 +296,12 @@ class OrderService:
         if background_tasks:
             try:
                 # Get user email
-                from app.models.user import User
-                user_result = await self.session.execute(
-                    select(User).where(User.id == user_id)
-                )
-                user = user_result.scalar_one()
+                if not user:
+                    from app.models.user import User as _User
+                    user_result = await self.session.execute(
+                        select(_User).where(_User.id == user_id)
+                    )
+                    user = user_result.scalar_one()
                 
                 background_tasks.add_task(
                     email_service.send_order_confirmation_email,

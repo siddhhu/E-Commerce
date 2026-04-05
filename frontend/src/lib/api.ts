@@ -5,6 +5,20 @@ interface ApiError {
     detail: string;
 }
 
+export interface PromoCode {
+    id: string;
+    code: string;
+    discount_type: 'flat' | 'percent';
+    discount_value: number;
+    max_discount_amount: number;
+    is_active: boolean;
+    max_uses?: number | null;
+    used_count: number;
+    expires_at?: string | null;
+    created_at: string;
+    updated_at: string;
+}
+
 class ApiClient {
     private baseUrl: string;
 
@@ -17,7 +31,6 @@ class ApiClient {
         const headers: HeadersInit = {
             'Content-Type': 'application/json',
         };
-
         // Add auth token if available
         if (typeof window !== 'undefined') {
             const token = localStorage.getItem('access_token');
@@ -121,6 +134,54 @@ class ApiClient {
 }
 
 export const api = new ApiClient();
+
+// Small helper for multipart uploads
+function getApiBaseUrl(): string {
+    const cleanlyStrippedBase = API_BASE_URL.replace(/\/+$/, '');
+    return `${cleanlyStrippedBase}/api/${API_VERSION}`;
+}
+
+async function postMultipart<T>(endpoint: string, formData: FormData): Promise<T> {
+    const headers: HeadersInit = {};
+    if (typeof window !== 'undefined') {
+        const token = localStorage.getItem('access_token');
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    const response = await fetch(`${getApiBaseUrl()}${endpoint}`, {
+        method: 'POST',
+        headers,
+        body: formData,
+    });
+    // Reuse handleResponse (private) is not possible, so mirror behavior
+    if (!response.ok) {
+        let errorMessage = 'An error occurred';
+        try {
+            const errorData = await response.json();
+            if (errorData.detail) errorMessage = errorData.detail;
+        } catch {
+            errorMessage = response.statusText || errorMessage;
+        }
+        throw new Error(errorMessage);
+    }
+    if (response.status === 204) return {} as T;
+    return response.json();
+}
+
+// Promo Codes API
+export const promoCodesApi = {
+    validate: (code: string, subtotal: number) =>
+        api.post<{ code: string; discount_amount: number }>(`/promo-codes/validate`, { code, subtotal }),
+};
+
+// Invoices API
+export const invoicesApi = {
+    upload: async (file: File) => {
+        const formData = new FormData();
+        formData.append('file', file);
+        return postMultipart<{ invoice_url: string }>(`/invoices/upload`, formData);
+    },
+};
 
 // Auth API
 export const authApi = {
@@ -260,7 +321,7 @@ export const ordersApi = {
     get: (orderId: string) =>
         api.get<Order>(`/orders/${orderId}`),
 
-    checkout: (data: { shipping_address_id: string; payment_method: string; notes?: string }) =>
+    checkout: (data: { shipping_address_id: string; payment_method: string; notes?: string; promo_code?: string; invoice_url?: string }) =>
         api.post<Order>('/checkout', data),
 
     cancel: (orderId: string) =>
@@ -335,6 +396,35 @@ export const adminApi = {
     getUser: (id: string) => api.get<User>(`/admin/users/${id}`),
     verifyUser: (id: string, isVerified: boolean = true) => 
         api.post<User>(`/admin/users/${id}/verify?is_verified=${isVerified}`),
+
+    // Promo Codes
+    listPromoCodes: (params?: { page?: number; page_size?: number }) => {
+        const searchParams = new URLSearchParams();
+        if (params) {
+            Object.entries(params).forEach(([key, value]) => {
+                if (value !== undefined) searchParams.append(key, String(value));
+            });
+        }
+        return api.get<{ items: PromoCode[]; total: number; page: number; page_size: number }>(
+            `/admin/promo-codes?${searchParams}`
+        );
+    },
+    createPromoCode: (data: Partial<PromoCode>) => api.post<PromoCode>('/admin/promo-codes', data),
+    updatePromoCode: (id: string, data: Partial<PromoCode>) => api.patch<PromoCode>(`/admin/promo-codes/${id}`, data),
+    deletePromoCode: (id: string) => api.delete(`/admin/promo-codes/${id}`),
+    uploadBannerImage: async (file: File) => {
+        const formData = new FormData();
+        formData.append('file', file);
+        return postMultipart<{ image_url: string }>(`/admin/banners/upload-image`, formData);
+    },
+    uploadProductImage: async (productId: string, file: File, isPrimary: boolean = true) => {
+        const formData = new FormData();
+        formData.append('file', file);
+        return postMultipart<{ id: string; image_url: string }>(
+            `/admin/products/${productId}/images?is_primary=${isPrimary ? 'true' : 'false'}`,
+            formData
+        );
+    },
 };
 
 export interface PaginatedUsersAdmin {
@@ -481,10 +571,12 @@ export interface Order {
     payment_status: string;
     payment_method?: string;
     subtotal: number;
+    promo_code?: string | null;
     discount_amount: number;
     shipping_amount: number;
     tax_amount: number;
     total_amount: number;
+    invoice_url?: string | null;
     product_summary?: string;
     items_count?: number;
     

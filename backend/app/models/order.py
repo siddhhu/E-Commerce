@@ -46,11 +46,15 @@ class OrderBase(SQLModel):
     payment_status: PaymentStatus = Field(default=PaymentStatus.PENDING)
     payment_method: Optional[PaymentMethod] = Field(default=None)
     subtotal: Decimal = Field(max_digits=12, decimal_places=2)
+    promo_code: Optional[str] = Field(default=None, max_length=50)
     discount_amount: Decimal = Field(default=Decimal("0"), max_digits=12, decimal_places=2)
     shipping_amount: Decimal = Field(default=Decimal("0"), max_digits=12, decimal_places=2)
     tax_amount: Decimal = Field(default=Decimal("0"), max_digits=12, decimal_places=2)
     total_amount: Decimal = Field(max_digits=12, decimal_places=2)
     notes: Optional[str] = Field(default=None)
+
+    # Seller invoice upload (stored in Supabase)
+    invoice_url: Optional[str] = Field(default=None, max_length=500)
     
     # Razorpay specific fields
     razorpay_order_id: Optional[str] = Field(default=None, max_length=100)

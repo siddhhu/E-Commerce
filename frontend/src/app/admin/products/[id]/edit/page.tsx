@@ -20,6 +20,7 @@ export default function AdminEditProductPage() {
     
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
+    const [isUploadingImage, setIsUploadingImage] = useState(false);
     
     const [formData, setFormData] = useState({
         name: '',
@@ -61,6 +62,18 @@ export default function AdminEditProductPage() {
         };
         fetchProduct();
     }, [productId, toast]);
+
+    const handleImageUpload = async (file: File) => {
+        setIsUploadingImage(true);
+        try {
+            const res = await adminApi.uploadProductImage(productId, file, true);
+            setFormData((prev) => ({ ...prev, image_url: res.image_url }));
+        } catch (error: any) {
+            toast({ title: 'Image upload failed', description: error.message, variant: 'destructive' });
+        } finally {
+            setIsUploadingImage(false);
+        }
+    };
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
@@ -230,6 +243,21 @@ export default function AdminEditProductPage() {
                                         value={formData.image_url} onChange={handleChange} 
                                         placeholder="https://example.com/image.jpg"
                                     />
+                                    <div className="pt-2">
+                                        <Label>Or upload from device (JPG/PNG/WEBP, max 10MB)</Label>
+                                        <Input
+                                            type="file"
+                                            accept="image/jpeg,image/png,image/webp"
+                                            disabled={isUploadingImage}
+                                            onChange={(e) => {
+                                                const f = e.target.files?.[0];
+                                                if (f) handleImageUpload(f);
+                                            }}
+                                        />
+                                        {isUploadingImage && (
+                                            <div className="text-xs text-slate-500 mt-1">Uploading...</div>
+                                        )}
+                                    </div>
                                     {formData.image_url && (
                                         <div className="mt-2 relative aspect-square rounded-md overflow-hidden bg-slate-100 border">
                                             <img 

@@ -208,6 +208,26 @@ export default function AdminOrderDetailPage({ params }: { params: { id: string 
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="text-sm space-y-4">
+                            {order.promo_code && (
+                                <div>
+                                    <p className="text-slate-500 mb-1">Promo Code</p>
+                                    <p className="font-mono font-medium">{order.promo_code}</p>
+                                </div>
+                            )}
+
+                            {order.invoice_url && (
+                                <div>
+                                    <p className="text-slate-500 mb-1">Invoice</p>
+                                    <a
+                                        href={order.invoice_url}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="text-primary underline font-medium"
+                                    >
+                                        View Invoice
+                                    </a>
+                                </div>
+                            )}
                             <div>
                                 <p className="text-slate-500 mb-1">Method</p>
                                 <p className="font-medium">

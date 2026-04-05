@@ -186,6 +186,10 @@ class ProductService:
             for img in result.scalars():
                 img.is_primary = False
                 self.session.add(img)
+
+            # Keep Product.image_url in sync for primary image.
+            product.image_url = image_url
+            self.session.add(product)
         
         # Get max sort order
         result = await self.session.execute(

@@ -11,15 +11,25 @@ export interface CartItem {
 interface CartState {
     items: CartItem[];
 
+    promo_code: string | null;
+    promo_discount: number;
+    invoice_url: string | null;
+
     // Actions
     addItem: (product: Product, quantity?: number) => void;
     removeItem: (productId: string) => void;
     updateQuantity: (productId: string, quantity: number) => void;
     clearCart: () => void;
 
+    setPromo: (promo: { code: string; discount_amount: number }) => void;
+    clearPromo: () => void;
+    setInvoiceUrl: (invoiceUrl: string) => void;
+    clearInvoiceUrl: () => void;
+
     // Computed
     getItemCount: () => number;
     getSubtotal: () => number;
+    getDiscount: () => number;
     getTax: () => number;
     getTotal: () => number;
 }
@@ -28,6 +38,10 @@ export const useCartStore = create<CartState>()(
     persist(
         (set, get) => ({
             items: [],
+
+            promo_code: null,
+            promo_discount: 0,
+            invoice_url: null,
 
             addItem: (product, quantity = 1) => {
                 set((state) => {
@@ -71,7 +85,23 @@ export const useCartStore = create<CartState>()(
             },
 
             clearCart: () => {
-                set({ items: [] });
+                set({ items: [], promo_code: null, promo_discount: 0, invoice_url: null });
+            },
+
+            setPromo: ({ code, discount_amount }) => {
+                set({ promo_code: code, promo_discount: Math.max(0, Number(discount_amount) || 0) });
+            },
+
+            clearPromo: () => {
+                set({ promo_code: null, promo_discount: 0 });
+            },
+
+            setInvoiceUrl: (invoiceUrl) => {
+                set({ invoice_url: invoiceUrl });
+            },
+
+            clearInvoiceUrl: () => {
+                set({ invoice_url: null });
             },
 
             getItemCount: () => {
@@ -85,8 +115,14 @@ export const useCartStore = create<CartState>()(
                 );
             },
 
-            getTax: () => {
+            getDiscount: () => {
                 const subtotal = get().getSubtotal();
+                const discount = get().promo_discount || 0;
+                return Math.min(subtotal, Math.max(0, discount));
+            },
+
+            getTax: () => {
+                const subtotal = get().getSubtotal() - get().getDiscount();
                 // Prices are GST-inclusive. For 18% GST:
                 // base = subtotal / 1.18
                 // gst = subtotal - base
@@ -95,7 +131,7 @@ export const useCartStore = create<CartState>()(
 
             getTotal: () => {
                 // Total is GST-inclusive already
-                return get().getSubtotal();
+                return get().getSubtotal() - get().getDiscount();
             },
         }),
         {

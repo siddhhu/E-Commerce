@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { LayoutDashboard, ShoppingCart, Package, Image as ImageIcon, Users, LogOut } from 'lucide-react';
+import { LayoutDashboard, ShoppingCart, Package, Image as ImageIcon, Users, LogOut, TicketPercent } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/store/auth-store';
 
@@ -16,6 +16,7 @@ export function AdminSidebar() {
         { name: 'Orders', href: '/admin/orders', icon: ShoppingCart },
         { name: 'Products', href: '/admin/products', icon: Package },
         { name: 'Banners', href: '/admin/banners', icon: ImageIcon },
+        { name: 'Promo Codes', href: '/admin/promo-codes', icon: TicketPercent },
         { name: 'Users', href: '/admin/users', icon: Users },
     ];
 
