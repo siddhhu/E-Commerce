@@ -43,6 +43,7 @@ export const dummyProducts: Product[] = [
         unit: 'pcs',
         is_active: true,
         is_featured: true,
+        image_url: 'https://images.unsplash.com/photo-1586495777744-4413f21062fa?w=500',
         images: [
             { id: 'img-1', image_url: 'https://images.unsplash.com/photo-1586495777744-4413f21062fa?w=500', alt_text: 'Ruby Red Lipstick', is_primary: true }
         ]
@@ -66,6 +67,7 @@ export const dummyProducts: Product[] = [
         unit: 'pcs',
         is_active: true,
         is_featured: true,
+        image_url: 'https://images.unsplash.com/photo-1631214540553-ff044a3ff1d4?w=500',
         images: [
             { id: 'img-2', image_url: 'https://images.unsplash.com/photo-1631214540553-ff044a3ff1d4?w=500', alt_text: 'HD Foundation', is_primary: true }
         ]
@@ -89,6 +91,7 @@ export const dummyProducts: Product[] = [
         unit: 'pcs',
         is_active: true,
         is_featured: true,
+        image_url: 'https://images.unsplash.com/photo-1512496015851-a90fb38ba796?w=500',
         images: [
             { id: 'img-3', image_url: 'https://images.unsplash.com/photo-1512496015851-a90fb38ba796?w=500', alt_text: 'Smokey Eye Palette', is_primary: true }
         ]
@@ -112,6 +115,7 @@ export const dummyProducts: Product[] = [
         unit: 'pcs',
         is_active: true,
         is_featured: false,
+        image_url: 'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=500',
         images: [
             { id: 'img-4', image_url: 'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=500', alt_text: 'Face Serum', is_primary: true }
         ]
@@ -135,6 +139,7 @@ export const dummyProducts: Product[] = [
         unit: 'pcs',
         is_active: true,
         is_featured: false,
+        image_url: 'https://images.unsplash.com/photo-1631214500115-598fc2cb8c8f?w=500',
         images: [
             { id: 'img-5', image_url: 'https://images.unsplash.com/photo-1631214500115-598fc2cb8c8f?w=500', alt_text: 'Mascara', is_primary: true }
         ]
@@ -158,6 +163,7 @@ export const dummyProducts: Product[] = [
         unit: 'pcs',
         is_active: true,
         is_featured: false,
+        image_url: 'https://images.unsplash.com/photo-1619451334792-150fd785ee74?w=500',
         images: [
             { id: 'img-6', image_url: 'https://images.unsplash.com/photo-1619451334792-150fd785ee74?w=500', alt_text: 'Lip Gloss', is_primary: true }
         ]
@@ -181,6 +187,7 @@ export const dummyProducts: Product[] = [
         unit: 'pcs',
         is_active: true,
         is_featured: false,
+        image_url: 'https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=500',
         images: [
             { id: 'img-7', image_url: 'https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=500', alt_text: 'Setting Powder', is_primary: true }
         ]
@@ -204,6 +211,7 @@ export const dummyProducts: Product[] = [
         unit: 'pcs',
         is_active: true,
         is_featured: true,
+        image_url: 'https://images.unsplash.com/photo-1556228720-195a672e8a03?w=500',
         images: [
             { id: 'img-8', image_url: 'https://images.unsplash.com/photo-1556228720-195a672e8a03?w=500', alt_text: 'Face Mist', is_primary: true }
         ]
