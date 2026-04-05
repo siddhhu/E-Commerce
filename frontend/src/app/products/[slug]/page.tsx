@@ -15,7 +15,7 @@ import { dummyProducts, Product } from '@/lib/dummy-data';
 import { productsApi, Product as APIProduct } from '@/lib/api';
 import { useCartStore } from '@/store/cart-store';
 import { useWishlistStore } from '@/store/wishlist-store';
-import { formatPrice, getDiscountPercentage } from '@/lib/utils';
+import { cn, formatPrice, getDiscountPercentage } from '@/lib/utils';
 
 export default function ProductDetailPage() {
     const params = useParams();
@@ -88,16 +88,29 @@ export default function ProductDetailPage() {
     }
 
     const discount = getDiscountPercentage(product.mrp, product.selling_price);
-    const primaryImage = imgError ? '/placeholder.jpg' : (product.images[0]?.image_url || '/placeholder.jpg');
+    const primaryImage = imgError
+        ? '/placeholder.jpg'
+        : (product.image_url || product.images?.find((img) => img.is_primary)?.image_url || product.images?.[0]?.image_url || '/placeholder.jpg');
     const inWishlist = isInWishlist(product.id);
 
     const minOrderQty = Math.max(1, product.min_order_quantity || 1);
     const maxQty = Math.max(minOrderQty, product.stock_quantity || minOrderQty);
-    const effectiveQty = Math.min(Math.max(quantity, minOrderQty), maxQty);
-    const useWholesale = Boolean(product.b2b_price) && effectiveQty >= minOrderQty;
+    
+    // Effective quantity shown to the user
+    const displayQty = Math.min(Math.max(quantity, minOrderQty), maxQty);
+    
+    // Use wholesale price if quantity meets minimum
+    const useWholesale = Boolean(product.b2b_price) && displayQty >= minOrderQty;
     const unitPrice = useWholesale ? Number(product.b2b_price) : Number(product.selling_price);
-    const totalPrice = unitPrice * effectiveQty;
-    const remainingStock = Math.max(0, Number(product.stock_quantity) - effectiveQty);
+    
+    // Total price based on quantity
+    const totalPrice = unitPrice * displayQty;
+    
+    // GST Calculation (18%) for GST-inclusive prices
+    const baseAmount = totalPrice / 1.18;
+    const gstAmount = totalPrice - baseAmount;
+    
+    const remainingStock = Math.max(0, Number(product.stock_quantity) - displayQty);
 
     const mapToStoreProduct = (p: APIProduct): Product => ({
         id: p.id,
@@ -128,17 +141,17 @@ export default function ProductDetailPage() {
 
     const handleAddToCart = () => {
         if (!product) return;
-        addToCart(mapToStoreProduct(product), quantity);
+        addToCart(mapToStoreProduct(product), displayQty);
         toast({
             title: 'Added to Cart',
-            description: `${quantity}x ${product.name} added to your cart`,
+            description: `${displayQty}x ${product.name} added to your cart`,
         });
     };
 
     const handleBuyNow = () => {
         if (!product) return;
-        addToCart(mapToStoreProduct(product), quantity);
-        router.push('/checkout');
+        addToCart(mapToStoreProduct(product), displayQty);
+        router.push('/cart');
     };
 
     const handleToggleWishlist = () => {
@@ -193,64 +206,87 @@ export default function ProductDetailPage() {
                         {/* Product Details */}
                         <div className="space-y-6">
                             <div>
-                                <h1 className="text-3xl font-bold">{product.name}</h1>
+                                <div className="flex items-center gap-2">
+                                    <h1 className="text-3xl font-bold">{product.name}</h1>
+                                    {product.unit && (
+                                        <span className="bg-muted text-muted-foreground text-sm px-2 py-0.5 rounded-full font-medium">
+                                            {product.unit}
+                                        </span>
+                                    )}
+                                </div>
                                 <p className="text-muted-foreground mt-2">{product.short_description}</p>
                             </div>
 
                             {/* Pricing */}
-                            <div className="flex items-center gap-4">
-                                <span className="text-4xl font-bold text-primary">
-                                    {formatPrice(totalPrice)}
-                                </span>
-                                {discount > 0 && (
-                                    <>
-                                        <span className="text-xl text-muted-foreground line-through">
-                                            {formatPrice(product.mrp)}
-                                        </span>
-                                        <span className="bg-green-100 text-green-700 text-sm font-medium px-2 py-1 rounded">
-                                            Save {formatPrice(product.mrp - product.selling_price)}
-                                        </span>
-                                    </>
-                                )}
+                            <div className="space-y-2">
+                                <div className="flex items-center gap-4">
+                                    <span className="text-5xl font-bold text-primary">
+                                        {formatPrice(totalPrice)}
+                                    </span>
+                                    {discount > 0 && (
+                                        <div className="flex flex-col">
+                                            <span className="text-xl text-muted-foreground line-through">
+                                                {formatPrice(product.mrp * displayQty)}
+                                            </span>
+                                            <span className="text-green-600 text-sm font-medium">
+                                                Save {formatPrice((product.mrp - unitPrice) * displayQty)}
+                                            </span>
+                                        </div>
+                                    )}
+                                </div>
+                                
+                                {/* GST Breakdown */}
+                                <div className="text-sm text-muted-foreground border-l-2 border-primary/20 pl-3 py-1 bg-muted/30 rounded-r-md">
+                                    <p>Base Price: <span className="font-medium text-foreground">{formatPrice(baseAmount)}</span></p>
+                                    <p>GST (18%): <span className="font-medium text-foreground">{formatPrice(gstAmount)}</span></p>
+                                    <p className="text-[10px] uppercase tracking-wider font-bold mt-1 text-primary/70">Inclusive of all taxes</p>
+                                </div>
                             </div>
 
-                            {/* Wholesale Price */}
-                            {product.b2b_price && (
-                                <div className="mt-2 p-3 bg-accent rounded-lg">
-                                    <p className="text-sm font-medium">Dealer / Wholesale Price</p>
-                                    <p className="text-2xl font-bold text-primary">{formatPrice(Number(product.b2b_price))}</p>
-                                    <p className="text-xs text-muted-foreground mt-1">
-                                        Applied when quantity is at least {minOrderQty}
+                            {/* Wholesale Price Info */}
+                            {product.b2b_price && !useWholesale && (
+                                <div className="p-3 bg-amber-50 border border-amber-100 rounded-lg">
+                                    <p className="text-xs text-amber-800">
+                                        Buy {minOrderQty} or more to get the wholesale price of <span className="font-bold">{formatPrice(Number(product.b2b_price))}</span>
                                     </p>
                                 </div>
                             )}
 
                             {/* Quantity */}
                             <div className="space-y-2">
-                                <label className="text-sm font-medium">Quantity</label>
+                                <label className="text-sm font-medium">Select Quantity</label>
                                 <div className="flex items-center gap-3">
-                                    <Button
-                                        variant="outline"
-                                        size="icon"
-                                        onClick={() => setQuantity((q) => Math.max(minOrderQty, q - 1))}
-                                    >
-                                        <Minus className="h-4 w-4" />
-                                    </Button>
-                                    <span className="w-12 text-center text-lg font-medium">{effectiveQty}</span>
-                                    <Button
-                                        variant="outline"
-                                        size="icon"
-                                        onClick={() => setQuantity((q) => Math.min(maxQty, q + 1))}
-                                    >
-                                        <Plus className="h-4 w-4" />
-                                    </Button>
-                                    <span className="text-sm text-muted-foreground">
-                                        {remainingStock} in stock
-                                    </span>
+                                    <div className="flex items-center border rounded-lg bg-card">
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-10 w-10 rounded-none rounded-l-lg"
+                                            onClick={() => setQuantity((q) => Math.max(minOrderQty, q - 1))}
+                                        >
+                                            <Minus className="h-4 w-4" />
+                                        </Button>
+                                        <span className="w-12 text-center text-lg font-bold border-x h-10 flex items-center justify-center">
+                                            {displayQty}
+                                        </span>
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-10 w-10 rounded-none rounded-r-lg"
+                                            onClick={() => setQuantity((q) => Math.min(maxQty, q + 1))}
+                                        >
+                                            <Plus className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                    <div className="flex flex-col">
+                                        <span className={cn(
+                                            "text-sm font-semibold",
+                                            remainingStock < 10 ? "text-destructive" : "text-green-600"
+                                        )}>
+                                            {remainingStock} units left
+                                        </span>
+                                        <span className="text-[10px] text-muted-foreground uppercase">Stock Status</span>
+                                    </div>
                                 </div>
-                                <p className="text-xs text-muted-foreground">
-                                    Unit price: {formatPrice(unitPrice)}
-                                </p>
                             </div>
 
                             {/* Actions */}

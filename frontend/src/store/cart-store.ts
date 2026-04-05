@@ -86,11 +86,16 @@ export const useCartStore = create<CartState>()(
             },
 
             getTax: () => {
-                return get().getSubtotal() * 0.18; // 18% GST
+                const subtotal = get().getSubtotal();
+                // Prices are GST-inclusive. For 18% GST:
+                // base = subtotal / 1.18
+                // gst = subtotal - base
+                return subtotal - subtotal / 1.18;
             },
 
             getTotal: () => {
-                return get().getSubtotal() + get().getTax();
+                // Total is GST-inclusive already
+                return get().getSubtotal();
             },
         }),
         {

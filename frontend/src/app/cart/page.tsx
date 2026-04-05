@@ -16,6 +16,9 @@ export default function CartPage() {
     const router = useRouter();
     const { items, removeItem, updateQuantity, getSubtotal, getTax, getTotal, clearCart } = useCartStore();
 
+    const sellerGstName = 'Mahaganpati Pvt Ltd';
+    const sellerGstin = '27ABCDE1234F1Z5';
+
     if (items.length === 0) {
         return (
             <div className="min-h-screen flex flex-col">
@@ -53,12 +56,22 @@ export default function CartPage() {
                                     <div className="flex gap-4 p-4">
                                         {/* Product Image */}
                                         <div className="relative w-24 h-24 rounded-lg overflow-hidden bg-muted shrink-0">
+                                            {(() => {
+                                                const imageUrl =
+                                                    item.product.image_url ||
+                                                    item.product.images?.find((img) => img.is_primary)?.image_url ||
+                                                    item.product.images?.[0]?.image_url ||
+                                                    '/placeholder.jpg';
+
+                                                return (
                                             <Image
-                                                src={item.product.images[0]?.image_url}
+                                                src={imageUrl}
                                                 alt={item.product.name}
                                                 fill
                                                 className="object-cover"
                                             />
+                                                );
+                                            })()}
                                         </div>
 
                                         {/* Product Details */}
@@ -134,7 +147,7 @@ export default function CartPage() {
                                         <span>{formatPrice(getSubtotal())}</span>
                                     </div>
                                     <div className="flex justify-between">
-                                        <span className="text-muted-foreground">GST (18%)</span>
+                                        <span className="text-muted-foreground">GST (18%) (included)</span>
                                         <span>{formatPrice(getTax())}</span>
                                     </div>
                                     <div className="flex justify-between">
@@ -145,6 +158,12 @@ export default function CartPage() {
                                         <span>Total</span>
                                         <span className="text-primary">{formatPrice(getTotal())}</span>
                                     </div>
+
+							<div className="border-t pt-4 space-y-1 text-sm">
+								<div className="font-semibold">Sold by</div>
+								<div>{sellerGstName}</div>
+								<div className="text-muted-foreground">GSTIN: {sellerGstin}</div>
+							</div>
                                 </CardContent>
                                 <CardFooter>
                                     <Button

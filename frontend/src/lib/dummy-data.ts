@@ -19,6 +19,7 @@ export interface Product {
     unit: string;
     is_active: boolean;
     is_featured: boolean;
+    image_url?: string;
     images: { id: string; image_url: string; alt_text: string; is_primary: boolean }[];
 }
 
