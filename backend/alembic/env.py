@@ -2,6 +2,7 @@
 Alembic Environment Configuration
 """
 import asyncio
+import os
 from logging.config import fileConfig
 
 from sqlalchemy import pool
@@ -24,6 +25,13 @@ if db_url.startswith("postgresql://"):
     db_url = db_url.replace("postgresql://", "postgresql+asyncpg://", 1)
 elif db_url.startswith("postgres://"):
     db_url = db_url.replace("postgres://", "postgresql+asyncpg://", 1)
+
+# Keep migrations consistent with runtime DB behavior on serverless.
+# Vercel/Lambda cannot connect to Supabase direct Postgres port 5432; it must use
+# the Transaction Pooler (pgBouncer) on port 6543.
+is_serverless = bool(os.environ.get("VERCEL") or os.environ.get("AWS_LAMBDA_FUNCTION_NAME"))
+if is_serverless and ":5432/" in db_url:
+    db_url = db_url.replace(":5432/", ":6543/")
 config.set_main_option("sqlalchemy.url", db_url)
 
 # Interpret the config file for Python logging
