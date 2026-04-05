@@ -56,12 +56,20 @@ class StorageService:
                 
                 async with httpx.AsyncClient(timeout=30.0) as client:
                     response = await client.post(api_url, content=file_content, headers=headers)
-                    if response.status_code == 200:
+                    if response.status_code in (200, 201):
                         return f"{base_url}/storage/v1/object/public/{self.bucket}/{unique_name}"
                     else:
                         print(f"REST Upload failed ({response.status_code}): {response.text}")
             except Exception as e:
                 print(f"REST Upload Exception: {e}")
+
+        # On serverless platforms (e.g., Vercel), the filesystem is read-only except /tmp.
+        # If Supabase isn't configured, we should fail fast instead of attempting local writes.
+        is_serverless = bool(os.environ.get("VERCEL") or os.environ.get("AWS_LAMBDA_FUNCTION_NAME"))
+        if is_serverless:
+            if not (settings.supabase_url and settings.supabase_key):
+                print("Storage upload failed: Supabase not configured (missing SUPABASE_URL/SUPABASE_KEY) and local filesystem uploads are unavailable on serverless")
+            return None
 
         # Local filesystem fallback
         try:
