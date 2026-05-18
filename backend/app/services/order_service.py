@@ -184,7 +184,7 @@ class OrderService:
         # Calculate order totals (GST-inclusive pricing model)
         shipping_amount = Decimal("0")  # Free shipping for now
         total_amount = max(Decimal("0"), subtotal - discount_amount + shipping_amount)
-        tax_amount = total_amount - (total_amount / Decimal("1.18"))
+        tax_amount = (total_amount - (total_amount / Decimal("1.18"))).quantize(Decimal("0.01"))
         
         # Create order
         try:
