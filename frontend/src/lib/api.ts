@@ -347,6 +347,12 @@ export const ordersApi = {
 
 // Admin API
 export const adminApi = {
+    // Categories
+    listCategories: () => api.get<CategoryRead[]>('/admin/categories'),
+    createCategory: (data: Partial<CategoryRead>) => api.post<CategoryRead>('/admin/categories', data),
+    updateCategory: (id: string, data: Partial<CategoryRead>) => api.patch<CategoryRead>(`/admin/categories/${id}`, data),
+    deleteCategory: (id: string) => api.delete(`/admin/categories/${id}`),
+
     // Dashboard
     getDashboardStats: (date?: string) => 
         api.get<DashboardStats>(date ? `/admin/dashboard?date=${date}` : '/admin/dashboard'),
@@ -555,6 +561,8 @@ export interface ProductSummary {
     stock_quantity: number;
     is_featured: boolean;
     primary_image?: string;
+    seller_id?: string;
+    seller_name?: string;
 }
 
 export interface PaginatedProducts {

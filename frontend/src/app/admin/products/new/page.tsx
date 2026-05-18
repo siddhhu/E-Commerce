@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { adminApi } from '@/lib/api';
+import { adminApi, CategoryRead } from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,6 +17,19 @@ export default function AdminAddProductPage() {
     const { toast } = useToast();
     const [isLoading, setIsLoading] = useState(false);
     const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
+    const [categories, setCategories] = useState<CategoryRead[]>([]);
+    
+    useEffect(() => {
+        const fetchCategories = async () => {
+            try {
+                const cats = await adminApi.listCategories();
+                setCategories(cats);
+            } catch (err) {
+                console.error("Failed to load categories:", err);
+            }
+        };
+        fetchCategories();
+    }, []);
     
     // Using a simple state object for the form
     const [formData, setFormData] = useState({
@@ -28,10 +41,11 @@ export default function AdminAddProductPage() {
         short_description: '',
         description: '',
         image_url: '',
+        category_id: '',
         is_active: true
     });
 
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value, type } = e.target;
         
         // For number inputs, if empty, keep as empty string to allow clearing
@@ -76,6 +90,7 @@ export default function AdminAddProductPage() {
                 short_description: formData.short_description,
                 description: formData.description,
                 image_url: formData.image_url,
+                category_id: formData.category_id || undefined,
                 is_active: formData.is_active,
                 slug: formData.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '') || `product-${Date.now()}`
             });
@@ -144,6 +159,21 @@ export default function AdminAddProductPage() {
                                         placeholder="Detailed HTML or text description..."
                                         className="h-32"
                                     />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="category_id">Category</Label>
+                                    <select
+                                        id="category_id"
+                                        name="category_id"
+                                        value={formData.category_id}
+                                        onChange={handleChange}
+                                        className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                    >
+                                        <option value="">Select a category</option>
+                                        {categories.map(cat => (
+                                            <option key={cat.id} value={cat.id}>{cat.name}</option>
+                                        ))}
+                                    </select>
                                 </div>
                             </CardContent>
                         </Card>

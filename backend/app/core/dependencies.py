@@ -74,7 +74,8 @@ async def get_current_admin(
     This allows sellers to access /admin/* routes (orders, products, dashboard)
     while super-admin-only routes still use get_current_super_admin.
     """
-    is_admin = current_user.role in [UserRole.ADMIN, UserRole.SUPER_ADMIN]
+    role_val = getattr(current_user.role, 'value', str(current_user.role)).upper()
+    is_admin = role_val in ["ADMIN", "SUPER_ADMIN"]
     is_approved_seller = (
         current_user.seller_status == "approved"
         and current_user.user_type == "seller"

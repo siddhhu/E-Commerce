@@ -20,6 +20,7 @@ from app.routers.admin import orders as admin_orders
 from app.routers.admin import promo_codes as admin_promo_codes
 from app.routers.admin import products as admin_products
 from app.routers.admin import users as admin_users
+from app.routers.admin import categories as admin_categories
 
 
 @asynccontextmanager
@@ -97,6 +98,9 @@ app.include_router(
 )
 app.include_router(
     admin_products.router, prefix=f"{API_PREFIX}/admin/products", tags=["Admin - Products"]
+)
+app.include_router(
+    admin_categories.router, prefix=f"{API_PREFIX}/admin/categories", tags=["Admin - Categories"]
 )
 app.include_router(
     admin_orders.router, prefix=f"{API_PREFIX}/admin/orders", tags=["Admin - Orders"]

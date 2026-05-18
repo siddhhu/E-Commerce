@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { adminApi, Product } from '@/lib/api';
+import { adminApi, Product, CategoryRead } from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,6 +21,7 @@ export default function AdminEditProductPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [isUploadingImage, setIsUploadingImage] = useState(false);
+    const [categories, setCategories] = useState<CategoryRead[]>([]);
     
     const [formData, setFormData] = useState({
         name: '',
@@ -31,14 +32,19 @@ export default function AdminEditProductPage() {
         short_description: '',
         description: '',
         image_url: '',
+        category_id: '',
         is_active: true
     });
 
     useEffect(() => {
-        const fetchProduct = async () => {
+        const fetchProductAndCategories = async () => {
             if (!productId) return;
             try {
-                const product = await adminApi.getProduct(productId);
+                const [product, cats] = await Promise.all([
+                    adminApi.getProduct(productId),
+                    adminApi.listCategories()
+                ]);
+                setCategories(cats);
                 setFormData({
                     name: product.name || '',
                     sku: product.sku || '',
@@ -48,6 +54,7 @@ export default function AdminEditProductPage() {
                     short_description: product.short_description || '',
                     description: product.description || '',
                     image_url: product.image_url || '',
+                    category_id: product.category_id || '',
                     is_active: product.is_active
                 });
             } catch (error: any) {
@@ -60,7 +67,7 @@ export default function AdminEditProductPage() {
                 setIsLoading(false);
             }
         };
-        fetchProduct();
+        fetchProductAndCategories();
     }, [productId, toast]);
 
     const handleImageUpload = async (file: File) => {
@@ -75,7 +82,7 @@ export default function AdminEditProductPage() {
         }
     };
 
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
     };
@@ -94,6 +101,7 @@ export default function AdminEditProductPage() {
                 short_description: formData.short_description,
                 description: formData.description,
                 image_url: formData.image_url,
+                category_id: formData.category_id || undefined,
                 is_active: formData.is_active
             });
 
@@ -162,6 +170,21 @@ export default function AdminEditProductPage() {
                                         value={formData.description} onChange={handleChange} 
                                         className="h-32"
                                     />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="category_id">Category</Label>
+                                    <select
+                                        id="category_id"
+                                        name="category_id"
+                                        value={formData.category_id}
+                                        onChange={handleChange}
+                                        className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                    >
+                                        <option value="">Select a category</option>
+                                        {categories.map(cat => (
+                                            <option key={cat.id} value={cat.id}>{cat.name}</option>
+                                        ))}
+                                    </select>
                                 </div>
                             </CardContent>
                         </Card>

@@ -11,6 +11,7 @@ import { formatCurrency } from '@/lib/utils';
 import Link from 'next/link';
 import Image from 'next/image';
 import { BulkUploadModal } from '@/components/admin/BulkUploadModal';
+import { useAuthStore } from '@/store/auth-store';
 
 export default function AdminProductsPage() {
     const [productsData, setProductsData] = useState<PaginatedProducts | null>(null);
@@ -18,6 +19,10 @@ export default function AdminProductsPage() {
     const [filters, setFilters] = useState({ page: 1, page_size: 10, search: '' });
     const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
     const { toast } = useToast();
+    const { user } = useAuthStore();
+    
+    const role = (user?.role || '').toString().toLowerCase();
+    const isAdmin = role === 'admin' || role === 'super_admin';
 
     const fetchProducts = async () => {
         setIsLoading(true);
@@ -92,6 +97,7 @@ export default function AdminProductsPage() {
                                         <th className="px-6 py-4">SKU</th>
                                         <th className="px-6 py-4">Price</th>
                                         <th className="px-6 py-4">Inventory</th>
+                                        {isAdmin && <th className="px-6 py-4">Added By</th>}
                                         <th className="px-6 py-4 text-center">Actions</th>
                                     </tr>
                                 </thead>
@@ -134,6 +140,13 @@ export default function AdminProductsPage() {
                                                     {product.stock_quantity} in stock
                                                 </span>
                                             </td>
+                                            {isAdmin && (
+                                                <td className="px-6 py-4">
+                                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-800 border">
+                                                        {product.seller_name || 'Pranjay'}
+                                                    </span>
+                                                </td>
+                                            )}
                                             <td className="px-6 py-4 text-center">
                                                 <Link href={`/admin/products/${product.id}/edit`}>
                                                     <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
