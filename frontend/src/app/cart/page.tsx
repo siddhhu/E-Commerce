@@ -32,15 +32,17 @@ export default function CartPage() {
     } = useCartStore();
 
     const { user } = useAuthStore();
+    const role = (user?.role || '').toString().toLowerCase();
+    const isAdminOrSeller = user && (
+        role === 'admin' || role === 'super_admin' ||
+        (user.seller_status === 'approved' && user.user_type === 'seller')
+    );
 
     const [imgErrors, setImgErrors] = useState<Record<string, boolean>>({});
 
     const [promoInput, setPromoInput] = useState('');
     const [isApplyingPromo, setIsApplyingPromo] = useState(false);
     const [promoError, setPromoError] = useState<string | null>(null);
-
-    const sellerGstName = 'MAHAGANPATI';
-    const sellerGstin = '10ACEFM4547Q1ZY';
 
     if (items.length === 0) {
         return (
@@ -243,17 +245,23 @@ export default function CartPage() {
                                         <span className="text-primary">{formatPrice(getTotal())}</span>
                                     </div>
 
-							<div className="border-t pt-4 space-y-1 text-sm">
-								<div className="font-semibold">Sold by</div>
-								<div>{sellerGstName}</div>
-								<div className="text-muted-foreground">GSTIN: {sellerGstin}</div>
-							</div>
                                 </CardContent>
+                                {/* Admin/Seller block banner */}
+                                {isAdminOrSeller && (
+                                    <div className="mx-4 mb-3 rounded-lg bg-amber-50 border border-amber-200 p-3 text-sm text-amber-800 flex items-start gap-2">
+                                        <span className="text-lg leading-none">⚠️</span>
+                                        <div>
+                                            <p className="font-semibold">Admin / Seller account</p>
+                                            <p className="text-xs mt-0.5">You cannot place orders with this account. Please use a separate customer account.</p>
+                                        </div>
+                                    </div>
+                                )}
                                 <CardFooter>
                                 <Button
                                         className="w-full"
                                         size="lg"
                                         onClick={() => router.push('/checkout')}
+                                        disabled={!!isAdminOrSeller}
                                     >
                                         Proceed to Checkout
                                         <ArrowRight className="ml-2 h-4 w-4" />

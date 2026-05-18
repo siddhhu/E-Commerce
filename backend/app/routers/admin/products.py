@@ -37,26 +37,32 @@ async def list_products_admin(
     current_user: User = Depends(get_current_admin),
     session: AsyncSession = Depends(get_session)
 ):
-    """List all products (admin view)."""
+    """List products. Sellers see only their own products; admins see all."""
+    from app.models.user import UserRole
     product_service = ProductService(session)
-    
+
     skip = (page - 1) * page_size
-    
+    is_admin = current_user.role in [UserRole.ADMIN, UserRole.SUPER_ADMIN]
+    # Sellers only see their own products
+    seller_id_filter = None if is_admin else current_user.id
+
     products = await product_service.list_products(
         skip=skip,
         limit=page_size,
         category_id=category_id,
         brand_id=brand_id,
         is_active=is_active,
-        search=search
+        search=search,
+        seller_id=seller_id_filter
     )
-    
+
     total = await product_service.count_products(
         category_id=category_id,
         brand_id=brand_id,
-        is_active=is_active
+        is_active=is_active,
+        seller_id=seller_id_filter
     )
-    
+
     return PaginatedProductsAdmin(
         items=products,
         total=total,
@@ -71,8 +77,13 @@ async def create_product(
     current_user: User = Depends(get_current_admin),
     session: AsyncSession = Depends(get_session)
 ):
-    """Create a new product."""
+    """Create a new product. Seller attribution is captured automatically."""
+    from app.models.user import UserRole
     product_service = ProductService(session)
+    is_admin = current_user.role in [UserRole.ADMIN, UserRole.SUPER_ADMIN]
+    # Sellers own the products they create; admins create store (Pranjay) products
+    data.seller_id = None if is_admin else current_user.id
+    data.seller_name = "Pranjay" if is_admin else (current_user.business_name or current_user.full_name or "Seller")
     return await product_service.create_product(data)
 
 

@@ -218,6 +218,13 @@ export default function ProductDetailPage() {
                                         </span>
                                     )}
                                 </div>
+                                {/* Sold by badge */}
+                                <div className="flex items-center gap-1.5 mt-1.5">
+                                    <span className="text-xs text-muted-foreground">Sold by</span>
+                                    <span className="text-xs font-semibold text-primary bg-primary/8 border border-primary/20 rounded-full px-2.5 py-0.5">
+                                        {(product as any).seller_name || 'Pranjay'}
+                                    </span>
+                                </div>
                                 <p className="text-muted-foreground mt-2">{product.short_description}</p>
                             </div>
 

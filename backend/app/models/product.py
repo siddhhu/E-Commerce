@@ -13,6 +13,7 @@ if TYPE_CHECKING:
     from app.models.cart import CartItem
     from app.models.category import Category
     from app.models.wishlist import WishlistItem
+    from app.models.user import User
 
 
 class ProductBase(SQLModel):
@@ -31,6 +32,9 @@ class ProductBase(SQLModel):
     is_active: bool = Field(default=True)
     is_featured: bool = Field(default=False)
     image_url: Optional[str] = Field(default=None, max_length=500)
+    # Seller attribution
+    seller_id: Optional[UUID] = Field(default=None, foreign_key="users.id")
+    seller_name: Optional[str] = Field(default="Pranjay", max_length=255)
 
 
 class Product(ProductBase, table=True):
@@ -89,6 +93,9 @@ class ProductCreate(SQLModel):
     unit: str = "pcs"
     attributes: dict = {}
     is_featured: bool = False
+    # Seller attribution — set by the router based on current_user
+    seller_id: Optional[UUID] = None
+    seller_name: Optional[str] = "Pranjay"
 
 
 class ProductUpdate(SQLModel):
@@ -126,6 +133,8 @@ class ProductRead(ProductBase):
     created_at: datetime
     updated_at: datetime
     images: list[ProductImageRead] = []
+    seller_id: Optional[UUID] = None
+    seller_name: Optional[str] = "Pranjay"
 
 
 class ProductListRead(SQLModel):
@@ -142,3 +151,5 @@ class ProductListRead(SQLModel):
     is_featured: bool
     image_url: Optional[str] = None
     primary_image: Optional[str] = None
+    seller_id: Optional[UUID] = None
+    seller_name: Optional[str] = "Pranjay"

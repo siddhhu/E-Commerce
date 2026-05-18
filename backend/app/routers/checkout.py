@@ -34,10 +34,20 @@ async def checkout(
 ):
     """
     Create order from cart.
-    Validates stock, creates order, sends notifications.
-    Sellers no longer need to upload an invoice at checkout —
-    the registration invoice is uploaded once during seller onboarding.
+    Admin and seller accounts cannot place orders — they must use a customer account.
     """
+    from app.core.exceptions import ForbiddenException
+    from app.models.user import UserRole
+
+    # Block admin/seller accounts from placing orders
+    is_admin = current_user.role in [UserRole.ADMIN, UserRole.SUPER_ADMIN]
+    is_seller = current_user.seller_status == "approved" and current_user.user_type == "seller"
+    if is_admin or is_seller:
+        raise ForbiddenException(
+            "Admin and seller accounts cannot place orders. "
+            "Please use a separate customer account to make purchases."
+        )
+
     order_service = OrderService(session)
 
     order = await order_service.create_order_from_cart(

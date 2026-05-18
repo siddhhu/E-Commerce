@@ -53,11 +53,12 @@ class ProductService:
         is_featured: Optional[bool] = None,
         search: Optional[str] = None,
         min_price: Optional[float] = None,
-        max_price: Optional[float] = None
+        max_price: Optional[float] = None,
+        seller_id: Optional[UUID] = None
     ) -> list[Product]:
-        """List products with filters."""
+        """List products with filters. Pass seller_id to restrict to that seller's products."""
         query = select(Product).options(selectinload(Product.images))
-        
+
         if is_active is not None:
             query = query.where(Product.is_active == is_active)
         if category_id:
@@ -75,9 +76,11 @@ class ProductService:
             query = query.where(Product.selling_price >= min_price)
         if max_price is not None:
             query = query.where(Product.selling_price <= max_price)
-        
+        if seller_id is not None:
+            query = query.where(Product.seller_id == seller_id)
+
         query = query.offset(skip).limit(limit).order_by(Product.created_at.desc())
-        
+
         result = await self.session.execute(query)
         return result.scalars().all()
     
@@ -85,20 +88,23 @@ class ProductService:
         self,
         category_id: Optional[UUID] = None,
         brand_id: Optional[UUID] = None,
-        is_active: bool = True
+        is_active: bool = True,
+        seller_id: Optional[UUID] = None
     ) -> int:
         """Count products with filters."""
         from sqlalchemy import func
-        
+
         query = select(func.count(Product.id))
-        
+
         if is_active is not None:
             query = query.where(Product.is_active == is_active)
         if category_id:
             query = query.where(Product.category_id == category_id)
         if brand_id:
             query = query.where(Product.brand_id == brand_id)
-        
+        if seller_id is not None:
+            query = query.where(Product.seller_id == seller_id)
+
         result = await self.session.execute(query)
         return result.scalar() or 0
     

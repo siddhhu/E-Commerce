@@ -158,14 +158,32 @@ export default function CheckoutPage() {
     };
 
     useEffect(() => {
-        if (_hasHydrated && !isAuthLoading && !isAuthenticated) {
+        if (!_hasHydrated || isAuthLoading) return;
+
+        if (!isAuthenticated) {
             toast({
                 title: 'Authentication Required',
                 description: 'Please login to complete your checkout.',
             });
             router.push('/login?redirect=/checkout');
+            return;
         }
-    }, [isAuthenticated, isAuthLoading, _hasHydrated, router, toast]);
+
+        // Block admin/seller from checkout
+        const role = (user?.role || '').toString().toLowerCase();
+        const isAdminOrSeller = (
+            role === 'admin' || role === 'super_admin' ||
+            (user?.seller_status === 'approved' && user?.user_type === 'seller')
+        );
+        if (isAdminOrSeller) {
+            toast({
+                title: '⚠️ Admin / Seller Account',
+                description: 'You cannot place orders with this account. Please use a separate customer account.',
+                variant: 'destructive',
+            });
+            router.push('/cart');
+        }
+    }, [isAuthenticated, isAuthLoading, _hasHydrated, user, router, toast]);
 
 
     const handlePlaceOrder = async () => {

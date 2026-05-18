@@ -44,18 +44,73 @@ async def list_orders_admin(
     current_user: User = Depends(get_current_admin),
     session: AsyncSession = Depends(get_session)
 ):
-    """List all orders (admin)."""
+    """
+    List orders.
+    - Super admin / Admin: sees ALL orders
+    - Approved seller: sees only orders containing their products
+    """
+    from sqlalchemy import func, distinct
+    from sqlmodel import select
+    from app.models.order import Order
+    from app.models.user import UserRole
+
+    is_admin = current_user.role in [UserRole.ADMIN, UserRole.SUPER_ADMIN]
     order_service = OrderService(session)
-    
     skip = (page - 1) * page_size
-    
-    orders = await order_service.list_all_orders(
-        skip=skip,
-        limit=page_size,
-        status=status,
-        payment_status=payment_status
-    )
-    
+
+    if is_admin:
+        # Full visibility
+        orders = await order_service.list_all_orders(
+            skip=skip,
+            limit=page_size,
+            status=status,
+            payment_status=payment_status
+        )
+        count_query = select(func.count(Order.id))
+        if status:
+            count_query = count_query.where(Order.status == status)
+        if payment_status:
+            count_query = count_query.where(Order.payment_status == payment_status)
+        result = await session.execute(count_query)
+        total = result.scalar() or 0
+    else:
+        # Seller: only orders that contain at least one of their products
+        from app.models.order import OrderItem
+        from app.models.product import Product
+
+        seller_order_ids_q = (
+            select(distinct(OrderItem.order_id))
+            .join(Product, Product.id == OrderItem.product_id)
+            .where(Product.seller_id == current_user.id)
+        )
+        seller_order_ids = (await session.execute(seller_order_ids_q)).scalars().all()
+
+        if not seller_order_ids:
+            return PaginatedOrdersAdmin(items=[], total=0, page=page, page_size=page_size)
+
+        from sqlalchemy import and_
+        from sqlalchemy.orm import selectinload as sil
+
+        order_q = (
+            select(Order)
+            .options(sil(Order.items), sil(Order.user))
+            .where(Order.id.in_(seller_order_ids))
+        )
+        if status:
+            order_q = order_q.where(Order.status == status)
+        if payment_status:
+            order_q = order_q.where(Order.payment_status == payment_status)
+        order_q = order_q.order_by(Order.created_at.desc()).offset(skip).limit(page_size)
+
+        orders = (await session.execute(order_q)).scalars().all()
+
+        count_q = select(func.count(Order.id)).where(Order.id.in_(seller_order_ids))
+        if status:
+            count_q = count_q.where(Order.status == status)
+        if payment_status:
+            count_q = count_q.where(Order.payment_status == payment_status)
+        total = (await session.execute(count_q)).scalar() or 0
+
     items = []
     for order in orders:
         items.append(OrderListRead(
@@ -71,20 +126,7 @@ async def list_orders_admin(
             placed_at=order.placed_at,
             created_at=order.created_at
         ))
-    
-    # Count total
-    from sqlalchemy import func
-    from sqlmodel import select
-    from app.models.order import Order
-    
-    count_query = select(func.count(Order.id))
-    if status:
-        count_query = count_query.where(Order.status == status)
-    if payment_status:
-        count_query = count_query.where(Order.payment_status == payment_status)
-    result = await session.execute(count_query)
-    total = result.scalar() or 0
-    
+
     return PaginatedOrdersAdmin(
         items=items,
         total=total,
