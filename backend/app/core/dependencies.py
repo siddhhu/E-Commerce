@@ -67,8 +67,19 @@ async def get_current_active_user(
 async def get_current_admin(
     current_user: User = Depends(get_current_active_user)
 ) -> User:
-    """Get current admin user."""
-    if current_user.role not in [UserRole.ADMIN, UserRole.SUPER_ADMIN]:
+    """
+    Get current admin OR approved seller user.
+    - Admins/SuperAdmins: pass via role check
+    - Approved sellers: pass via seller_status check
+    This allows sellers to access /admin/* routes (orders, products, dashboard)
+    while super-admin-only routes still use get_current_super_admin.
+    """
+    is_admin = current_user.role in [UserRole.ADMIN, UserRole.SUPER_ADMIN]
+    is_approved_seller = (
+        current_user.seller_status == "approved"
+        and current_user.user_type == "seller"
+    )
+    if not is_admin and not is_approved_seller:
         raise ForbiddenException("Admin access required")
     return current_user
 
