@@ -163,7 +163,7 @@ class EmailService:
         tracking_section = ""
         if tracking_info:
             tracking_section = f"<p><strong>Tracking:</strong> {tracking_info}</p>"
-        
+
         try:
             params = {
                 "from": self.from_email,
@@ -191,6 +191,76 @@ class EmailService:
             print(f"Error sending shipped email: {e}")
             return False
 
+    async def send_seller_application_received(
+        self,
+        to_email: str,
+        business_name: str = None
+    ) -> bool:
+        """Notify seller that their application has been received and is under review."""
+        display_name = business_name or "there"
+        try:
+            params = {
+                "from": self.from_email,
+                "to": [to_email],
+                "subject": "Seller Application Received — Pranjay",
+                "html": f"""
+                    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                        <h2 style="color: #1a1a1a;">Application Received!</h2>
+                        <p>Hi {display_name},</p>
+                        <p>Thank you for applying to sell on <strong>Pranjay</strong>. We've received your registration document and your application is now <strong>under review</strong>.</p>
+                        <div style="background: #fff8e1; border-left: 4px solid #f59e0b; padding: 16px; margin: 20px 0;">
+                            <p style="margin: 0;"><strong>Next step:</strong> Please contact <a href="mailto:admin@pranjay.com">admin@pranjay.com</a> to follow up on your approval. The admin will share your login credentials once approved.</p>
+                        </div>
+                        <p>Once approved, you will receive a <strong>@pranjay.com username</strong> and password that you can use to log in and start listing your products.</p>
+                        <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+                        <p style="color: #666; font-size: 12px;">&copy; 2024 Pranjay. All rights reserved.</p>
+                    </div>
+                """
+            }
+            resend.Emails.send(params)
+            return True
+        except Exception as e:
+            print(f"Error sending seller application received email: {e}")
+            return False
+
+    async def send_seller_application_to_admin(
+        self,
+        admin_email: str,
+        seller_name: str,
+        seller_phone: str,
+        business_name: str,
+        gst_number: str,
+        invoice_url: str,
+        user_id: str
+    ) -> bool:
+        """Notify admin of a new seller application awaiting review."""
+        try:
+            params = {
+                "from": self.from_email,
+                "to": [admin_email],
+                "subject": f"🆕 New Seller Application — {business_name or seller_name}",
+                "html": f"""
+                    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                        <h2 style="color: #1a1a1a;">New Seller Application</h2>
+                        <div style="background: #f5f5f5; padding: 20px; margin: 20px 0;">
+                            <p><strong>Name:</strong> {seller_name}</p>
+                            <p><strong>Phone:</strong> {seller_phone}</p>
+                            <p><strong>Business:</strong> {business_name or '—'}</p>
+                            <p><strong>GST:</strong> {gst_number or '—'}</p>
+                            <p><strong>Invoice:</strong> <a href="{invoice_url}">View Document</a></p>
+                            <p><strong>User ID:</strong> {user_id}</p>
+                        </div>
+                        <p>Please review and approve/reject this application in the <strong>Admin Panel → Seller Applications</strong> tab.</p>
+                    </div>
+                """
+            }
+            resend.Emails.send(params)
+            return True
+        except Exception as e:
+            print(f"Error sending seller application admin email: {e}")
+            return False
+
 
 # Singleton instance
 email_service = EmailService()
+

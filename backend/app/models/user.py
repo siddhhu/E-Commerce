@@ -29,6 +29,14 @@ class UserRole(str, enum.Enum):
     SUPER_ADMIN = "SUPER_ADMIN"
 
 
+class SellerStatus(str, enum.Enum):
+    """Seller application status."""
+    none = "none"          # Not a seller / hasn't applied
+    pending = "pending"    # Applied, awaiting admin approval
+    approved = "approved"  # Approved — has @pranjay.com credentials
+    rejected = "rejected"  # Rejected by admin
+
+
 class UserBase(SQLModel):
     """User base fields."""
     email: str = Field(unique=True, index=True, max_length=255)
@@ -44,6 +52,15 @@ class UserBase(SQLModel):
     is_active: bool = Field(default=True)
     is_verified: bool = Field(default=False)
     hashed_password: Optional[str] = Field(default=None)
+
+    # Seller onboarding fields
+    seller_status: SellerStatus = Field(default=SellerStatus.none)
+    seller_invoice_url: Optional[str] = Field(default=None)      # Document uploaded at registration
+    seller_username: Optional[str] = Field(default=None, max_length=255)  # Generated @pranjay.com email
+    # Plain password stored temporarily for super-admin to read & share.
+    # Cleared after admin acknowledges. Stored as-is (not hashed) — super-admin
+    # reads it once from the panel then shares it to the seller manually.
+    seller_plain_password: Optional[str] = Field(default=None)
 
 
 class User(UserBase, table=True):
@@ -92,3 +109,13 @@ class UserRead(UserBase):
     id: UUID
     created_at: datetime
     updated_at: datetime
+
+
+class SellerCredentialsRead(SQLModel):
+    """One-time response after seller approval — includes plain password."""
+    id: UUID
+    seller_username: str
+    seller_plain_password: str
+    seller_status: SellerStatus
+    business_name: Optional[str] = None
+    full_name: Optional[str] = None

@@ -38,7 +38,7 @@ function validateDoc(type: string, value: string): boolean {
 export default function CheckoutPage() {
     const router = useRouter();
     const { toast } = useToast();
-    const { items, getSubtotal, getDiscount, getTax, getTotal, clearCart, promo_code, invoice_url } = useCartStore();
+    const { items, getSubtotal, getDiscount, getTax, getTotal, clearCart, promo_code } = useCartStore();
     const { addOrder } = useOrderStore();
     const { isAuthenticated, isLoading: isAuthLoading, _hasHydrated, user, setUser } = useAuthStore();
 
@@ -164,18 +164,9 @@ export default function CheckoutPage() {
                 description: 'Please login to complete your checkout.',
             });
             router.push('/login?redirect=/checkout');
-            return;
         }
+    }, [isAuthenticated, isAuthLoading, _hasHydrated, router, toast]);
 
-        if (user?.user_type === 'seller' && !invoice_url) {
-            toast({
-                title: 'Invoice Required',
-                description: 'Sellers must upload an invoice on the cart page before placing an order.',
-                variant: 'destructive',
-            });
-            return;
-        }
-    }, [isAuthenticated, isAuthLoading, _hasHydrated, router, toast, user, invoice_url]);
 
     const handlePlaceOrder = async () => {
         if (!validateForm()) return;
@@ -212,12 +203,10 @@ export default function CheckoutPage() {
             // Wait for address and basic tasks (sync/profile)
             const [savedAddress] = await Promise.all([addressTask, syncTask, profileTask]);
 
-            // 4. Create order (needs address ID)
             const createdOrder = await ordersApi.checkout({
                 shipping_address_id: savedAddress.id,
                 payment_method: paymentMethod,
                 promo_code: promo_code || undefined,
-                invoice_url: invoice_url || undefined,
             });
 
             if (paymentMethod === 'cod') {

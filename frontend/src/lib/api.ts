@@ -220,6 +220,14 @@ export const authApi = {
             user: User;
         }>('/auth/refresh', { refresh_token: refreshToken }),
 
+    sellerLogin: (username: string, password: string) =>
+        api.post<{
+            access_token: string;
+            refresh_token: string;
+            token_type: string;
+            user: User;
+        }>('/auth/seller/login', { username, password }),
+
     updateProfile: (data: { 
         full_name?: string; 
         business_name?: string; 
@@ -237,6 +245,14 @@ export const usersApi = {
     getAddresses: () => api.get<Address[]>('/users/me/addresses'),
     createAddress: (data: Omit<Address, 'id' | 'user_id' | 'created_at' | 'updated_at'>) =>
         api.post<Address>('/users/me/addresses', data),
+    submitSellerApplication: async (file: File) => {
+        // 1. Upload the document file
+        const formData = new FormData();
+        formData.append('file', file);
+        const { invoice_url } = await postMultipart<{ invoice_url: string }>('/invoices/upload', formData);
+        // 2. Submit the application with the uploaded URL
+        return api.post<User>('/users/me/seller-application', { invoice_url });
+    },
 };
 
 // Products API
@@ -321,7 +337,7 @@ export const ordersApi = {
     get: (orderId: string) =>
         api.get<Order>(`/orders/${orderId}`),
 
-    checkout: (data: { shipping_address_id: string; payment_method: string; notes?: string; promo_code?: string; invoice_url?: string }) =>
+    checkout: (data: { shipping_address_id: string; payment_method: string; notes?: string; promo_code?: string }) =>
         api.post<Order>('/checkout', data),
 
     cancel: (orderId: string) =>
@@ -397,6 +413,11 @@ export const adminApi = {
     verifyUser: (id: string, isVerified: boolean = true) => 
         api.post<User>(`/admin/users/${id}/verify?is_verified=${isVerified}`),
 
+    // Seller Applications (super admin only)
+    listPendingSellers: () => api.get<User[]>('/admin/users/sellers/pending'),
+    approveSeller: (id: string) => api.post<SellerCredentials>(`/admin/users/${id}/approve-seller`),
+    rejectSeller: (id: string) => api.post<User>(`/admin/users/${id}/reject-seller`),
+
     // Promo Codes
     listPromoCodes: (params?: { page?: number; page_size?: number }) => {
         const searchParams = new URLSearchParams();
@@ -466,11 +487,25 @@ export interface User {
     aadhaar?: string;
     shop_license?: string;
     user_type: 'seller' | 'customer';
-    role: 'customer' | 'admin' | 'super_admin';
+    role: 'customer' | 'admin' | 'super_admin' | 'CUSTOMER' | 'ADMIN' | 'SUPER_ADMIN';
     is_active: boolean;
     is_verified: boolean;
+    // Seller onboarding fields
+    seller_status?: 'none' | 'pending' | 'approved' | 'rejected';
+    seller_invoice_url?: string | null;
+    seller_username?: string | null;
+    seller_plain_password?: string | null;
     created_at: string;
     updated_at: string;
+}
+
+export interface SellerCredentials {
+    id: string;
+    seller_username: string;
+    seller_plain_password: string;
+    seller_status: string;
+    business_name?: string;
+    full_name?: string;
 }
 
 export interface Product {

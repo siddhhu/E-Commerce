@@ -23,7 +23,6 @@ class CheckoutRequest(BaseModel):
     payment_method: str
     notes: Optional[str] = None
     promo_code: Optional[str] = None
-    invoice_url: Optional[str] = None
 
 
 @router.post("", response_model=OrderRead, status_code=201)
@@ -36,17 +35,18 @@ async def checkout(
     """
     Create order from cart.
     Validates stock, creates order, sends notifications.
+    Sellers no longer need to upload an invoice at checkout —
+    the registration invoice is uploaded once during seller onboarding.
     """
     order_service = OrderService(session)
-    
+
     order = await order_service.create_order_from_cart(
         user_id=current_user.id,
         shipping_address_id=data.shipping_address_id,
         payment_method=data.payment_method,
         notes=data.notes,
         promo_code=data.promo_code,
-        invoice_url=data.invoice_url,
         background_tasks=background_tasks
     )
-    
+
     return order

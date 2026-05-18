@@ -1,13 +1,14 @@
 """
 Auth Router - Authentication endpoints
 """
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel
+from sqlmodel import select
 
 from app.database import get_session
 from app.models.otp import OTPRequest, OTPVerify
-from app.models.user import UserRead
+from app.models.user import User, UserRead, SellerStatus
 from app.services.auth_service import AuthService
 from app.services.otp_service import OTPService
 from app.services.email_service import email_service
@@ -45,6 +46,12 @@ class AdminLoginRequest(BaseModel):
     password: str
 
 
+class SellerLoginRequest(BaseModel):
+    """Seller login — uses the generated @pranjay.com credentials."""
+    username: str   # e.g. mybrand1234@pranjay.com
+    password: str
+
+
 @router.post("/request-otp", response_model=MessageResponse)
 async def request_otp(
     data: OTPRequest,
@@ -56,16 +63,16 @@ async def request_otp(
     """
     otp_service = OTPService(session)
     auth_service = AuthService(session)
-    
+
     # Get or create user
     user, is_new = await auth_service.get_or_create_user(data.email)
-    
+
     # Generate and store OTP
     otp = await otp_service.create_otp(data.email, user.id)
-    
+
     # Send OTP email
     await email_service.send_otp_email(data.email, otp)
-    
+
     return {"message": "OTP sent to your email"}
 
 
@@ -80,24 +87,23 @@ async def verify_firebase(
     """
     # 1. Verify token with Firebase Admin
     decoded_token = await firebase_service.verify_id_token(data.id_token)
-    
+
     # 2. Extract phone number
     phone_number = decoded_token.get("phone_number")
     if not phone_number:
-        from fastapi import HTTPException, status
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Firebase token does not contain a phone number. Please use Phone Authentication."
         )
-        
+
     auth_service = AuthService(session)
-    
+
     # 3. Get or create user by phone
     user, is_new = await auth_service.get_or_create_user_by_phone(phone_number)
-    
+
     # 4. Generate tokens
     tokens = auth_service.generate_tokens(user)
-    
+
     return TokenResponse(
         access_token=tokens["access_token"],
         refresh_token=tokens["refresh_token"],
@@ -117,21 +123,21 @@ async def verify_otp(
     """
     otp_service = OTPService(session)
     auth_service = AuthService(session)
-    
+
     # Verify OTP
     await otp_service.verify_otp(data.email, data.otp)
-    
+
     # Get user and mark as verified
     user = await auth_service.get_user_by_email(data.email)
     user = await auth_service.mark_user_verified(user)
-    
+
     # Generate tokens
     tokens = auth_service.generate_tokens(user)
-    
+
     # Send welcome email for new users
     if user.is_verified:
         await email_service.send_welcome_email(data.email, user.full_name)
-    
+
     return TokenResponse(
         access_token=tokens["access_token"],
         refresh_token=tokens["refresh_token"],
@@ -150,16 +156,60 @@ async def admin_login(
     """
     auth_service = AuthService(session)
     user = await auth_service.authenticate_admin(data.email, data.password)
-    
+
     if not user:
-        from fastapi import HTTPException, status
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid email or password or inadequate permissions",
         )
-        
+
     tokens = auth_service.generate_tokens(user)
-    
+
+    return TokenResponse(
+        access_token=tokens["access_token"],
+        refresh_token=tokens["refresh_token"],
+        token_type=tokens["token_type"],
+        user=UserRead.model_validate(user)
+    )
+
+
+@router.post("/seller/login", response_model=TokenResponse)
+async def seller_login(
+    data: SellerLoginRequest,
+    session: AsyncSession = Depends(get_session)
+):
+    """
+    Login for approved sellers using their generated @pranjay.com credentials.
+    Only works when seller_status == approved.
+    """
+    from app.core.security import verify_password
+
+    result = await session.execute(
+        select(User).where(User.seller_username == data.username)
+    )
+    user = result.scalar_one_or_none()
+
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid username or password."
+        )
+
+    if user.seller_status != SellerStatus.approved:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Your seller account is not yet approved. Please contact admin@pranjay.com."
+        )
+
+    if not user.hashed_password or not verify_password(data.password, user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid username or password."
+        )
+
+    auth_service = AuthService(session)
+    tokens = auth_service.generate_tokens(user)
+
     return TokenResponse(
         access_token=tokens["access_token"],
         refresh_token=tokens["refresh_token"],
@@ -177,16 +227,16 @@ async def refresh_token(
     Refresh access token using refresh token.
     """
     auth_service = AuthService(session)
-    
+
     tokens = await auth_service.refresh_tokens(data.refresh_token)
-    
+
     # Get user for response
     from app.core.security import verify_refresh_token
     from uuid import UUID
-    
+
     payload = verify_refresh_token(data.refresh_token)
     user = await auth_service.get_user_by_id(UUID(payload["sub"]))
-    
+
     return TokenResponse(
         access_token=tokens["access_token"],
         refresh_token=tokens["refresh_token"],

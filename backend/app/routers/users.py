@@ -152,3 +152,55 @@ async def delete_address(
     
     await session.delete(address)
     await session.commit()
+
+
+# ── Seller Application ────────────────────────────────────────────────────────
+
+from pydantic import BaseModel as _BaseModel
+from fastapi import BackgroundTasks
+
+
+class SellerApplicationRequest(_BaseModel):
+    """Submit a seller registration application."""
+    invoice_url: str    # URL of the uploaded document (already in Supabase Storage)
+
+
+@router.post("/me/seller-application", response_model=UserRead, status_code=200)
+async def submit_seller_application(
+    data: SellerApplicationRequest,
+    background_tasks: BackgroundTasks,
+    current_user: User = Depends(get_current_active_user),
+    session: AsyncSession = Depends(get_session)
+):
+    """
+    Submit a seller registration application.
+    - Upload your registration invoice/document first (via the storage endpoint).
+    - Pass the resulting URL here.
+    - Status becomes 'pending'. Admin is notified by email.
+    - You will receive a confirmation email with next steps.
+    """
+    from app.config import settings
+    from app.services.email_service import email_service
+
+    user_service = UserService(session)
+    user = await user_service.submit_seller_application(current_user.id, data.invoice_url)
+
+    # Fire notification emails in background
+    background_tasks.add_task(
+        email_service.send_seller_application_received,
+        user.email,
+        user.business_name
+    )
+    background_tasks.add_task(
+        email_service.send_seller_application_to_admin,
+        settings.admin_email,
+        user.full_name or user.email,
+        user.phone or "—",
+        user.business_name or "—",
+        user.gst_number or "—",
+        data.invoice_url,
+        str(user.id)
+    )
+
+    return user
+

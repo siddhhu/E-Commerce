@@ -4,13 +4,13 @@ Admin Users Router
 from typing import Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic import BaseModel
 
 from app.core.dependencies import get_current_admin, get_current_super_admin
 from app.database import get_session
-from app.models.user import User, UserRead, UserRole
+from app.models.user import User, UserRead, UserRole, SellerCredentialsRead
 from app.services.user_service import UserService
 
 router = APIRouter()
@@ -40,21 +40,21 @@ async def list_users_admin(
 ):
     """List all users (admin)."""
     user_service = UserService(session)
-    
+
     skip = (page - 1) * page_size
-    
+
     users = await user_service.list_users(
         skip=skip,
         limit=page_size,
         role=role,
         is_active=is_active
     )
-    
+
     total = await user_service.count_users(
         role=role,
         is_active=is_active
     )
-    
+
     return PaginatedUsersAdmin(
         items=[UserRead.model_validate(u) for u in users],
         total=total,
@@ -118,3 +118,57 @@ async def verify_user(
     """Verify/Approve a user (B2B)."""
     user_service = UserService(session)
     return await user_service.verify_user(user_id, is_verified)
+
+
+# ── Seller Application Management (Super Admin only) ─────────────────────────
+
+@router.get("/sellers/pending", response_model=list[UserRead])
+async def list_pending_sellers(
+    current_user: User = Depends(get_current_super_admin),
+    session: AsyncSession = Depends(get_session)
+):
+    """
+    List all sellers whose applications are pending approval.
+    Super admin only.
+    """
+    user_service = UserService(session)
+    return await user_service.list_pending_sellers()
+
+
+@router.post("/{user_id}/approve-seller", response_model=SellerCredentialsRead)
+async def approve_seller(
+    user_id: UUID,
+    background_tasks: BackgroundTasks,
+    current_user: User = Depends(get_current_super_admin),
+    session: AsyncSession = Depends(get_session)
+):
+    """
+    Approve a seller application (super admin only).
+    Generates a @pranjay.com username and a random password.
+    Returns the plain credentials — admin must share these with the seller manually.
+    The plain password is stored temporarily so it can be retrieved again from this panel.
+    """
+    user_service = UserService(session)
+    user, plain_password = await user_service.approve_seller(user_id)
+
+    return SellerCredentialsRead(
+        id=user.id,
+        seller_username=user.seller_username,
+        seller_plain_password=plain_password,
+        seller_status=user.seller_status,
+        business_name=user.business_name,
+        full_name=user.full_name
+    )
+
+
+@router.post("/{user_id}/reject-seller", response_model=UserRead)
+async def reject_seller(
+    user_id: UUID,
+    current_user: User = Depends(get_current_super_admin),
+    session: AsyncSession = Depends(get_session)
+):
+    """
+    Reject a seller application (super admin only).
+    """
+    user_service = UserService(session)
+    return await user_service.reject_seller(user_id)

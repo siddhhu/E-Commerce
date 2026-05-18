@@ -118,7 +118,6 @@ class OrderService:
         payment_method: str,
         notes: Optional[str] = None,
         promo_code: Optional[str] = None,
-        invoice_url: Optional[str] = None,
         background_tasks: Optional[BackgroundTasks] = None
     ) -> Order:
         """Create order from user's cart items."""
@@ -172,14 +171,6 @@ class OrderService:
                 "total_price": item_total
             })
 
-        # Enforce seller invoice
-        user_result = await self.session.execute(
-            select(User).where(User.id == user_id)
-        )
-        user = user_result.scalar_one_or_none()
-        if user and user.user_type == UserType.seller:
-            if not invoice_url:
-                raise BadRequestException("Invoice upload is required for sellers")
 
         # Apply promo code (discount is applied on GST-inclusive subtotal)
         discount_amount = Decimal("0")
@@ -222,7 +213,6 @@ class OrderService:
                 shipping_amount=shipping_amount,
                 tax_amount=tax_amount,
                 total_amount=total_amount,
-                invoice_url=invoice_url,
                 placed_at=datetime.utcnow()
             )
             
