@@ -64,6 +64,19 @@ export default function ProfileSetupPage() {
             return;
         }
 
+        // GST is mandatory for sellers — validate format
+        if (businessType === 'seller') {
+            if (!gstNumber.trim()) {
+                toast({ title: 'GST Number required', description: 'Please enter your 15-digit GST number to register as a seller.', variant: 'destructive' });
+                return;
+            }
+            const GST_REGEX = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
+            if (!GST_REGEX.test(gstNumber.trim())) {
+                toast({ title: 'Invalid GST Number', description: 'GST must be 15 characters: e.g. 27AABCU9603R1ZV (2 digits + 5 letters + 4 digits + 4 chars)', variant: 'destructive' });
+                return;
+            }
+        }
+
         setIsLoading(true);
         try {
             const updatedUser = await authApi.updateProfile({
@@ -387,26 +400,54 @@ export default function ProfileSetupPage() {
                         {businessType === 'seller' && (
                             <>
                                 <div className="space-y-2">
-                                    <Label htmlFor="business_name">Business / Shop Name</Label>
+                                    <Label htmlFor="business_name">Business / Shop Name *</Label>
                                     <Input
                                         id="business_name"
                                         type="text"
                                         placeholder="Your shop or company name"
                                         value={businessName}
                                         onChange={(e) => setBusinessName(e.target.value)}
+                                        required
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor="gst_number">GST Number <span className="text-muted-foreground font-normal text-xs">(optional)</span></Label>
+                                    <Label htmlFor="gst_number" className="flex items-center gap-1">
+                                        GST Number
+                                        <span className="text-red-500 ml-0.5">*</span>
+                                        {gstNumber.length === 15 && /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/.test(gstNumber) && (
+                                            <span className="text-green-600 text-xs font-normal ml-2">✓ Valid</span>
+                                        )}
+                                    </Label>
                                     <Input
                                         id="gst_number"
                                         type="text"
                                         placeholder="e.g. 27AABCU9603R1ZV"
                                         value={gstNumber}
-                                        onChange={(e) => setGstNumber(e.target.value.toUpperCase())}
-                                        className="font-mono"
+                                        onChange={(e) => setGstNumber(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''))}
+                                        className={`font-mono ${
+                                            gstNumber.length > 0 && gstNumber.length < 15
+                                                ? 'border-amber-400 focus-visible:ring-amber-400'
+                                                : gstNumber.length === 15 && !/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/.test(gstNumber)
+                                                ? 'border-red-400 focus-visible:ring-red-400'
+                                                : ''
+                                        }`}
                                         maxLength={15}
+                                        required
                                     />
+                                    <div className="text-xs space-y-0.5">
+                                        {gstNumber.length === 0 && (
+                                            <p className="text-muted-foreground">Format: 2 digits (state) + 5 letters (PAN) + 4 digits + 1 letter + 1 char + Z + 1 char</p>
+                                        )}
+                                        {gstNumber.length > 0 && gstNumber.length < 15 && (
+                                            <p className="text-amber-600">{15 - gstNumber.length} more characters needed</p>
+                                        )}
+                                        {gstNumber.length === 15 && !/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/.test(gstNumber) && (
+                                            <p className="text-red-500">Invalid GST format. Example: 27AABCU9603R1ZV</p>
+                                        )}
+                                        {gstNumber.length === 15 && /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/.test(gstNumber) && (
+                                            <p className="text-green-600">✓ Valid GST number</p>
+                                        )}
+                                    </div>
                                 </div>
                             </>
                         )}

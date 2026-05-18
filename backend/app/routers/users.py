@@ -1,7 +1,8 @@
 """
 Users Router - User profile endpoints
 """
-from fastapi import APIRouter, Depends
+import re
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.dependencies import get_current_active_user
@@ -11,6 +12,9 @@ from app.models.address import Address, AddressCreate, AddressRead, AddressUpdat
 from app.services.user_service import UserService
 
 router = APIRouter()
+
+# Indian GST format: 2 digits (state) + 5 alpha (PAN prefix) + 4 digits + 1 alpha + 1 alphanum + Z + 1 alphanum
+_GST_RE = re.compile(r'^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$')
 
 
 @router.get("/me", response_model=UserRead)
@@ -27,7 +31,18 @@ async def update_current_user_profile(
     current_user: User = Depends(get_current_active_user),
     session: AsyncSession = Depends(get_session)
 ):
-    """Update current user's profile."""
+    """Update current user's profile. GST number is mandatory for sellers."""
+    # Server-side GST validation for sellers
+    if data.user_type == "seller" or (data.user_type is None and current_user.user_type == "seller"):
+        if data.gst_number is not None:
+            gst = data.gst_number.strip().upper()
+            if gst and not _GST_RE.match(gst):
+                raise HTTPException(
+                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    detail="Invalid GST number format. Must be 15 characters, e.g. 27AABCU9603R1ZV"
+                )
+            data.gst_number = gst or None
+
     user_service = UserService(session)
     updated_user = await user_service.update_user(current_user.id, data)
     return updated_user
