@@ -359,9 +359,43 @@ export default function AdminUsersPage() {
                                                 </Badge>
                                             </div>
                                             {selected.seller_username && (
-                                                <div>
-                                                    <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Seller Username</p>
-                                                    <p className="font-mono text-xs mt-0.5">{selected.seller_username}</p>
+                                                <div className="space-y-3">
+                                                    <div>
+                                                        <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Seller Username</p>
+                                                        <div className="flex items-center gap-2 mt-0.5">
+                                                            <code className="text-xs font-mono bg-slate-100 px-2 py-1 rounded">
+                                                                {selected.seller_username}
+                                                            </code>
+                                                            <Button
+                                                                size="sm" variant="ghost" className="h-6 w-6 p-0"
+                                                                onClick={() => copyToClipboard(selected.seller_username!)}
+                                                            >
+                                                                <Copy className="h-3 w-3" />
+                                                            </Button>
+                                                        </div>
+                                                    </div>
+                                                    {selected.seller_plain_password && (
+                                                        <div>
+                                                            <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Seller Password</p>
+                                                            <div className="flex items-center gap-2 mt-0.5">
+                                                                <code className="text-xs font-mono bg-slate-100 px-2 py-1 rounded">
+                                                                    {showPasswordFor === selected.id ? selected.seller_plain_password : '••••••••••••'}
+                                                                </code>
+                                                                <Button
+                                                                    size="sm" variant="ghost" className="h-6 w-6 p-0"
+                                                                    onClick={() => setShowPasswordFor(showPasswordFor === selected.id ? null : selected.id)}
+                                                                >
+                                                                    {showPasswordFor === selected.id ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+                                                                </Button>
+                                                                <Button
+                                                                    size="sm" variant="ghost" className="h-6 w-6 p-0"
+                                                                    onClick={() => copyToClipboard(selected.seller_plain_password!)}
+                                                                >
+                                                                    <Copy className="h-3 w-3" />
+                                                                </Button>
+                                                            </div>
+                                                        </div>
+                                                    )}
                                                 </div>
                                             )}
                                             {selected.seller_invoice_url && (
