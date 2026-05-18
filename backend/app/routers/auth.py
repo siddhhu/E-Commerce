@@ -8,7 +8,7 @@ from sqlmodel import select
 
 from app.database import get_session
 from app.models.otp import OTPRequest, OTPVerify
-from app.models.user import User, UserRead, SellerStatus
+from app.models.user import User, UserRead
 from app.services.auth_service import AuthService
 from app.services.otp_service import OTPService
 from app.services.email_service import email_service
@@ -195,10 +195,10 @@ async def seller_login(
             detail="Invalid username or password."
         )
 
-    if user.seller_status != SellerStatus.approved:
+    if user.seller_status != "approved":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Your seller account is not yet approved. Please contact admin@pranjay.com."
+            detail="Your seller account is not yet approved. Please contact pawantheblizz@gmail.com.",
         )
 
     if not user.hashed_password or not verify_password(data.password, user.hashed_password):

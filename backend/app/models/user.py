@@ -6,6 +6,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Optional
 from uuid import UUID, uuid4
 
+import sqlalchemy as sa
 from sqlmodel import Field, Relationship, SQLModel
 
 if TYPE_CHECKING:
@@ -51,14 +52,20 @@ class UserBase(SQLModel):
     pan: Optional[str] = Field(default=None, max_length=10)
     aadhaar: Optional[str] = Field(default=None, max_length=12)
     shop_license: Optional[str] = Field(default=None, max_length=50)
-    user_type: UserType = Field(default=UserType.seller)
+    # Default to 'customer' — new phone-registered users are customers by default
+    user_type: UserType = Field(default=UserType.customer)
     role: UserRole = Field(default=UserRole.CUSTOMER)
     is_active: bool = Field(default=True)
     is_verified: bool = Field(default=False)
     hashed_password: Optional[str] = Field(default=None)
 
     # Seller onboarding fields
-    seller_status: SellerStatus = Field(default=SellerStatus.none)
+    # seller_status is stored as plain VARCHAR in the DB (not a PG enum type)
+    # Using sa_column to prevent SQLModel from trying to cast as 'sellerstatus' PG type
+    seller_status: str = Field(
+        default="none",
+        sa_column=sa.Column(sa.String(20), default="none", nullable=False, server_default="none")
+    )
     seller_invoice_url: Optional[str] = Field(default=None)      # Document uploaded at registration
     seller_username: Optional[str] = Field(default=None, max_length=255)  # Generated @pranjay.com email
     # Plain password stored temporarily for super-admin to read & share.
@@ -92,7 +99,7 @@ class UserCreate(SQLModel):
     pan: Optional[str] = None
     aadhaar: Optional[str] = None
     shop_license: Optional[str] = None
-    user_type: UserType = UserType.seller
+    user_type: UserType = UserType.customer
 
 
 class UserUpdate(SQLModel):
@@ -120,6 +127,6 @@ class SellerCredentialsRead(SQLModel):
     id: UUID
     seller_username: str
     seller_plain_password: str
-    seller_status: SellerStatus
+    seller_status: str   # "approved", "pending", "rejected", "none"
     business_name: Optional[str] = None
     full_name: Optional[str] = None

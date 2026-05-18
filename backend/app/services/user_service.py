@@ -143,11 +143,11 @@ class UserService:
         """
         user = await self.get_user_by_id(user_id)
 
-        if user.seller_status == SellerStatus.approved:
+        if user.seller_status == "approved":
             raise BadRequestException("Your seller account is already approved.")
 
         user.seller_invoice_url = invoice_url
-        user.seller_status = SellerStatus.pending
+        user.seller_status = "pending"
         user.updated_at = datetime.utcnow()
 
         self.session.add(user)
@@ -159,7 +159,7 @@ class UserService:
     async def list_pending_sellers(self) -> list[User]:
         """List all sellers awaiting approval."""
         result = await self.session.execute(
-            select(User).where(User.seller_status == SellerStatus.pending)
+            select(User).where(User.seller_status == "pending")
             .order_by(User.updated_at.asc())
         )
         return result.scalars().all()
@@ -204,7 +204,7 @@ class UserService:
         """
         user = await self.get_user_by_id(user_id)
 
-        if user.seller_status == SellerStatus.approved:
+        if user.seller_status == "approved":
             # Already approved — return existing credentials
             return user, user.seller_plain_password or ""
 
@@ -214,7 +214,7 @@ class UserService:
         user.seller_username = username
         user.seller_plain_password = plain_password          # plain — admin reads this
         user.hashed_password = hash_password(plain_password) # used by login endpoint
-        user.seller_status = SellerStatus.approved
+        user.seller_status = "approved"
         user.is_verified = True
         user.updated_at = datetime.utcnow()
 
@@ -228,7 +228,7 @@ class UserService:
         """Super-admin rejects a seller application."""
         user = await self.get_user_by_id(user_id)
 
-        user.seller_status = SellerStatus.rejected
+        user.seller_status = "rejected"
         user.updated_at = datetime.utcnow()
 
         self.session.add(user)
