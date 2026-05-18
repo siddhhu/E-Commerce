@@ -186,11 +186,14 @@ async def submit_seller_application(
     user = await user_service.submit_seller_application(current_user.id, data.invoice_url)
 
     # Fire notification emails in background
-    background_tasks.add_task(
-        email_service.send_seller_application_received,
-        user.email,
-        user.business_name
-    )
+    # Use contact_email if set (login email is auto-generated from phone for OTP users)
+    notify_to = user.contact_email or user.email
+    if user.contact_email:
+        background_tasks.add_task(
+            email_service.send_seller_application_received,
+            notify_to,
+            user.business_name
+        )
     background_tasks.add_task(
         email_service.send_seller_application_to_admin,
         settings.admin_email,
@@ -203,4 +206,5 @@ async def submit_seller_application(
     )
 
     return user
+
 

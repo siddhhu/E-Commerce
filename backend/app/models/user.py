@@ -43,6 +43,10 @@ class UserBase(SQLModel):
     phone: Optional[str] = Field(default=None, max_length=20)
     full_name: Optional[str] = Field(default=None, max_length=255)
     business_name: Optional[str] = Field(default=None, max_length=255)
+    # contact_email: optional email for notifications (separate from login email/phone-based email)
+    # When users register via phone OTP, their login 'email' is auto-generated from the phone.
+    # This field lets them provide a real email to receive approvals, order updates etc.
+    contact_email: Optional[str] = Field(default=None, max_length=255)
     gst_number: Optional[str] = Field(default=None, max_length=15)
     pan: Optional[str] = Field(default=None, max_length=10)
     aadhaar: Optional[str] = Field(default=None, max_length=12)
@@ -58,8 +62,6 @@ class UserBase(SQLModel):
     seller_invoice_url: Optional[str] = Field(default=None)      # Document uploaded at registration
     seller_username: Optional[str] = Field(default=None, max_length=255)  # Generated @pranjay.com email
     # Plain password stored temporarily for super-admin to read & share.
-    # Cleared after admin acknowledges. Stored as-is (not hashed) — super-admin
-    # reads it once from the panel then shares it to the seller manually.
     seller_plain_password: Optional[str] = Field(default=None)
 
 
@@ -85,6 +87,7 @@ class UserCreate(SQLModel):
     phone: Optional[str] = None
     full_name: Optional[str] = None
     business_name: Optional[str] = None
+    contact_email: Optional[str] = None
     gst_number: Optional[str] = None
     pan: Optional[str] = None
     aadhaar: Optional[str] = None
@@ -97,6 +100,7 @@ class UserUpdate(SQLModel):
     phone: Optional[str] = None
     full_name: Optional[str] = None
     business_name: Optional[str] = None
+    contact_email: Optional[str] = None
     gst_number: Optional[str] = None
     pan: Optional[str] = None
     aadhaar: Optional[str] = None

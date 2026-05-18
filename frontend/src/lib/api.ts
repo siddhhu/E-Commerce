@@ -231,6 +231,7 @@ export const authApi = {
     updateProfile: (data: { 
         full_name?: string; 
         business_name?: string; 
+        contact_email?: string;
         gst_number?: string; 
         pan?: string;
         aadhaar?: string;
@@ -482,6 +483,7 @@ export interface User {
     phone?: string;
     full_name?: string;
     business_name?: string;
+    contact_email?: string | null;
     gst_number?: string;
     pan?: string;
     aadhaar?: string;

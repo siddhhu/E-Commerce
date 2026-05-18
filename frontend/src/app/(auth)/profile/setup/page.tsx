@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { Loader2, User as UserIcon, Upload, CheckCircle2, Clock, XCircle, FileText } from 'lucide-react';
+import { Loader2, User as UserIcon, Upload, CheckCircle2, Clock, XCircle, FileText, Mail } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -17,12 +17,13 @@ export default function ProfileSetupPage() {
     const { user, setUser, isAuthenticated, isLoading: isAuthLoading } = useAuthStore();
 
     const [name, setName] = useState('');
-    const [businessType, setBusinessType] = useState<'seller' | 'customer'>('seller');
+    const [businessType, setBusinessType] = useState<'seller' | 'customer'>('customer');
     const [businessName, setBusinessName] = useState('');
+    const [contactEmail, setContactEmail] = useState('');
     const [gstNumber, setGstNumber] = useState('');
     const [isLoading, setIsLoading] = useState(false);
 
-    // Seller invoice upload
+    // Step: 'profile' → fill details, 'invoice' → upload document (sellers only)
     const [step, setStep] = useState<'profile' | 'invoice'>('profile');
     const [invoiceFile, setInvoiceFile] = useState<File | null>(null);
     const [isUploadingInvoice, setIsUploadingInvoice] = useState(false);
@@ -32,24 +33,36 @@ export default function ProfileSetupPage() {
         if (!isAuthLoading) {
             if (!isAuthenticated) {
                 router.push('/login');
-            } else if (user?.full_name && user.full_name !== user.phone && user.full_name.trim() !== '') {
-                // Already has a profile — if seller and pending/approved, skip setup
-                if (user.user_type === 'seller' && user.seller_status && user.seller_status !== 'none') {
-                    router.push('/');
-                } else if (user.user_type === 'customer') {
-                    router.push('/');
-                }
-                // If seller with seller_status === 'none', stay here to complete invoice
-                if (user.user_type === 'seller' && (!user.seller_status || user.seller_status === 'none')) {
-                    setStep('invoice');
-                }
+                return;
+            }
+            // Pre-fill if partially set up
+            if (user?.full_name && user.full_name !== user.phone) {
+                setName(user.full_name);
+            }
+            if (user?.contact_email) setContactEmail(user.contact_email);
+            if (user?.business_name) setBusinessName(user.business_name);
+            if (user?.gst_number) setGstNumber(user.gst_number);
+            if (user?.user_type) setBusinessType(user.user_type as 'seller' | 'customer');
+
+            // If seller and already has pending/approved status, go straight to invoice step
+            if (user?.user_type === 'seller' && user?.seller_status && user.seller_status !== 'none') {
+                setStep('invoice');
             }
         }
     }, [isAuthenticated, isAuthLoading, user, router]);
 
     const handleSaveProfile = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!name.trim()) return;
+        if (!name.trim()) {
+            toast({ title: 'Name required', description: 'Please enter your full name', variant: 'destructive' });
+            return;
+        }
+
+        // Basic email validation if provided
+        if (contactEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactEmail)) {
+            toast({ title: 'Invalid email', description: 'Please enter a valid email address', variant: 'destructive' });
+            return;
+        }
 
         setIsLoading(true);
         try {
@@ -57,18 +70,15 @@ export default function ProfileSetupPage() {
                 full_name: name.trim(),
                 user_type: businessType,
                 business_name: businessName.trim() || undefined,
+                contact_email: contactEmail.trim() || undefined,
                 gst_number: gstNumber.trim() || undefined,
             });
             setUser(updatedUser);
 
             if (businessType === 'seller') {
-                // Move to invoice upload step
                 setStep('invoice');
             } else {
-                toast({
-                    title: 'Profile Updated',
-                    description: 'Welcome to Pranjay!',
-                });
+                toast({ title: 'Profile saved!', description: 'Welcome to Pranjay!' });
                 router.push('/');
             }
         } catch (error: any) {
@@ -86,7 +96,7 @@ export default function ProfileSetupPage() {
         if (!invoiceFile) {
             toast({
                 title: 'Document Required',
-                description: 'Please upload your registration invoice or business document.',
+                description: 'Please upload your business registration document.',
                 variant: 'destructive',
             });
             return;
@@ -97,7 +107,9 @@ export default function ProfileSetupPage() {
             setUser(updatedUser);
             toast({
                 title: '✅ Application Submitted!',
-                description: 'Your seller application is under review. Contact admin@pranjay.com to follow up.',
+                description: contactEmail
+                    ? `Your seller application is under review. We'll email you at ${contactEmail} once approved.`
+                    : 'Your seller application is under review. Contact pawantheblizz@gmail.com to follow up.',
             });
             router.push('/');
         } catch (error: any) {
@@ -119,7 +131,7 @@ export default function ProfileSetupPage() {
         );
     }
 
-    // ── Invoice Upload Step ────────────────────────────────────────────────────
+    // ── Invoice Upload / Status Step ────────────────────────────────────────
     if (step === 'invoice') {
         const sellerStatus = user?.seller_status;
         return (
@@ -139,44 +151,67 @@ export default function ProfileSetupPage() {
                         </div>
                         <CardTitle className="text-2xl">
                             {sellerStatus === 'pending'
-                                ? '⏳ Awaiting Approval'
+                                ? '⏳ Application Under Review'
                                 : sellerStatus === 'approved'
                                 ? '✅ Seller Account Active'
                                 : sellerStatus === 'rejected'
                                 ? '❌ Application Rejected'
-                                : 'Upload Seller Document'}
+                                : '📄 Upload Business Document'}
                         </CardTitle>
                         <CardDescription>
                             {sellerStatus === 'pending'
-                                ? 'Your application is under review. Contact admin@pranjay.com to follow up.'
+                                ? 'Your application is being reviewed by our team.'
                                 : sellerStatus === 'approved'
-                                ? 'Your seller account is approved. You can now list products.'
+                                ? 'Your seller account is active. Log in with your seller credentials.'
                                 : sellerStatus === 'rejected'
-                                ? 'Your application was rejected. Contact admin@pranjay.com for details.'
-                                : 'Upload your business registration invoice or GST certificate to register as a seller.'}
+                                ? 'Your application was rejected. Contact the admin for details.'
+                                : 'Upload your GST certificate or business registration document to apply as a seller.'}
                         </CardDescription>
                     </CardHeader>
 
                     <CardContent className="space-y-4">
-                        {/* Pending banner */}
+                        {/* Pending */}
                         {sellerStatus === 'pending' && (
                             <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 text-sm text-amber-800">
-                                <p className="font-semibold mb-1">Application Submitted!</p>
+                                <p className="font-semibold mb-1">Application Submitted ✓</p>
                                 <p>
-                                    Please contact{' '}
-                                    <a href="mailto:admin@pranjay.com" className="underline font-medium">
-                                        admin@pranjay.com
-                                    </a>{' '}
-                                    to ask the admin to approve your registration. Once approved, you'll receive login credentials.
+                                    {user?.contact_email
+                                        ? `We'll email your approval status to ${user.contact_email}.`
+                                        : 'Contact '}{' '}
+                                    {!user?.contact_email && (
+                                        <a href="mailto:pawantheblizz@gmail.com" className="underline font-medium">
+                                            pawantheblizz@gmail.com
+                                        </a>
+                                    )}{' '}
+                                    {!user?.contact_email && 'to follow up on your application approval.'}
                                 </p>
                             </div>
                         )}
 
-                        {/* Approved banner */}
+                        {/* Approved */}
                         {sellerStatus === 'approved' && (
                             <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-sm text-green-800">
                                 <p className="font-semibold mb-1">🎉 You're an approved seller!</p>
-                                <p>Your @pranjay.com credentials have been shared by the admin. Use them to log in on the seller login page.</p>
+                                <p>
+                                    {user?.contact_email
+                                        ? `Your login credentials were sent to ${user.contact_email}.`
+                                        : 'The admin will share your login credentials with you manually.'}{' '}
+                                    Use them to log in via the admin login page.
+                                </p>
+                            </div>
+                        )}
+
+                        {/* Rejected */}
+                        {sellerStatus === 'rejected' && (
+                            <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-sm text-red-800">
+                                <p className="font-semibold mb-1">Application Not Approved</p>
+                                <p>
+                                    Please contact{' '}
+                                    <a href="mailto:pawantheblizz@gmail.com" className="underline font-medium">
+                                        pawantheblizz@gmail.com
+                                    </a>{' '}
+                                    for details or to re-apply.
+                                </p>
                             </div>
                         )}
 
@@ -213,14 +248,17 @@ export default function ProfileSetupPage() {
                                         <div className="flex flex-col items-center gap-2">
                                             <Upload className="h-8 w-8 text-muted-foreground" />
                                             <p className="text-sm font-medium">Click to upload your document</p>
+                                            <p className="text-xs text-muted-foreground">GST cert / shop license / trade license</p>
                                             <p className="text-xs text-muted-foreground">PDF, JPG, or PNG • Max 10MB</p>
                                         </div>
                                     )}
                                 </div>
 
-                                <div className="bg-blue-50 border border-blue-100 rounded-lg p-3 text-xs text-blue-700">
-                                    <strong>What to upload:</strong> GST certificate, shop registration certificate, trade license, or any valid business document.
-                                </div>
+                                {!user?.contact_email && (
+                                    <div className="bg-blue-50 border border-blue-100 rounded-lg p-3 text-xs text-blue-700">
+                                        💡 <strong>Tip:</strong> Go back and add your email to receive approval notifications automatically.
+                                    </div>
+                                )}
 
                                 <Button
                                     className="w-full"
@@ -228,15 +266,23 @@ export default function ProfileSetupPage() {
                                     disabled={!invoiceFile || isUploadingInvoice}
                                 >
                                     {isUploadingInvoice && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                    Submit Application
+                                    Submit Seller Application
+                                </Button>
+
+                                <Button
+                                    variant="ghost"
+                                    className="w-full text-muted-foreground"
+                                    onClick={() => setStep('profile')}
+                                >
+                                    ← Back to Profile
                                 </Button>
 
                                 <p className="text-xs text-center text-muted-foreground">
                                     After submission, contact{' '}
-                                    <a href="mailto:admin@pranjay.com" className="underline">
-                                        admin@pranjay.com
+                                    <a href="mailto:pawantheblizz@gmail.com" className="underline">
+                                        pawantheblizz@gmail.com
                                     </a>{' '}
-                                    to request approval.
+                                    if you need to follow up.
                                 </p>
                             </div>
                         )}
@@ -266,80 +312,108 @@ export default function ProfileSetupPage() {
 
                 <CardContent>
                     <form onSubmit={handleSaveProfile} className="space-y-4">
-                        <div className="space-y-4 pt-2">
-                            <div className="space-y-2">
-                                <Label htmlFor="name">Full Name</Label>
-                                <Input
-                                    id="name"
-                                    type="text"
-                                    placeholder="John Doe"
-                                    value={name}
-                                    onChange={(e) => setName(e.target.value)}
-                                    required
-                                />
-                            </div>
 
-                            <div className="space-y-2">
-                                <Label>Account Type</Label>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <button
-                                        type="button"
-                                        onClick={() => setBusinessType('seller')}
-                                        className={`p-3 rounded-lg border-2 transition-all text-sm font-medium ${
-                                            businessType === 'seller'
-                                            ? 'border-primary bg-primary/5 text-primary'
-                                            : 'border-muted bg-background hover:border-muted-foreground/30'
-                                        }`}
-                                    >
-                                        🏪 Seller (Wholesale)
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => setBusinessType('customer')}
-                                        className={`p-3 rounded-lg border-2 transition-all text-sm font-medium ${
-                                            businessType === 'customer'
-                                            ? 'border-primary bg-primary/5 text-primary'
-                                            : 'border-muted bg-background hover:border-muted-foreground/30'
-                                        }`}
-                                    >
-                                        🛍️ Customer (Retail)
-                                    </button>
-                                </div>
+                        {/* Account Type — shown first */}
+                        <div className="space-y-2">
+                            <Label>Account Type</Label>
+                            <div className="grid grid-cols-2 gap-3">
+                                <button
+                                    type="button"
+                                    onClick={() => setBusinessType('customer')}
+                                    className={`p-3 rounded-lg border-2 transition-all text-sm font-medium text-left ${
+                                        businessType === 'customer'
+                                        ? 'border-primary bg-primary/5 text-primary'
+                                        : 'border-muted bg-background hover:border-muted-foreground/30'
+                                    }`}
+                                >
+                                    🛍️ <span className="block text-xs font-normal mt-1 text-muted-foreground">I want to buy products</span>
+                                    Customer
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setBusinessType('seller')}
+                                    className={`p-3 rounded-lg border-2 transition-all text-sm font-medium text-left ${
+                                        businessType === 'seller'
+                                        ? 'border-primary bg-primary/5 text-primary'
+                                        : 'border-muted bg-background hover:border-muted-foreground/30'
+                                    }`}
+                                >
+                                    🏪 <span className="block text-xs font-normal mt-1 text-muted-foreground">I want to sell wholesale</span>
+                                    Seller
+                                </button>
                             </div>
-
                             {businessType === 'seller' && (
-                                <>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="business_name">Business Name</Label>
-                                        <Input
-                                            id="business_name"
-                                            type="text"
-                                            placeholder="Your Shop / Company Name"
-                                            value={businessName}
-                                            onChange={(e) => setBusinessName(e.target.value)}
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="gst_number">GST Number (optional)</Label>
-                                        <Input
-                                            id="gst_number"
-                                            type="text"
-                                            placeholder="e.g. 27AABCU9603R1ZV"
-                                            value={gstNumber}
-                                            onChange={(e) => setGstNumber(e.target.value.toUpperCase())}
-                                            className="font-mono"
-                                        />
-                                    </div>
-                                    <div className="bg-amber-50 border border-amber-100 rounded-lg p-3 text-xs text-amber-700">
-                                        <strong>📋 Next step:</strong> After saving your profile, you'll upload your business registration document for seller approval.
-                                    </div>
-                                </>
+                                <p className="text-xs text-amber-600 bg-amber-50 border border-amber-100 rounded px-3 py-2">
+                                    📋 Seller accounts require admin approval. You'll upload your business document in the next step.
+                                </p>
                             )}
                         </div>
 
+                        {/* Full Name */}
+                        <div className="space-y-2">
+                            <Label htmlFor="name">Full Name *</Label>
+                            <Input
+                                id="name"
+                                type="text"
+                                placeholder="Your full name"
+                                value={name}
+                                onChange={(e) => setName(e.target.value)}
+                                required
+                            />
+                        </div>
+
+                        {/* Email for notifications */}
+                        <div className="space-y-2">
+                            <Label htmlFor="contact_email" className="flex items-center gap-1">
+                                <Mail className="h-3.5 w-3.5" />
+                                Email{' '}
+                                <span className="text-muted-foreground font-normal text-xs ml-1">(optional — for notifications)</span>
+                            </Label>
+                            <Input
+                                id="contact_email"
+                                type="email"
+                                placeholder="your@email.com"
+                                value={contactEmail}
+                                onChange={(e) => setContactEmail(e.target.value)}
+                            />
+                            {businessType === 'seller' && (
+                                <p className="text-xs text-muted-foreground">
+                                    Seller approvals will be sent to this email. Without an email, admin will share credentials manually.
+                                </p>
+                            )}
+                        </div>
+
+                        {/* Seller-specific fields */}
+                        {businessType === 'seller' && (
+                            <>
+                                <div className="space-y-2">
+                                    <Label htmlFor="business_name">Business / Shop Name</Label>
+                                    <Input
+                                        id="business_name"
+                                        type="text"
+                                        placeholder="Your shop or company name"
+                                        value={businessName}
+                                        onChange={(e) => setBusinessName(e.target.value)}
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="gst_number">GST Number <span className="text-muted-foreground font-normal text-xs">(optional)</span></Label>
+                                    <Input
+                                        id="gst_number"
+                                        type="text"
+                                        placeholder="e.g. 27AABCU9603R1ZV"
+                                        value={gstNumber}
+                                        onChange={(e) => setGstNumber(e.target.value.toUpperCase())}
+                                        className="font-mono"
+                                        maxLength={15}
+                                    />
+                                </div>
+                            </>
+                        )}
+
                         <Button type="submit" className="w-full" disabled={isLoading}>
                             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            {businessType === 'seller' ? 'Next: Upload Document →' : 'Save Profile'}
+                            {businessType === 'seller' ? 'Next: Upload Document →' : 'Save & Continue'}
                         </Button>
                     </form>
                 </CardContent>

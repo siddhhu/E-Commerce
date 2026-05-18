@@ -33,7 +33,7 @@ class Settings(BaseSettings):
     # Email (Resend) - Optional for deployment without email
     resend_api_key: Optional[str] = None
     email_from: str = "noreply@pranjay.com"
-    admin_email: str = "admin@pranjay.com"
+    admin_email: str = "pawantheblizz@gmail.com"
     
     # Supabase Storage - Optional for deployment without storage
     supabase_url: Optional[str] = None

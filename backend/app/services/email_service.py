@@ -1,5 +1,13 @@
 """
 Email Service - Send emails via Resend
+
+To enable email sending you need:
+  1. A Resend account → https://resend.com (free tier: 3,000 emails/month)
+  2. Set RESEND_API_KEY in backend/.env
+  3. Verify your sending domain (or use Resend's sandbox domain for testing)
+  4. Set EMAIL_FROM to your verified sender (e.g. noreply@pranjay.com)
+
+Without RESEND_API_KEY all email methods are silently skipped (no errors).
 """
 import resend
 
@@ -8,14 +16,23 @@ from app.config import settings
 
 class EmailService:
     """Service for sending emails via Resend."""
-    
+
     def __init__(self):
-        resend.api_key = settings.resend_api_key
+        if settings.resend_api_key:
+            resend.api_key = settings.resend_api_key
         self.from_email = settings.email_from
         self.admin_email = settings.admin_email
-    
+        self._enabled = bool(settings.resend_api_key)
+
+    def _log_skip(self, method: str, to: str):
+        """Log that email was skipped because Resend is not configured."""
+        print(f"[Email] SKIPPED {method} → {to}  (RESEND_API_KEY not set)")
+
     async def send_otp_email(self, to_email: str, otp: str) -> bool:
         """Send OTP verification email."""
+        if not self._enabled:
+            self._log_skip("send_otp_email", to_email)
+            return False
         try:
             params = {
                 "from": self.from_email,
@@ -45,9 +62,12 @@ class EmailService:
         except Exception as e:
             print(f"Error sending OTP email: {e}")
             return False
-    
+
     async def send_welcome_email(self, to_email: str, name: str = None) -> bool:
         """Send welcome email to new users."""
+        if not self._enabled:
+            self._log_skip("send_welcome_email", to_email)
+            return False
         display_name = name or "there"
         try:
             params = {
@@ -58,11 +78,11 @@ class EmailService:
                     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
                         <h2 style="color: #1a1a1a;">Welcome to Pranjay!</h2>
                         <p>Hi {display_name},</p>
-                        <p>Thank you for joining Pranjay - your trusted B2B cosmetics platform.</p>
+                        <p>Thank you for joining Pranjay - your trusted wholesale cosmetics platform.</p>
                         <p>You can now:</p>
                         <ul>
                             <li>Browse our extensive catalog of cosmetics</li>
-                            <li>Get exclusive B2B pricing</li>
+                            <li>Get exclusive wholesale pricing</li>
                             <li>Place bulk orders with ease</li>
                             <li>Track your orders in real-time</li>
                         </ul>
@@ -79,7 +99,7 @@ class EmailService:
         except Exception as e:
             print(f"Error sending welcome email: {e}")
             return False
-    
+
     async def send_order_confirmation_email(
         self,
         to_email: str,
@@ -88,6 +108,9 @@ class EmailService:
         items_count: int
     ) -> bool:
         """Send order confirmation email to customer."""
+        if not self._enabled:
+            self._log_skip("send_order_confirmation_email", to_email)
+            return False
         try:
             params = {
                 "from": self.from_email,
@@ -115,7 +138,7 @@ class EmailService:
         except Exception as e:
             print(f"Error sending order confirmation email: {e}")
             return False
-    
+
     async def send_order_notification_to_admin(
         self,
         order_number: str,
@@ -125,6 +148,9 @@ class EmailService:
         items_count: int
     ) -> bool:
         """Send new order notification to admin."""
+        if not self._enabled:
+            self._log_skip("send_order_notification_to_admin", self.admin_email)
+            return False
         try:
             params = {
                 "from": self.from_email,
@@ -139,11 +165,6 @@ class EmailService:
                             <p><strong>Items:</strong> {items_count}</p>
                             <p><strong>Total:</strong> ₹{total_amount:,.2f}</p>
                         </div>
-                        <p>
-                            <a href="#" style="background: #333; color: white; padding: 10px 20px; text-decoration: none; display: inline-block;">
-                                View Order
-                            </a>
-                        </p>
                     </div>
                 """
             }
@@ -152,7 +173,7 @@ class EmailService:
         except Exception as e:
             print(f"Error sending admin notification: {e}")
             return False
-    
+
     async def send_order_shipped_email(
         self,
         to_email: str,
@@ -160,10 +181,12 @@ class EmailService:
         tracking_info: str = None
     ) -> bool:
         """Send order shipped notification."""
+        if not self._enabled:
+            self._log_skip("send_order_shipped_email", to_email)
+            return False
         tracking_section = ""
         if tracking_info:
             tracking_section = f"<p><strong>Tracking:</strong> {tracking_info}</p>"
-
         try:
             params = {
                 "from": self.from_email,
@@ -197,6 +220,9 @@ class EmailService:
         business_name: str = None
     ) -> bool:
         """Notify seller that their application has been received and is under review."""
+        if not self._enabled:
+            self._log_skip("send_seller_application_received", to_email)
+            return False
         display_name = business_name or "there"
         try:
             params = {
@@ -209,9 +235,9 @@ class EmailService:
                         <p>Hi {display_name},</p>
                         <p>Thank you for applying to sell on <strong>Pranjay</strong>. We've received your registration document and your application is now <strong>under review</strong>.</p>
                         <div style="background: #fff8e1; border-left: 4px solid #f59e0b; padding: 16px; margin: 20px 0;">
-                            <p style="margin: 0;"><strong>Next step:</strong> Please contact <a href="mailto:admin@pranjay.com">admin@pranjay.com</a> to follow up on your approval. The admin will share your login credentials once approved.</p>
+                            <p style="margin: 0;"><strong>Next step:</strong> Our admin team will review your document. Once approved, you will receive your login credentials directly. If you haven't heard back in 48 hours, please contact <a href="mailto:{self.admin_email}">{self.admin_email}</a>.</p>
                         </div>
-                        <p>Once approved, you will receive a <strong>@pranjay.com username</strong> and password that you can use to log in and start listing your products.</p>
+                        <p>Once approved, you will receive a <strong>@pranjay.com username</strong> and password to log in and start listing your products.</p>
                         <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
                         <p style="color: #666; font-size: 12px;">&copy; 2024 Pranjay. All rights reserved.</p>
                     </div>
@@ -234,6 +260,12 @@ class EmailService:
         user_id: str
     ) -> bool:
         """Notify admin of a new seller application awaiting review."""
+        if not self._enabled:
+            self._log_skip("send_seller_application_to_admin", admin_email)
+            print(f"  ↳ New seller application from: {seller_name} ({seller_phone}) — {business_name}")
+            print(f"  ↳ Invoice: {invoice_url}")
+            print(f"  ↳ User ID: {user_id}")
+            return False
         try:
             params = {
                 "from": self.from_email,
@@ -260,7 +292,51 @@ class EmailService:
             print(f"Error sending seller application admin email: {e}")
             return False
 
+    async def send_seller_approved_credentials(
+        self,
+        to_email: str,
+        seller_name: str,
+        seller_username: str,
+        plain_password: str
+    ) -> bool:
+        """
+        Send approved seller their login credentials.
+        Called after super-admin approves the application.
+        """
+        if not self._enabled:
+            self._log_skip("send_seller_approved_credentials", to_email)
+            print(f"  ↳ Seller credentials: {seller_username} / {plain_password}")
+            return False
+        try:
+            params = {
+                "from": self.from_email,
+                "to": [to_email],
+                "subject": "🎉 Your Seller Account is Approved — Pranjay",
+                "html": f"""
+                    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                        <h2 style="color: #16a34a;">Your Seller Account is Approved!</h2>
+                        <p>Hi {seller_name},</p>
+                        <p>Great news! Your seller application on <strong>Pranjay</strong> has been approved. Here are your login credentials:</p>
+                        <div style="background: #f0fdf4; border: 2px solid #86efac; padding: 24px; margin: 20px 0; border-radius: 8px;">
+                            <p style="margin: 0 0 12px;"><strong>Login Page:</strong> <a href="https://pranjay.com/admin/login">pranjay.com/admin/login</a></p>
+                            <p style="margin: 0 0 12px;"><strong>Username:</strong> <code style="background: #fff; padding: 4px 8px; border-radius: 4px; font-size: 14px;">{seller_username}</code></p>
+                            <p style="margin: 0;"><strong>Password:</strong> <code style="background: #fff; padding: 4px 8px; border-radius: 4px; font-size: 14px;">{plain_password}</code></p>
+                        </div>
+                        <div style="background: #fff7ed; border-left: 4px solid #f97316; padding: 12px; margin: 20px 0;">
+                            <p style="margin: 0; font-size: 13px;">⚠️ Please change your password after your first login. Keep these credentials safe.</p>
+                        </div>
+                        <p>Welcome to the Pranjay seller family! You can now log in and start listing your products.</p>
+                        <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+                        <p style="color: #666; font-size: 12px;">&copy; 2024 Pranjay. All rights reserved.</p>
+                    </div>
+                """
+            }
+            resend.Emails.send(params)
+            return True
+        except Exception as e:
+            print(f"Error sending seller approved credentials email: {e}")
+            return False
+
 
 # Singleton instance
 email_service = EmailService()
-

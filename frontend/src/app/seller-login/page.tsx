@@ -130,8 +130,8 @@ export default function SellerLoginPage() {
                                     regular login
                                 </Link>
                                 , then upload your seller document on your profile page. Contact{' '}
-                                <a href="mailto:admin@pranjay.com" className="underline font-medium">
-                                    admin@pranjay.com
+                                <a href="mailto:pawantheblizz@gmail.com" className="underline font-medium">
+                                    pawantheblizz@gmail.com
                                 </a>{' '}
                                 to request approval.
                             </p>
