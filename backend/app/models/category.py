@@ -19,6 +19,8 @@ class CategoryBase(SQLModel):
     image_url: Optional[str] = Field(default=None, max_length=500)
     sort_order: int = Field(default=0)
     is_active: bool = Field(default=True)
+    seller_id: Optional[UUID] = Field(default=None, foreign_key="users.id")
+    seller_name: Optional[str] = Field(default="Pranjay", max_length=255)
 
 
 class Category(CategoryBase, table=True):
@@ -46,6 +48,8 @@ class CategoryCreate(SQLModel):
     image_url: Optional[str] = None
     parent_id: Optional[UUID] = None
     sort_order: int = 0
+    seller_id: Optional[UUID] = None
+    seller_name: Optional[str] = "Pranjay"
 
 
 class CategoryUpdate(SQLModel):
@@ -57,6 +61,8 @@ class CategoryUpdate(SQLModel):
     parent_id: Optional[UUID] = None
     sort_order: Optional[int] = None
     is_active: Optional[bool] = None
+    seller_id: Optional[UUID] = None
+    seller_name: Optional[str] = None
 
 
 class CategoryRead(CategoryBase):

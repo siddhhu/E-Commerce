@@ -582,6 +582,8 @@ export interface CategoryRead {
     parent_id?: string;
     sort_order: number;
     is_active: boolean;
+    seller_id?: string;
+    seller_name?: string;
     created_at: string;
 }
 

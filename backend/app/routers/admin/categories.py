@@ -38,6 +38,11 @@ async def create_category(
     if existing.scalar_one_or_none():
         raise ConflictException("Category with this slug already exists")
     
+    # Seller attribution
+    is_admin = current_user.role in [UserRole.ADMIN, UserRole.SUPER_ADMIN]
+    data.seller_id = None if is_admin else current_user.id
+    data.seller_name = "Pranjay" if is_admin else (current_user.business_name or current_user.full_name or "Seller")
+    
     category = Category(**data.model_dump())
     session.add(category)
     await session.commit()

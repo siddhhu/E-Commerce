@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { adminApi, CategoryRead } from '@/lib/api';
+import { useAuthStore } from '@/store/auth-store';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,6 +15,10 @@ export default function AdminCategoriesPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
+    const { user } = useAuthStore();
+    
+    const role = (user?.role || '').toString().toLowerCase();
+    const isAdmin = role === 'admin' || role === 'super_admin';
     
     const [formData, setFormData] = useState({
         id: '',
@@ -198,6 +203,7 @@ export default function AdminCategoriesPage() {
                                     <th className="px-6 py-4">Name</th>
                                     <th className="px-6 py-4">Slug</th>
                                     <th className="px-6 py-4">Status</th>
+                                    {isAdmin && <th className="px-6 py-4">Added By</th>}
                                     <th className="px-6 py-4 text-right">Actions</th>
                                 </tr>
                             </thead>
@@ -213,6 +219,13 @@ export default function AdminCategoriesPage() {
                                                 {cat.is_active ? 'Active' : 'Inactive'}
                                             </span>
                                         </td>
+                                        {isAdmin && (
+                                            <td className="px-6 py-4">
+                                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-800 border">
+                                                    {cat.seller_name || 'Pranjay'}
+                                                </span>
+                                            </td>
+                                        )}
                                         <td className="px-6 py-4 text-right space-x-2">
                                             <Button variant="ghost" size="sm" onClick={() => handleOpenForm(cat)} className="h-8 w-8 p-0">
                                                 <Edit className="h-4 w-4 text-slate-500" />
