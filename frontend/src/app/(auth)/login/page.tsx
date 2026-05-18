@@ -182,7 +182,7 @@ function LoginForm() {
                     return;
                 }
                 if (sellerStatus === 'approved') {
-                    router.push('/seller/dashboard');
+                    router.push('/admin');
                     return;
                 }
                 // seller with 'none' status → profile setup to upload doc

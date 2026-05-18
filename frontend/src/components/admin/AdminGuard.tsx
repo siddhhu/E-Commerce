@@ -27,8 +27,10 @@ export default function AdminGuard({ children }: { children: React.ReactNode }) 
     const isLoginPage = pathname === '/admin/login';
     const role = (user?.role || '').toString().toLowerCase();
     const isAdmin = isAuthenticated && (role === 'admin' || role === 'super_admin');
+    const isApprovedSeller = isAuthenticated && user?.seller_status === 'approved' && user?.user_type === 'seller';
+    const isAllowed = isAdmin || isApprovedSeller;
 
-    if (!isLoginPage && !isAdmin) {
+    if (!isLoginPage && !isAllowed) {
         router.push('/admin/login');
         return <div className="min-h-screen bg-slate-50 flex items-center justify-center">Redirecting...</div>;
     }

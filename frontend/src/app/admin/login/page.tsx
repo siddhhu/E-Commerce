@@ -59,19 +59,19 @@ export default function AdminLoginPage() {
 
             <Card className="w-full max-w-md shadow-2xl border-slate-800 bg-slate-950 text-slate-100">
                 <CardHeader className="space-y-1 pb-8 pt-8">
-                    <CardTitle className="text-3xl font-bold tracking-tight text-center">Admin Portal</CardTitle>
+                    <CardTitle className="text-3xl font-bold tracking-tight text-center">Admin &amp; Seller Login</CardTitle>
                     <CardDescription className="text-center text-slate-400">
-                        Enter your secure administrative credentials
+                        Admins: use your email · Sellers: use your @pranjay.com username
                     </CardDescription>
                 </CardHeader>
                 <form onSubmit={handleLogin}>
                     <CardContent className="space-y-4">
                         <div className="space-y-2">
-                            <Label htmlFor="email" className="text-slate-300">Admin Email</Label>
+                            <Label htmlFor="email" className="text-slate-300">Email / Seller Username</Label>
                             <Input
                                 id="email"
-                                type="email"
-                                placeholder="admin@pranjay.com"
+                                type="text"
+                                placeholder="admin@example.com or seller1234@pranjay.com"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
                                 disabled={isLoading}

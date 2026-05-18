@@ -58,18 +58,39 @@ class AuthService:
         return new_user, True
         
     async def authenticate_admin(self, email: str, password: str) -> Optional[User]:
-        """Authenticate admin user by email and password."""
+        """
+        Authenticate admin OR approved seller by email/username and password.
+        - Admins: look up by email field
+        - Sellers: look up by seller_username (e.g. mybrand1234@pranjay.com)
+        Both use the same /admin/login endpoint — no separate seller-login needed.
+        """
+        from sqlmodel import select as sql_select
+
+        # 1. Try by email (admins)
         user = await self.get_user_by_email(email)
-        
+
+        # 2. If not found, try by seller_username (approved sellers)
+        if not user:
+            result = await self.session.execute(
+                sql_select(User).where(User.seller_username == email)
+            )
+            user = result.scalar_one_or_none()
+
         if not user or not user.hashed_password:
             return None
-            
-        if user.role not in [UserRole.ADMIN, UserRole.SUPER_ADMIN]:
+
+        # Allow admins
+        if user.role in [UserRole.ADMIN, UserRole.SUPER_ADMIN]:
+            if verify_password(password, user.hashed_password):
+                return user
             return None
-            
-        if verify_password(password, user.hashed_password):
-            return user
-            
+
+        # Allow approved sellers
+        if user.seller_status == "approved" and user.user_type == "seller":
+            if verify_password(password, user.hashed_password):
+                return user
+            return None
+
         return None
         
     async def get_or_create_user_by_phone(self, phone: str) -> tuple[User, bool]:
