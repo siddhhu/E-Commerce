@@ -111,7 +111,7 @@ export default function ProfileSetupPage() {
                     ? `Your seller application is under review. We'll email you at ${contactEmail} once approved.`
                     : 'Your seller application is under review. Contact pawantheblizz@gmail.com to follow up.',
             });
-            router.push('/');
+            router.push('/seller/pending');
         } catch (error: any) {
             toast({
                 title: 'Upload Failed',

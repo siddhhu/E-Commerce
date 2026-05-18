@@ -164,15 +164,36 @@ function LoginForm() {
             setUser(response.user);
             setTokens(response.access_token, response.refresh_token);
 
-            toast({
-                title: 'Welcome!',
-                description: 'You have successfully logged in.',
-            });
+            const u = response.user;
+            const sellerStatus = u.seller_status;
+            const isSeller = u.user_type === 'seller';
+            const hasName = u.full_name && u.full_name.trim() !== '' && u.full_name !== u.phone;
 
-            // Redirect to the originally requested page, or home/admin/profile setup
-            if (!response.user.full_name || response.user.full_name.trim() === '' || response.user.full_name === response.user.phone) {
+            // Step 1: New user with no name → always go to profile setup first
+            if (!hasName) {
                 router.push('/profile/setup');
-            } else if (redirectUrl && redirectUrl !== '/') {
+                return;
+            }
+
+            // Step 2: Seller routing based on approval status
+            if (isSeller) {
+                if (sellerStatus === 'pending' || sellerStatus === 'rejected') {
+                    router.push('/seller/pending');
+                    return;
+                }
+                if (sellerStatus === 'approved') {
+                    router.push('/seller/dashboard');
+                    return;
+                }
+                // seller with 'none' status → profile setup to upload doc
+                if (!sellerStatus || sellerStatus === 'none') {
+                    router.push('/profile/setup');
+                    return;
+                }
+            }
+
+            // Step 3: Customer or fallback → original redirect or home
+            if (redirectUrl && redirectUrl !== '/') {
                 router.push(redirectUrl);
             } else {
                 router.push('/');
