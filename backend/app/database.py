@@ -104,11 +104,55 @@ async def init_db() -> None:
             return
         except Exception as e:
             if attempt < max_retries - 1:
-                print(f"Database: Initialization attempt {attempt + 1} failed: {e}. Retrying in {retry_delay}s...")
+                print(f"Database: Initializing attempt {attempt + 1} failed: {e}. Retrying in {retry_delay}s...")
                 await asyncio.sleep(retry_delay)
             else:
-                print(f"Database: Initialization failed after {max_retries} attempts: {e}")
+                print(f"Database: Initializing failed after {max_retries} attempts: {e}")
                 raise e
+
+
+async def run_startup_migrations() -> None:
+    """Run schema migrations on startup to support Vercel serverless environment."""
+    import asyncio
+    
+    async def run_migrations_impl() -> None:
+        import sqlalchemy as sa
+        from sqlmodel import SQLModel
+
+        # 1. Initialize tables first
+        await init_db()
+
+        # 2. Run schema updates for Category model
+        print("Database: Running category attribution schema migrations...")
+        async with engine.begin() as conn:
+            if "sqlite" in db_url:
+                try:
+                    await conn.execute(sa.text("ALTER TABLE categories ADD COLUMN seller_id CHAR(32);"))
+                except Exception:
+                    pass
+                try:
+                    await conn.execute(sa.text("ALTER TABLE categories ADD COLUMN seller_name VARCHAR(255) DEFAULT 'Pranjay';"))
+                except Exception:
+                    pass
+            else:
+                await conn.execute(sa.text("ALTER TABLE categories ADD COLUMN IF NOT EXISTS seller_id UUID;"))
+                await conn.execute(sa.text("ALTER TABLE categories ADD COLUMN IF NOT EXISTS seller_name VARCHAR(255) DEFAULT 'Pranjay';"))
+                try:
+                    await conn.execute(sa.text(
+                        "ALTER TABLE categories ADD CONSTRAINT fk_categories_seller_id_users "
+                        "FOREIGN KEY (seller_id) REFERENCES users (id);"
+                    ))
+                except Exception:
+                    pass
+        print("Database: Category schema migrations applied successfully.")
+
+    try:
+        # Run with a 5-second timeout so offline development doesn't hang the app startup
+        await asyncio.wait_for(run_migrations_impl(), timeout=5.0)
+    except asyncio.TimeoutError:
+        print("Database: Startup migrations timed out (unreachable database). Skipping startup migration check...")
+    except Exception as e:
+        print(f"Database: Startup migrations error: {e}")
 
 
 async def close_db() -> None:

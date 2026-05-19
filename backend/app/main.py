@@ -11,7 +11,7 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.config import settings
-from app.database import close_db, init_db
+from app.database import close_db, init_db, run_startup_migrations
 from app.routers import auth, banners, cart, categories, checkout, orders, products, users, wishlist
 from app.routers import invoices, promo_codes
 # from app.routers.admin import banners as admin_banners, bulk_upload, dashboard, migrate_images
@@ -27,7 +27,7 @@ from app.routers.admin import categories as admin_categories
 async def lifespan(app: FastAPI):
     """Application lifespan handler."""
     # Startup
-    # Tables are now managed by Alembic in startCommand
+    await run_startup_migrations()
     yield
     # Shutdown
     await close_db()
