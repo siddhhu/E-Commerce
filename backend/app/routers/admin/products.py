@@ -33,7 +33,7 @@ async def list_products_admin(
     page_size: int = Query(20, ge=1, le=100),
     category_id: Optional[UUID] = None,
     brand_id: Optional[UUID] = None,
-    is_active: Optional[bool] = None,
+    is_active: Optional[bool] = Query(True),
     search: Optional[str] = None,
     current_user: User = Depends(get_current_admin),
     session: AsyncSession = Depends(get_session)
