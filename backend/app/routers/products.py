@@ -83,8 +83,11 @@ async def list_products(
             b2b_price=product.b2b_price,
             stock_quantity=product.stock_quantity,
             is_featured=product.is_featured,
+            category_id=product.category_id,
             image_url=getattr(product, "image_url", None),
-            primary_image=primary_image
+            primary_image=primary_image,
+            seller_id=product.seller_id,
+            seller_name=product.seller_name or "Pranjay"
         ))
     
     pages = (total + page_size - 1) // page_size
@@ -132,8 +135,11 @@ async def get_featured_products(
             b2b_price=product.b2b_price,
             stock_quantity=product.stock_quantity,
             is_featured=product.is_featured,
+            category_id=product.category_id,
             image_url=getattr(product, "image_url", None),
-            primary_image=primary_image
+            primary_image=primary_image,
+            seller_id=product.seller_id,
+            seller_name=product.seller_name or "Pranjay"
         ))
     
     return items

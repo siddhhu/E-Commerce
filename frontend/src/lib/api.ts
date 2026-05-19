@@ -560,6 +560,7 @@ export interface ProductSummary {
     b2b_price?: number;
     stock_quantity: number;
     is_featured: boolean;
+    category_id?: string;
     primary_image?: string;
     seller_id?: string;
     seller_name?: string;

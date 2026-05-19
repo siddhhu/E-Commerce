@@ -122,60 +122,6 @@ app.include_router(
 # )
 
 
-@app.get(f"{API_PREFIX}/debug-db")
-async def debug_db():
-    """Debug database connection and migration status."""
-    import traceback
-    import sqlalchemy as sa
-    from app.database import engine, db_url
-    
-    steps = {}
-    try:
-        steps["db_url_redacted"] = db_url.split("@")[-1] if db_url and "@" in db_url else str(db_url)
-        
-        # Test connection
-        steps["connection"] = "testing..."
-        async with engine.connect() as conn:
-            conn = conn.execution_options(isolation_level="AUTOCOMMIT")
-            steps["connection"] = "success"
-            
-            # Query columns
-            res = await conn.execute(sa.text("SELECT * FROM categories LIMIT 0;"))
-            columns = list(res.keys())
-            steps["categories_columns"] = columns
-            
-            # Attempt manual column additions if missing
-            if "seller_id" not in columns:
-                steps["add_seller_id"] = "running..."
-                await conn.execute(sa.text("ALTER TABLE categories ADD COLUMN seller_id UUID;"))
-                steps["add_seller_id"] = "success"
-            else:
-                steps["add_seller_id"] = "already_exists"
-                
-            if "seller_name" not in columns:
-                steps["add_seller_name"] = "running..."
-                await conn.execute(sa.text("ALTER TABLE categories ADD COLUMN seller_name VARCHAR(255) DEFAULT 'Pranjay';"))
-                steps["add_seller_name"] = "success"
-            else:
-                steps["add_seller_name"] = "already_exists"
-                
-            # Foreign key check/add
-            try:
-                await conn.execute(sa.text(
-                    "ALTER TABLE categories ADD CONSTRAINT fk_categories_seller_id_users "
-                    "FOREIGN KEY (seller_id) REFERENCES users (id);"
-                ))
-                steps["foreign_key"] = "added"
-            except Exception as fk_err:
-                steps["foreign_key"] = f"skipped/exists: {str(fk_err)}"
-                
-    except Exception as e:
-        steps["error"] = str(e)
-        steps["traceback"] = traceback.format_exc()
-        
-    return steps
-
-
 @app.get("/")
 async def root():
     """Root endpoint."""

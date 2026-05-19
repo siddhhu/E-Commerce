@@ -16,6 +16,7 @@ export interface APIProduct {
     stock_quantity: number;
     is_featured: boolean;
     primary_image: string | null;
+    category_id?: string;
 }
 
 export interface APIProductDetail {

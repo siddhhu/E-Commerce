@@ -149,6 +149,7 @@ class ProductListRead(SQLModel):
     b2b_price: Optional[Decimal]
     stock_quantity: int
     is_featured: bool
+    category_id: Optional[UUID] = None
     image_url: Optional[str] = None
     primary_image: Optional[str] = None
     seller_id: Optional[UUID] = None
