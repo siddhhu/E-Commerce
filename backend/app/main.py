@@ -135,7 +135,8 @@ async def debug_db():
         
         # Test connection
         steps["connection"] = "testing..."
-        async with engine.begin() as conn:
+        async with engine.connect() as conn:
+            conn = conn.execution_options(isolation_level="AUTOCOMMIT")
             steps["connection"] = "success"
             
             # Query columns

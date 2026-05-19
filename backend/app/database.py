@@ -124,7 +124,8 @@ async def run_startup_migrations() -> None:
 
         # 2. Run schema updates for Category model
         print("Database: Running category attribution schema migrations...")
-        async with engine.begin() as conn:
+        async with engine.connect() as conn:
+            conn = conn.execution_options(isolation_level="AUTOCOMMIT")
             if "sqlite" in db_url:
                 try:
                     await conn.execute(sa.text("ALTER TABLE categories ADD COLUMN seller_id CHAR(32);"))
