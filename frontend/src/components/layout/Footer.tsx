@@ -83,7 +83,7 @@ export function Footer() {
                     <div className="border-t border-slate-800 py-8 text-center text-sm text-slate-400">
                         <p>© {new Date().getFullYear()} Pranjay. All rights reserved.</p>
                         <p className="mt-2 text-primary/60 font-medium">
-                            Made with ❤️ by Siddharth
+                            Made with ❤️ by <a href="https://www.linkedin.com/in/siddharth-kumar-907a85169/" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary transition-colors">Siddharth</a>
                         </p>
                     </div>
                     <div className="flex space-x-6 text-sm text-muted-foreground">
