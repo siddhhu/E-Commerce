@@ -139,11 +139,8 @@ async def debug_db():
             steps["connection"] = "success"
             
             # Query columns
-            steps["categories_columns"] = []
-            res = await conn.execute(sa.text(
-                "SELECT column_name FROM information_schema.columns WHERE table_name = 'categories';"
-            ))
-            columns = [r[0] for r in res.fetchall()]
+            res = await conn.execute(sa.text("SELECT * FROM categories LIMIT 0;"))
+            columns = list(res.keys())
             steps["categories_columns"] = columns
             
             # Attempt manual column additions if missing
