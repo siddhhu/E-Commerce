@@ -5,7 +5,7 @@ import { adminApi, ProductSummary, PaginatedProducts } from '@/lib/api';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Search, Plus, Upload, Edit, ChevronLeft, ChevronRight, Image as ImageIcon } from 'lucide-react';
+import { Search, Plus, Upload, Edit, Trash2, ChevronLeft, ChevronRight, Image as ImageIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { formatCurrency } from '@/lib/utils';
 import Link from 'next/link';
@@ -37,6 +37,26 @@ export default function AdminProductsPage() {
             });
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    const handleDeleteProduct = async (id: string, name: string) => {
+        if (!confirm(`Are you sure you want to delete "${name}"?`)) {
+            return;
+        }
+        try {
+            await adminApi.deleteProduct(id);
+            toast({
+                title: "Product deleted",
+                description: `"${name}" has been deleted successfully.`,
+            });
+            fetchProducts();
+        } catch (error: any) {
+            toast({
+                title: "Error deleting product",
+                description: error.message,
+                variant: "destructive"
+            });
         }
     };
 
@@ -148,11 +168,21 @@ export default function AdminProductsPage() {
                                                 </td>
                                             )}
                                             <td className="px-6 py-4 text-center">
-                                                <Link href={`/admin/products/${product.id}/edit`}>
-                                                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                                                        <Edit className="h-4 w-4 text-slate-500" />
-                                                    </Button>
-                                                </Link>
+                                                 <div className="flex items-center justify-center gap-1">
+                                                     <Link href={`/admin/products/${product.id}/edit`}>
+                                                         <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                                             <Edit className="h-4 w-4 text-slate-500" />
+                                                         </Button>
+                                                     </Link>
+                                                     <Button 
+                                                         variant="ghost" 
+                                                         size="sm" 
+                                                         className="h-8 w-8 p-0"
+                                                         onClick={() => handleDeleteProduct(product.id, product.name)}
+                                                     >
+                                                         <Trash2 className="h-4 w-4 text-red-500" />
+                                                     </Button>
+                                                 </div>
                                             </td>
                                         </tr>
                                     ))}

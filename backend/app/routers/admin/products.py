@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic import BaseModel
 
 from app.core.dependencies import get_current_admin
+from app.core.exceptions import ForbiddenException
 from app.database import get_session
 from app.models.product import ProductCreate, ProductRead, ProductUpdate
 from app.models.user import User
@@ -106,7 +107,15 @@ async def update_product(
     session: AsyncSession = Depends(get_session)
 ):
     """Update a product."""
+    from app.models.user import UserRole
     product_service = ProductService(session)
+    
+    # Ownership check
+    product = await product_service.get_product_by_id(product_id)
+    is_admin = current_user.role in [UserRole.ADMIN, UserRole.SUPER_ADMIN]
+    if not is_admin and product.seller_id != current_user.id:
+        raise ForbiddenException("Not authorized to modify this product")
+        
     return await product_service.update_product(product_id, data)
 
 
@@ -117,7 +126,15 @@ async def delete_product(
     session: AsyncSession = Depends(get_session)
 ):
     """Delete (soft) a product."""
+    from app.models.user import UserRole
     product_service = ProductService(session)
+    
+    # Ownership check
+    product = await product_service.get_product_by_id(product_id)
+    is_admin = current_user.role in [UserRole.ADMIN, UserRole.SUPER_ADMIN]
+    if not is_admin and product.seller_id != current_user.id:
+        raise ForbiddenException("Not authorized to delete this product")
+        
     await product_service.delete_product(product_id)
 
 

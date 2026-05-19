@@ -390,6 +390,7 @@ export const adminApi = {
     getProduct: (id: string) => api.get<Product>(`/admin/products/${id}`),
     createProduct: (data: Partial<Product>) => api.post<Product>('/admin/products', data),
     updateProduct: (id: string, data: Partial<Product>) => api.patch<Product>(`/admin/products/${id}`, data),
+    deleteProduct: (id: string) => api.delete(`/admin/products/${id}`),
     
     // Banners
     listBanners: (params?: { page?: number; page_size?: number; is_active?: boolean }) => {
