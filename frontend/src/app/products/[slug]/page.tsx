@@ -93,24 +93,25 @@ export default function ProductDetailPage() {
         : (product.image_url || product.images?.find((img) => img.is_primary)?.image_url || product.images?.[0]?.image_url || '/placeholder.jpg');
     const inWishlist = isInWishlist(product.id);
 
+    const isOutOfStock = product.stock_quantity <= 0;
     const minOrderQty = Math.max(1, product.min_order_quantity || 1);
     const maxQty = Math.max(minOrderQty, product.stock_quantity || minOrderQty);
     
     // Effective quantity shown to the user
-    const displayQty = Math.min(Math.max(quantity, minOrderQty), maxQty);
+    const displayQty = isOutOfStock ? 0 : Math.min(Math.max(quantity, minOrderQty), maxQty);
     
     // Use wholesale price if quantity meets minimum
     const useWholesale = Boolean(product.b2b_price) && displayQty >= minOrderQty;
     const unitPrice = useWholesale ? Number(product.b2b_price) : Number(product.selling_price);
     
-    // Total price based on quantity
-    const totalPrice = unitPrice * displayQty;
+    // Total price based on quantity (if out of stock, default to single unit price for display)
+    const totalPrice = unitPrice * (isOutOfStock ? 1 : displayQty);
     
     // GST Calculation (18%) for GST-inclusive prices
     const baseAmount = totalPrice / 1.18;
     const gstAmount = totalPrice - baseAmount;
     
-    const remainingStock = Math.max(0, Number(product.stock_quantity) - displayQty);
+    const remainingStock = isOutOfStock ? 0 : Math.max(0, Number(product.stock_quantity) - displayQty);
 
     const mapToStoreProduct = (p: APIProduct): Product => ({
         id: p.id,
@@ -272,6 +273,7 @@ export default function ProductDetailPage() {
                                             variant="ghost"
                                             size="icon"
                                             className="h-10 w-10 rounded-none rounded-l-lg"
+                                            disabled={isOutOfStock}
                                             onClick={() => setQuantity((q) => Math.max(minOrderQty, q - 1))}
                                         >
                                             <Minus className="h-4 w-4" />
@@ -283,6 +285,7 @@ export default function ProductDetailPage() {
                                             variant="ghost"
                                             size="icon"
                                             className="h-10 w-10 rounded-none rounded-r-lg"
+                                            disabled={isOutOfStock}
                                             onClick={() => setQuantity((q) => Math.min(maxQty, q + 1))}
                                         >
                                             <Plus className="h-4 w-4" />
@@ -291,9 +294,9 @@ export default function ProductDetailPage() {
                                     <div className="flex flex-col">
                                         <span className={cn(
                                             "text-sm font-semibold",
-                                            remainingStock < 10 ? "text-destructive" : "text-green-600"
+                                            isOutOfStock ? "text-destructive" : remainingStock < 10 ? "text-destructive" : "text-green-600"
                                         )}>
-                                            {remainingStock} units left
+                                            {isOutOfStock ? "Out of Stock" : `${remainingStock} units left`}
                                         </span>
                                         <span className="text-[10px] text-muted-foreground uppercase">Stock Status</span>
                                     </div>
@@ -302,11 +305,22 @@ export default function ProductDetailPage() {
 
                             {/* Actions */}
                             <div className="flex gap-4">
-                                <Button size="lg" className="flex-1" onClick={handleAddToCart}>
+                                <Button 
+                                    size="lg" 
+                                    className="flex-1" 
+                                    disabled={isOutOfStock}
+                                    onClick={handleAddToCart}
+                                >
                                     <ShoppingCart className="h-5 w-5 mr-2" />
-                                    Add to Cart
+                                    {isOutOfStock ? 'Out of Stock' : 'Add to Cart'}
                                 </Button>
-                                <Button size="lg" variant="secondary" className="flex-1" onClick={handleBuyNow}>
+                                <Button 
+                                    size="lg" 
+                                    variant="secondary" 
+                                    className="flex-1" 
+                                    disabled={isOutOfStock}
+                                    onClick={handleBuyNow}
+                                >
                                     Buy Now
                                 </Button>
                                 <Button

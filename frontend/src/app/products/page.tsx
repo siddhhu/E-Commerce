@@ -270,8 +270,12 @@ function ProductsContent() {
                                                         </span>
                                                     )}
                                                 </div>
-                                                <Button size="sm" onClick={() => handleAddToCart(product)}>
-                                                    Add to Cart
+                                                <Button
+                                                    size="sm"
+                                                    disabled={product.stock_quantity <= 0}
+                                                    onClick={() => handleAddToCart(product)}
+                                                >
+                                                    {product.stock_quantity <= 0 ? 'Out of Stock' : 'Add to Cart'}
                                                 </Button>
                                             </div>
                                         </CardContent>

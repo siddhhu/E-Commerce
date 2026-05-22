@@ -253,10 +253,11 @@ function SearchContent() {
                                         <Button
                                             className="w-full mt-4"
                                             size="sm"
+                                            disabled={product.stock_quantity <= 0}
                                             onClick={() => handleAddToCart(product)}
                                         >
                                             <ShoppingCart className="h-4 w-4 mr-2" />
-                                            Add to Cart
+                                            {product.stock_quantity <= 0 ? 'Out of Stock' : 'Add to Cart'}
                                         </Button>
                                     </CardContent>
                                 </Card>
