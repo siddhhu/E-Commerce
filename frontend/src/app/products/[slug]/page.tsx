@@ -235,13 +235,24 @@ export default function ProductDetailPage() {
                         {/* Product Details */}
                         <div className="space-y-6">
                             <div>
-                                <div className="flex items-center gap-2">
-                                    <h1 className="text-3xl font-bold">{product.name}</h1>
-                                    {product.unit && (
-                                        <span className="bg-muted text-muted-foreground text-sm px-2 py-0.5 rounded-full font-medium">
-                                            {product.unit}
-                                        </span>
-                                    )}
+                                <div className="flex items-start justify-between gap-4">
+                                    <div className="flex items-center flex-wrap gap-2">
+                                        <h1 className="text-3xl font-bold">{product.name}</h1>
+                                        {product.unit && (
+                                            <span className="bg-muted text-muted-foreground text-sm px-2 py-0.5 rounded-full font-medium">
+                                                {product.unit}
+                                            </span>
+                                        )}
+                                    </div>
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="text-muted-foreground hover:text-foreground shrink-0 -mt-1"
+                                        onClick={handleShare}
+                                        title="Share Product"
+                                    >
+                                        <Share2 className="h-5 w-5" />
+                                    </Button>
                                 </div>
                                 {/* Sold by badge */}
                                 <div className="flex items-center gap-1.5 mt-1.5">
@@ -354,13 +365,6 @@ export default function ProductDetailPage() {
                                     onClick={handleToggleWishlist}
                                 >
                                     <Heart className={`h-5 w-5 ${inWishlist ? 'fill-current' : ''}`} />
-                                </Button>
-                                <Button
-                                    size="lg"
-                                    variant="outline"
-                                    onClick={handleShare}
-                                >
-                                    <Share2 className="h-5 w-5" />
                                 </Button>
                             </div>
 
