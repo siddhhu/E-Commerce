@@ -42,3 +42,4 @@ razorpay>=1.3.0
 
 # Supabase Storage
 supabase>=2.3.0
+fpdf2>=2.7.0

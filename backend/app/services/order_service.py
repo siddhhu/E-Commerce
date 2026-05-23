@@ -321,8 +321,19 @@ class OrderService:
                     float(order.total_amount),
                     len(order_items)
                 )
+
+                # Generate invoice in background
+                from app.services.invoice_service import InvoiceService
+                from app.database import async_session_maker
+                
+                async def generate_invoice_task(o_id):
+                    async with async_session_maker() as s:
+                        await InvoiceService.generate_and_upload_invoice(o_id, s)
+                        
+                background_tasks.add_task(generate_invoice_task, order.id)
+                
             except Exception as e:
-                print(f"Error scheduling order emails: {e}")
+                print(f"Error scheduling order tasks: {e}")
         
         return order
     

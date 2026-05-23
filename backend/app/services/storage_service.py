@@ -143,6 +143,20 @@ class StorageService:
             content_type,
             folder="brands"
         )
+        
+    async def upload_invoice(
+        self,
+        file_content: bytes,
+        file_name: str,
+        content_type: str = "application/pdf"
+    ) -> str:
+        """Upload a PDF invoice."""
+        return await self.upload_file(
+            file_content,
+            file_name,
+            content_type,
+            folder="invoices"
+        )
 
     async def upload_from_url(
         self,
