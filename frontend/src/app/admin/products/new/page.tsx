@@ -42,6 +42,7 @@ export default function AdminAddProductPage() {
         description: '',
         image_url: '',
         category_id: '',
+        gst_percentage: '18',
         is_active: true
     });
 
@@ -87,6 +88,7 @@ export default function AdminAddProductPage() {
                 mrp: mrp,
                 selling_price: sellingPrice,
                 stock_quantity: isNaN(stock) ? 0 : stock,
+                gst_percentage: Number(formData.gst_percentage),
                 short_description: formData.short_description,
                 description: formData.description,
                 image_url: formData.image_url,
@@ -216,6 +218,24 @@ export default function AdminAddProductPage() {
                                             value={formData.stock_quantity} onChange={handleChange} 
                                             placeholder="0"
                                         />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="gst_percentage">GST Percentage *</Label>
+                                        <select
+                                            id="gst_percentage"
+                                            name="gst_percentage"
+                                            value={formData.gst_percentage}
+                                            onChange={handleChange}
+                                            className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                            required
+                                        >
+                                            <option value="0">0% (NIL)</option>
+                                            <option value="2">2%</option>
+                                            <option value="5">5%</option>
+                                            <option value="12">12%</option>
+                                            <option value="18">18%</option>
+                                            <option value="28">28%</option>
+                                        </select>
                                     </div>
                                 </div>
                             </CardContent>

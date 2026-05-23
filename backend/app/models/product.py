@@ -28,6 +28,7 @@ class ProductBase(SQLModel):
     b2b_price: Optional[Decimal] = Field(default=None, max_digits=10, decimal_places=2)
     stock_quantity: int = Field(default=0)
     min_order_quantity: int = Field(default=1)
+    gst_percentage: int = Field(default=18)
     unit: str = Field(default="pcs", max_length=50)
     is_active: bool = Field(default=True)
     is_featured: bool = Field(default=False)
@@ -88,6 +89,7 @@ class ProductCreate(SQLModel):
     b2b_price: Optional[Decimal] = None
     stock_quantity: int = 0
     min_order_quantity: int = 1
+    gst_percentage: int = 18
     category_id: Optional[UUID] = None
     brand_id: Optional[UUID] = None
     unit: str = "pcs"
@@ -110,6 +112,7 @@ class ProductUpdate(SQLModel):
     b2b_price: Optional[Decimal] = None
     stock_quantity: Optional[int] = None
     min_order_quantity: Optional[int] = None
+    gst_percentage: Optional[int] = None
     category_id: Optional[UUID] = None
     brand_id: Optional[UUID] = None
     unit: Optional[str] = None
@@ -148,6 +151,7 @@ class ProductListRead(SQLModel):
     selling_price: Decimal
     b2b_price: Optional[Decimal]
     stock_quantity: int
+    gst_percentage: int = 18
     is_featured: bool
     category_id: Optional[UUID] = None
     image_url: Optional[str] = None

@@ -11,6 +11,7 @@ export interface Product {
     selling_price: number;
     b2b_price: number;
     stock_quantity: number;
+    gst_percentage?: number;
     min_order_quantity: number;
     category_id: string;
     category_name: string;

@@ -151,6 +151,7 @@ class OrderService:
         
         order_items = []
         subtotal = Decimal("0")
+        raw_tax_total = Decimal("0")
         
         for cart_item in cart_items:
             product = products.get(cart_item.product_id)
@@ -164,13 +165,16 @@ class OrderService:
             item_total = product.selling_price * cart_item.quantity
             subtotal += item_total
             
+            gst_rate = Decimal(str(getattr(product, 'gst_percentage', 18)))
+            base_price = item_total / (Decimal("1") + gst_rate / Decimal("100"))
+            raw_tax_total += (item_total - base_price)
+            
             order_items.append({
                 "product": product,
                 "quantity": cart_item.quantity,
                 "unit_price": product.selling_price,
                 "total_price": item_total
             })
-
 
         # Apply promo code (discount is applied on GST-inclusive subtotal)
         discount_amount = Decimal("0")
@@ -184,7 +188,15 @@ class OrderService:
         # Calculate order totals (GST-inclusive pricing model)
         shipping_amount = Decimal("0")  # Free shipping for now
         total_amount = max(Decimal("0"), subtotal - discount_amount + shipping_amount)
-        tax_amount = (total_amount - (total_amount / Decimal("1.18"))).quantize(Decimal("0.01"))
+        
+        # Proportionally reduce tax if there's a discount
+        if subtotal > 0 and discount_amount > 0:
+            discount_ratio = discount_amount / subtotal
+            tax_amount = raw_tax_total * (Decimal("1") - discount_ratio)
+        else:
+            tax_amount = raw_tax_total
+            
+        tax_amount = tax_amount.quantize(Decimal("0.01"))
         
         # Create order
         try:

@@ -125,7 +125,7 @@ async def run_startup_migrations() -> None:
         # 2. Run schema updates for Category model
         print("Database: Running category attribution schema migrations...")
         async with engine.connect() as conn:
-            conn = conn.execution_options(isolation_level="AUTOCOMMIT")
+            conn = await conn.execution_options(isolation_level="AUTOCOMMIT")
             if "sqlite" in db_url:
                 try:
                     await conn.execute(sa.text("ALTER TABLE categories ADD COLUMN seller_id CHAR(32);"))
@@ -145,11 +145,21 @@ async def run_startup_migrations() -> None:
                     ))
                 except Exception:
                     pass
-        print("Database: Category schema migrations applied successfully.")
-
+        # 3. Run schema updates for Product model
+        print("Database: Running product schema migrations...")
+        async with engine.connect() as conn:
+            conn = await conn.execution_options(isolation_level="AUTOCOMMIT")
+            if "sqlite" in db_url:
+                try:
+                    await conn.execute(sa.text("ALTER TABLE products ADD COLUMN gst_percentage INTEGER DEFAULT 18;"))
+                except Exception:
+                    pass
+            else:
+                await conn.execute(sa.text("ALTER TABLE products ADD COLUMN IF NOT EXISTS gst_percentage INTEGER DEFAULT 18;"))
+        print("Database: Schema migrations applied successfully.")
     try:
-        # Run with a 5-second timeout so offline development doesn't hang the app startup
-        await asyncio.wait_for(run_migrations_impl(), timeout=5.0)
+        # Run with a 20-second timeout so offline development doesn't hang the app startup
+        await asyncio.wait_for(run_migrations_impl(), timeout=20.0)
     except asyncio.TimeoutError:
         print("Database: Startup migrations timed out (unreachable database). Skipping startup migration check...")
     except Exception as e:

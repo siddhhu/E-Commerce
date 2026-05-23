@@ -122,11 +122,24 @@ export const useCartStore = create<CartState>()(
             },
 
             getTax: () => {
-                const subtotal = get().getSubtotal() - get().getDiscount();
-                // Prices are GST-inclusive. For 18% GST:
-                // base = subtotal / 1.18
-                // gst = subtotal - base
-                return subtotal - subtotal / 1.18;
+                const items = get().items;
+                const subtotal = get().getSubtotal();
+                const discount = get().getDiscount();
+                
+                // Calculate total tax per item based on each item's GST percentage
+                const rawTax = items.reduce((tax, item) => {
+                    const itemTotal = item.product.selling_price * item.quantity;
+                    const gstRate = item.product.gst_percentage ?? 18;
+                    const itemBase = itemTotal / (1 + gstRate / 100);
+                    return tax + (itemTotal - itemBase);
+                }, 0);
+                
+                // Proportionally reduce the tax if there is a discount
+                if (subtotal > 0 && discount > 0) {
+                    const discountRatio = discount / subtotal;
+                    return rawTax * (1 - discountRatio);
+                }
+                return rawTax;
             },
 
             getTotal: () => {

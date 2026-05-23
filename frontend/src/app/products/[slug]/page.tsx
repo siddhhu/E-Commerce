@@ -107,8 +107,9 @@ export default function ProductDetailPage() {
     // Total price based on quantity (if out of stock, default to single unit price for display)
     const totalPrice = unitPrice * (isOutOfStock ? 1 : displayQty);
     
-    // GST Calculation (18%) for GST-inclusive prices
-    const baseAmount = totalPrice / 1.18;
+    // GST Calculation based on product specific GST percentage
+    const gstRate = product.gst_percentage ?? 18;
+    const baseAmount = totalPrice / (1 + gstRate / 100);
     const gstAmount = totalPrice - baseAmount;
     
     const remainingStock = isOutOfStock ? 0 : Math.max(0, Number(product.stock_quantity) - displayQty);
@@ -124,6 +125,7 @@ export default function ProductDetailPage() {
         selling_price: Number(p.selling_price),
         b2b_price: p.b2b_price ? Number(p.b2b_price) : 0,
         stock_quantity: p.stock_quantity,
+        gst_percentage: p.gst_percentage,
         min_order_quantity: p.min_order_quantity,
         unit: p.unit,
         is_active: p.is_active,
@@ -285,7 +287,7 @@ export default function ProductDetailPage() {
                                 {/* GST Breakdown */}
                                 <div className="text-sm text-muted-foreground border-l-2 border-primary/20 pl-3 py-1 bg-muted/30 rounded-r-md">
                                     <p>Base Price: <span className="font-medium text-foreground">{formatPrice(baseAmount)}</span></p>
-                                    <p>GST (18%): <span className="font-medium text-foreground">{formatPrice(gstAmount)}</span></p>
+                                    <p>GST ({gstRate}%): <span className="font-medium text-foreground">{formatPrice(gstAmount)}</span></p>
                                     <p className="text-[10px] uppercase tracking-wider font-bold mt-1 text-primary/70">Inclusive of all taxes</p>
                                 </div>
                             </div>
@@ -329,9 +331,9 @@ export default function ProductDetailPage() {
                                     <div className="flex flex-col">
                                         <span className={cn(
                                             "text-sm font-semibold",
-                                            isOutOfStock ? "text-destructive" : remainingStock < 10 ? "text-destructive" : "text-green-600"
+                                            isOutOfStock ? "text-destructive" : remainingStock < 6 ? "text-amber-600" : "text-green-600"
                                         )}>
-                                            {isOutOfStock ? "Out of Stock" : `${remainingStock} units left`}
+                                            {isOutOfStock ? "Out of Stock" : remainingStock < 6 ? "Only a few stock left, hurry up!" : "In Stock"}
                                         </span>
                                         <span className="text-[10px] text-muted-foreground uppercase">Stock Status</span>
                                     </div>

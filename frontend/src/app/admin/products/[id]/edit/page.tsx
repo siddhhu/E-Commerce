@@ -33,6 +33,7 @@ export default function AdminEditProductPage() {
         description: '',
         image_url: '',
         category_id: '',
+        gst_percentage: '18',
         is_active: true
     });
 
@@ -55,6 +56,7 @@ export default function AdminEditProductPage() {
                     description: product.description || '',
                     image_url: product.image_url || '',
                     category_id: product.category_id || '',
+                    gst_percentage: product.gst_percentage?.toString() || '18',
                     is_active: product.is_active
                 });
             } catch (error: any) {
@@ -98,6 +100,7 @@ export default function AdminEditProductPage() {
                 mrp: parseFloat(formData.mrp),
                 selling_price: parseFloat(formData.selling_price),
                 stock_quantity: parseInt(formData.stock_quantity, 10),
+                gst_percentage: Number(formData.gst_percentage),
                 short_description: formData.short_description,
                 description: formData.description,
                 image_url: formData.image_url,
@@ -223,6 +226,24 @@ export default function AdminEditProductPage() {
                                             id="stock_quantity" name="stock_quantity" type="number" required
                                             value={formData.stock_quantity} onChange={handleChange} 
                                         />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="gst_percentage">GST Percentage *</Label>
+                                        <select
+                                            id="gst_percentage"
+                                            name="gst_percentage"
+                                            value={formData.gst_percentage}
+                                            onChange={handleChange}
+                                            className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                            required
+                                        >
+                                            <option value="0">0% (NIL)</option>
+                                            <option value="2">2%</option>
+                                            <option value="5">5%</option>
+                                            <option value="12">12%</option>
+                                            <option value="18">18%</option>
+                                            <option value="28">28%</option>
+                                        </select>
                                     </div>
                                 </div>
                             </CardContent>
