@@ -1,12 +1,12 @@
 """
 Product Service - Product operations
 """
-from typing import Optional
+from typing import Optional, Sequence
 from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
-from sqlmodel import select
+from sqlmodel import select, or_
 from slugify import slugify
 
 from app.core.exceptions import ConflictException, NotFoundException
@@ -108,6 +108,23 @@ class ProductService:
         result = await self.session.execute(query)
         return result.scalar() or 0
     
+    async def get_product_variants(self, slug: str) -> Sequence[Product]:
+        """Get all sibling products including the parent product."""
+        product = await self.get_product_by_slug(slug)
+        target_parent_id = product.parent_id or product.id
+        
+        query = select(Product).options(
+            selectinload(Product.images)
+        ).where(
+            or_(
+                Product.id == target_parent_id,
+                Product.parent_id == target_parent_id
+            ),
+            Product.is_active == True
+        )
+        result = await self.session.execute(query)
+        return result.scalars().all()
+
     async def create_product(self, data: ProductCreate) -> Product:
         """Create a new product."""
         # Check for duplicate SKU

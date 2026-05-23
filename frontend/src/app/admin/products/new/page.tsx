@@ -18,17 +18,22 @@ export default function AdminAddProductPage() {
     const [isLoading, setIsLoading] = useState(false);
     const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
     const [categories, setCategories] = useState<CategoryRead[]>([]);
+    const [products, setProducts] = useState<any[]>([]);
     
     useEffect(() => {
-        const fetchCategories = async () => {
+        const fetchData = async () => {
             try {
-                const cats = await adminApi.listCategories();
+                const [cats, prods] = await Promise.all([
+                    adminApi.listCategories(),
+                    adminApi.listProducts({ page_size: 100 })
+                ]);
                 setCategories(cats);
+                setProducts(prods.items);
             } catch (err) {
-                console.error("Failed to load categories:", err);
+                console.error("Failed to load data:", err);
             }
         };
-        fetchCategories();
+        fetchData();
     }, []);
     
     // Using a simple state object for the form
@@ -43,6 +48,9 @@ export default function AdminAddProductPage() {
         image_url: '',
         category_id: '',
         gst_percentage: '18',
+        parent_id: '',
+        color: '',
+        size: '',
         is_active: true
     });
 
@@ -93,6 +101,11 @@ export default function AdminAddProductPage() {
                 description: formData.description,
                 image_url: formData.image_url,
                 category_id: formData.category_id || undefined,
+                parent_id: formData.parent_id || undefined,
+                attributes: {
+                    color: formData.color || undefined,
+                    size: formData.size || undefined,
+                },
                 is_active: formData.is_active,
                 slug: formData.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '') || `product-${Date.now()}`
             });
@@ -176,6 +189,44 @@ export default function AdminAddProductPage() {
                                             <option key={cat.id} value={cat.id}>{cat.name}</option>
                                         ))}
                                     </select>
+                                </div>
+
+                                {/* Variant Options */}
+                                <div className="space-y-4 border-t pt-4 mt-4">
+                                    <h3 className="text-sm font-semibold">Variant Settings (Optional)</h3>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="parent_id">Is this a variant of another product?</Label>
+                                        <select
+                                            id="parent_id"
+                                            name="parent_id"
+                                            value={formData.parent_id}
+                                            onChange={handleChange}
+                                            className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                        >
+                                            <option value="">No, this is a standalone product</option>
+                                            {products.filter(p => !p.parent_id).map(prod => (
+                                                <option key={prod.id} value={prod.id}>{prod.name} ({prod.sku})</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <div className="grid gap-4 sm:grid-cols-2">
+                                        <div className="space-y-2">
+                                            <Label htmlFor="color">Color</Label>
+                                            <Input 
+                                                id="color" name="color" 
+                                                value={formData.color} onChange={handleChange} 
+                                                placeholder="e.g., Red, Blue, #FF0000"
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label htmlFor="size">Size / Weight</Label>
+                                            <Input 
+                                                id="size" name="size" 
+                                                value={formData.size} onChange={handleChange} 
+                                                placeholder="e.g., 50g, 100ml, XL"
+                                            />
+                                        </div>
+                                    </div>
                                 </div>
                             </CardContent>
                         </Card>

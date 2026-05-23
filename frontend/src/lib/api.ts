@@ -279,6 +279,9 @@ export const productsApi = {
 
     getBySlug: (slug: string) =>
         api.get<Product>(`/products/${slug}`),
+
+    getVariants: (slug: string) =>
+        api.get<ProductSummary[]>(`/products/${slug}/variants`),
 };
 
 // Categories API
@@ -533,6 +536,7 @@ export interface Product {
     category_id?: string;
     brand_id?: string;
     unit: string;
+    parent_id?: string;
     attributes: Record<string, unknown>;
     is_active: boolean;
     is_featured: boolean;
@@ -564,6 +568,7 @@ export interface ProductSummary {
     gst_percentage?: number;
     is_featured: boolean;
     category_id?: string;
+    parent_id?: string;
     primary_image?: string;
     seller_id?: string;
     seller_name?: string;

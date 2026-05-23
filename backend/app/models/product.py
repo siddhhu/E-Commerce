@@ -36,6 +36,9 @@ class ProductBase(SQLModel):
     # Seller attribution
     seller_id: Optional[UUID] = Field(default=None, foreign_key="users.id")
     seller_name: Optional[str] = Field(default="Pranjay", max_length=255)
+    
+    # Parent product (for variants)
+    parent_id: Optional[UUID] = Field(default=None, foreign_key="products.id")
 
 
 class Product(ProductBase, table=True):
@@ -95,6 +98,7 @@ class ProductCreate(SQLModel):
     unit: str = "pcs"
     attributes: dict = {}
     is_featured: bool = False
+    parent_id: Optional[UUID] = None
     # Seller attribution — set by the router based on current_user
     seller_id: Optional[UUID] = None
     seller_name: Optional[str] = "Pranjay"
@@ -119,6 +123,7 @@ class ProductUpdate(SQLModel):
     attributes: Optional[dict] = None
     is_active: Optional[bool] = None
     is_featured: Optional[bool] = None
+    parent_id: Optional[UUID] = None
 
 
 class ProductImageRead(ProductImageBase):
@@ -138,6 +143,7 @@ class ProductRead(ProductBase):
     images: list[ProductImageRead] = []
     seller_id: Optional[UUID] = None
     seller_name: Optional[str] = "Pranjay"
+    parent_id: Optional[UUID] = None
 
 
 class ProductListRead(SQLModel):
@@ -158,3 +164,4 @@ class ProductListRead(SQLModel):
     primary_image: Optional[str] = None
     seller_id: Optional[UUID] = None
     seller_name: Optional[str] = "Pranjay"
+    parent_id: Optional[UUID] = None

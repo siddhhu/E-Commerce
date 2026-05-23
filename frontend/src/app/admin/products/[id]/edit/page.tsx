@@ -22,6 +22,7 @@ export default function AdminEditProductPage() {
     const [isSaving, setIsSaving] = useState(false);
     const [isUploadingImage, setIsUploadingImage] = useState(false);
     const [categories, setCategories] = useState<CategoryRead[]>([]);
+    const [products, setProducts] = useState<any[]>([]);
     
     const [formData, setFormData] = useState({
         name: '',
@@ -34,6 +35,9 @@ export default function AdminEditProductPage() {
         image_url: '',
         category_id: '',
         gst_percentage: '18',
+        parent_id: '',
+        color: '',
+        size: '',
         is_active: true
     });
 
@@ -41,11 +45,13 @@ export default function AdminEditProductPage() {
         const fetchProductAndCategories = async () => {
             if (!productId) return;
             try {
-                const [product, cats] = await Promise.all([
+                const [product, cats, prodsRes] = await Promise.all([
                     adminApi.getProduct(productId),
-                    adminApi.listCategories()
+                    adminApi.listCategories(),
+                    adminApi.listProducts({ page_size: 100 })
                 ]);
                 setCategories(cats);
+                setProducts(prodsRes.items);
                 setFormData({
                     name: product.name || '',
                     sku: product.sku || '',
@@ -56,6 +62,9 @@ export default function AdminEditProductPage() {
                     description: product.description || '',
                     image_url: product.image_url || '',
                     category_id: product.category_id || '',
+                    parent_id: product.parent_id || '',
+                    color: (product.attributes?.color as string) || '',
+                    size: (product.attributes?.size as string) || '',
                     gst_percentage: product.gst_percentage?.toString() || '18',
                     is_active: product.is_active
                 });
@@ -105,6 +114,11 @@ export default function AdminEditProductPage() {
                 description: formData.description,
                 image_url: formData.image_url,
                 category_id: formData.category_id || undefined,
+                parent_id: formData.parent_id || undefined,
+                attributes: {
+                    color: formData.color || undefined,
+                    size: formData.size || undefined,
+                },
                 is_active: formData.is_active
             });
 
@@ -188,6 +202,44 @@ export default function AdminEditProductPage() {
                                             <option key={cat.id} value={cat.id}>{cat.name}</option>
                                         ))}
                                     </select>
+                                </div>
+
+                                {/* Variant Options */}
+                                <div className="space-y-4 border-t pt-4 mt-4">
+                                    <h3 className="text-sm font-semibold">Variant Settings (Optional)</h3>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="parent_id">Is this a variant of another product?</Label>
+                                        <select
+                                            id="parent_id"
+                                            name="parent_id"
+                                            value={formData.parent_id}
+                                            onChange={handleChange}
+                                            className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                        >
+                                            <option value="">No, this is a standalone product</option>
+                                            {products.filter(p => p.id !== productId && !p.parent_id).map(prod => (
+                                                <option key={prod.id} value={prod.id}>{prod.name} ({prod.sku})</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <div className="grid gap-4 sm:grid-cols-2">
+                                        <div className="space-y-2">
+                                            <Label htmlFor="color">Color</Label>
+                                            <Input 
+                                                id="color" name="color" 
+                                                value={formData.color} onChange={handleChange} 
+                                                placeholder="e.g., Red, Blue, #FF0000"
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label htmlFor="size">Size / Weight</Label>
+                                            <Input 
+                                                id="size" name="size" 
+                                                value={formData.size} onChange={handleChange} 
+                                                placeholder="e.g., 50g, 100ml, XL"
+                                            />
+                                        </div>
+                                    </div>
                                 </div>
                             </CardContent>
                         </Card>

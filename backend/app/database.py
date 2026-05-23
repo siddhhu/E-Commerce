@@ -154,8 +154,13 @@ async def run_startup_migrations() -> None:
                     await conn.execute(sa.text("ALTER TABLE products ADD COLUMN gst_percentage INTEGER DEFAULT 18;"))
                 except Exception:
                     pass
+                try:
+                    await conn.execute(sa.text("ALTER TABLE products ADD COLUMN parent_id CHAR(32) REFERENCES products(id);"))
+                except Exception:
+                    pass
             else:
                 await conn.execute(sa.text("ALTER TABLE products ADD COLUMN IF NOT EXISTS gst_percentage INTEGER DEFAULT 18;"))
+                await conn.execute(sa.text("ALTER TABLE products ADD COLUMN IF NOT EXISTS parent_id UUID REFERENCES products(id);"))
         print("Database: Schema migrations applied successfully.")
     try:
         # Run with a 20-second timeout so offline development doesn't hang the app startup

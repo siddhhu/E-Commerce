@@ -154,3 +154,13 @@ async def get_product_by_slug(
     product_service = ProductService(session)
     product = await product_service.get_product_by_slug(slug)
     return product
+
+@router.get("/{slug}/variants", response_model=list[ProductListRead])
+async def get_product_variants(
+    slug: str,
+    session: AsyncSession = Depends(get_session)
+):
+    """Get all variants (siblings) for a product."""
+    product_service = ProductService(session)
+    variants = await product_service.get_product_variants(slug)
+    return variants

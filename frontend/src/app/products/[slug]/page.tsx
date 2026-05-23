@@ -24,6 +24,7 @@ export default function ProductDetailPage() {
     const [quantity, setQuantity] = useState(1);
 
     const [product, setProduct] = useState<APIProduct | null>(null);
+    const [variants, setVariants] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(false);
 
@@ -38,6 +39,14 @@ export default function ProductDetailPage() {
             try {
                 const data = await productsApi.getBySlug(params.slug as string);
                 setProduct(data);
+                
+                try {
+                    const variantsData = await productsApi.getVariants(params.slug as string);
+                    setVariants(variantsData);
+                } catch (vErr) {
+                    console.error('Failed to fetch variants:', vErr);
+                }
+                
                 setError(false);
             } catch (err) {
                 console.error('Failed to fetch product:', err);
@@ -298,6 +307,48 @@ export default function ProductDetailPage() {
                                     <p className="text-xs text-amber-800">
                                         Buy {minOrderQty} or more to get the wholesale price of <span className="font-bold">{formatPrice(Number(product.b2b_price))}</span>
                                     </p>
+                                </div>
+                            )}
+
+                            {/* Variants */}
+                            {variants.length > 1 && (
+                                <div className="space-y-3 py-4 border-y">
+                                    <h3 className="text-sm font-medium text-muted-foreground">Available Options</h3>
+                                    <div className="flex flex-wrap gap-3">
+                                        {variants.map(v => {
+                                            const color = v.attributes?.color;
+                                            const size = v.attributes?.size;
+                                            const label = [color, size].filter(Boolean).join(' - ') || v.name;
+                                            
+                                            // Handle colors that might not be valid CSS colors (e.g. 'Matte Red')
+                                            const isHexOrBasicColor = color ? /^(#[0-9A-F]{3,6}|[a-zA-Z]+)$/i.test(color) : false;
+                                            const colorStyle = isHexOrBasicColor ? { backgroundColor: color.toLowerCase() } : {};
+                                            
+                                            return (
+                                                <Link href={`/products/${v.slug}`} key={v.id}>
+                                                    <Button
+                                                        variant={v.id === product.id ? "default" : "outline"}
+                                                        size="sm"
+                                                        className={cn(
+                                                            "h-10 px-4 rounded-xl transition-all shadow-sm",
+                                                            v.id === product.id ? "ring-2 ring-primary ring-offset-2" : "hover:border-primary/50"
+                                                        )}
+                                                    >
+                                                        {color && (
+                                                            <span 
+                                                                className={cn(
+                                                                    "mr-2 w-4 h-4 rounded-full border shadow-inner",
+                                                                    !isHexOrBasicColor ? "bg-muted" : ""
+                                                                )} 
+                                                                style={colorStyle}
+                                                            ></span>
+                                                        )}
+                                                        {label}
+                                                    </Button>
+                                                </Link>
+                                            );
+                                        })}
+                                    </div>
                                 </div>
                             )}
 
