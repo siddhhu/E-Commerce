@@ -322,15 +322,13 @@ class OrderService:
                     len(order_items)
                 )
 
-                # Generate invoice in background
+                # Generate invoice immediately (before response) 
+                # to prevent Vercel Serverless from killing the task mid-upload.
                 from app.services.invoice_service import InvoiceService
-                from app.database import async_session_maker
-                
-                async def generate_invoice_task(o_id):
-                    async with async_session_maker() as s:
-                        await InvoiceService.generate_and_upload_invoice(o_id, s)
-                        
-                background_tasks.add_task(generate_invoice_task, order.id)
+                try:
+                    await InvoiceService.generate_and_upload_invoice(order.id, self.session)
+                except Exception as e:
+                    print(f"Error generating invoice synchronously: {e}")
                 
             except Exception as e:
                 print(f"Error scheduling order tasks: {e}")
