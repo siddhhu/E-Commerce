@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Heart, ShoppingCart, Minus, Plus, ArrowLeft, Truck, Shield, RotateCcw, Loader2 } from 'lucide-react';
+import { Heart, ShoppingCart, Minus, Plus, ArrowLeft, Truck, Shield, RotateCcw, Loader2, Share2 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -170,6 +170,30 @@ export default function ProductDetailPage() {
         }
     };
 
+    const handleShare = async () => {
+        if (!product) return;
+        
+        const shareData = {
+            title: product.name,
+            text: product.short_description || `Check out ${product.name} on Pranjay`,
+            url: window.location.href,
+        };
+
+        try {
+            if (navigator.share) {
+                await navigator.share(shareData);
+            } else {
+                await navigator.clipboard.writeText(window.location.href);
+                toast({
+                    title: 'Link Copied',
+                    description: 'Product link copied to clipboard',
+                });
+            }
+        } catch (err) {
+            console.error('Error sharing:', err);
+        }
+    };
+
     // Related products (same category)
     const relatedProducts = [] as any[]; // Simplified for now since we don't have easy fetch for this yet
 
@@ -330,6 +354,13 @@ export default function ProductDetailPage() {
                                     onClick={handleToggleWishlist}
                                 >
                                     <Heart className={`h-5 w-5 ${inWishlist ? 'fill-current' : ''}`} />
+                                </Button>
+                                <Button
+                                    size="lg"
+                                    variant="outline"
+                                    onClick={handleShare}
+                                >
+                                    <Share2 className="h-5 w-5" />
                                 </Button>
                             </div>
 
