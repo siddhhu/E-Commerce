@@ -229,10 +229,12 @@ export default function CheckoutPage() {
         setIsProcessing(true);
 
         try {
-            // 1. Create address (always save a fresh one) + sync profile doc in parallel
-            // Note: cart sync (syncAll) removed — cart is already on backend from when
-            // items were added. We only need the address and optional profile update.
+            // Always re-sync the cart to backend before checkout.
+            // The frontend Zustand store (localStorage) is the source of truth —
+            // the backend cart can be empty after a page reload, session change,
+            // or a previous order. syncAll is now parallel (fast, uses Promise.allSettled).
             const addressTask = usersApi.createAddress({ ...address, country: 'India', is_default: true });
+            const syncTask = cartApi.syncAll(items.map(item => ({ product_id: item.product.id, quantity: item.quantity })));
 
             let profileTask = Promise.resolve<any>(undefined);
             if (docValid && docNumber && !docSavedToProfile) {
@@ -241,8 +243,8 @@ export default function CheckoutPage() {
                 profileTask = authApi.updateProfile(updateData).then(u => setUser(u));
             }
 
-            // Wait for address + profile update
-            const [savedAddress] = await Promise.all([addressTask, profileTask]);
+            // All three run in parallel — address creation, cart sync, profile update
+            const [savedAddress] = await Promise.all([addressTask, syncTask, profileTask]);
 
             const createdOrder = await ordersApi.checkout({
                 shipping_address_id: savedAddress.id,
