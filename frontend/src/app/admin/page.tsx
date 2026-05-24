@@ -1,14 +1,15 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { adminApi, DashboardStats, RecentOrder } from '@/lib/api';
+import { adminApi, DashboardStats, RecentOrder, authApi } from '@/lib/api';
 import { 
     Users, Package, ShoppingCart, DollarSign, 
-    TrendingUp, Clock, AlertTriangle 
+    TrendingUp, Clock, AlertTriangle, KeyRound, Eye, EyeOff, CheckCircle2
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useToast } from '@/hooks/use-toast';
 
 export default function AdminDashboardPage() {
     const [stats, setStats] = useState<DashboardStats | null>(null);
@@ -200,6 +201,159 @@ export default function AdminDashboardPage() {
                     )}
                 </CardContent>
             </Card>
+
+            {/* ── Change Password ───────────────────────────────────────────── */}
+            <ChangePasswordCard />
         </div>
+    );
+}
+
+
+// ── Self-contained inline change password card ────────────────────────────────
+function ChangePasswordCard() {
+    const { toast } = useToast();
+    const [form, setForm] = useState({ current: '', next: '', confirm: '' });
+    const [show, setShow] = useState({ current: false, next: false, confirm: false });
+    const [isLoading, setIsLoading] = useState(false);
+    const [success, setSuccess] = useState(false);
+    const [errors, setErrors] = useState<Record<string, string>>({});
+
+    const field = (key: 'current' | 'next' | 'confirm') => ({
+        value: form[key],
+        type: show[key] ? 'text' : 'password',
+        onChange: (e: React.ChangeEvent<HTMLInputElement>) => {
+            setForm(f => ({ ...f, [key]: e.target.value }));
+            setErrors(er => ({ ...er, [key]: '' }));
+            setSuccess(false);
+        },
+        toggle: () => setShow(s => ({ ...s, [key]: !s[key] })),
+        showIcon: show[key],
+    });
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        const errs: Record<string, string> = {};
+        if (!form.current) errs.current = 'Required.';
+        if (!form.next) errs.next = 'Required.';
+        else if (form.next.length < 8) errs.next = 'At least 8 characters.';
+        if (form.next !== form.confirm) errs.confirm = 'Passwords do not match.';
+        if (form.current && form.current === form.next) errs.next = 'Must differ from current.';
+        if (Object.keys(errs).length) { setErrors(errs); return; }
+
+        setIsLoading(true);
+        try {
+            await authApi.changePassword({ current_password: form.current, new_password: form.next });
+            setSuccess(true);
+            setForm({ current: '', next: '', confirm: '' });
+            toast({ title: '✅ Password Updated', description: 'Your password has been changed successfully.' });
+        } catch (err: any) {
+            const msg = err.message || 'Failed to update password.';
+            toast({ title: 'Error', description: msg, variant: 'destructive' });
+            if (msg.toLowerCase().includes('incorrect')) setErrors({ current: 'Current password is incorrect.' });
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const strength = (() => {
+        const p = form.next;
+        if (!p) return { score: 0, label: '', color: '' };
+        let s = 0;
+        if (p.length >= 8) s++; if (p.length >= 12) s++;
+        if (/[A-Z]/.test(p)) s++; if (/[0-9]/.test(p)) s++; if (/[^A-Za-z0-9]/.test(p)) s++;
+        return s <= 1 ? { score: s, label: 'Weak', color: 'bg-red-500' }
+            : s <= 3 ? { score: s, label: 'Fair', color: 'bg-amber-500' }
+            : s === 4 ? { score: s, label: 'Strong', color: 'bg-blue-500' }
+            : { score: s, label: 'Very Strong', color: 'bg-green-500' };
+    })();
+
+    const pw = field('current'), pn = field('next'), pc = field('confirm');
+
+    return (
+        <Card className="border-slate-200">
+            <CardHeader className="flex flex-row items-center gap-3 pb-4">
+                <div className="h-9 w-9 rounded-lg bg-slate-900 flex items-center justify-center flex-shrink-0">
+                    <KeyRound className="h-4 w-4 text-white" />
+                </div>
+                <div>
+                    <CardTitle className="text-base">Change Password</CardTitle>
+                    <p className="text-xs text-slate-500 font-normal">Update your account password.</p>
+                </div>
+            </CardHeader>
+            <CardContent>
+                <form onSubmit={handleSubmit} className="grid gap-4 sm:grid-cols-3">
+                    {success && (
+                        <div className="sm:col-span-3 flex items-center gap-2 p-3 rounded-lg bg-green-50 border border-green-200 text-green-800 text-sm">
+                            <CheckCircle2 className="h-4 w-4 flex-shrink-0" />
+                            Password updated successfully!
+                        </div>
+                    )}
+
+                    {/* Current */}
+                    <div className="space-y-1">
+                        <label className="text-xs font-medium text-slate-600">Current Password</label>
+                        <div className="relative">
+                            <input id="cp-current" {...{type: pw.type, value: pw.value, onChange: pw.onChange}}
+                                placeholder="Current password"
+                                className={`w-full pr-9 pl-3 py-2 text-sm rounded-lg border focus:outline-none focus:ring-2 transition-colors ${
+                                    errors.current ? 'border-red-400 focus:ring-red-100 bg-red-50' : 'border-slate-300 focus:ring-slate-200'
+                                }`} />
+                            <button type="button" onClick={pw.toggle} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                                {pw.showIcon ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                            </button>
+                        </div>
+                        {errors.current && <p className="text-xs text-red-600">{errors.current}</p>}
+                    </div>
+
+                    {/* New */}
+                    <div className="space-y-1">
+                        <label className="text-xs font-medium text-slate-600">New Password</label>
+                        <div className="relative">
+                            <input id="cp-new" {...{type: pn.type, value: pn.value, onChange: pn.onChange}}
+                                placeholder="Min. 8 characters"
+                                className={`w-full pr-9 pl-3 py-2 text-sm rounded-lg border focus:outline-none focus:ring-2 transition-colors ${
+                                    errors.next ? 'border-red-400 focus:ring-red-100 bg-red-50' : 'border-slate-300 focus:ring-slate-200'
+                                }`} />
+                            <button type="button" onClick={pn.toggle} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                                {pn.showIcon ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                            </button>
+                        </div>
+                        {form.next && (
+                            <div className="flex gap-1 pt-0.5">
+                                {[1,2,3,4,5].map(i => <div key={i} className={`h-1 flex-1 rounded-full ${i <= strength.score ? strength.color : 'bg-slate-200'}`} />)}
+                            </div>
+                        )}
+                        {errors.next && <p className="text-xs text-red-600">{errors.next}</p>}
+                    </div>
+
+                    {/* Confirm */}
+                    <div className="space-y-1">
+                        <label className="text-xs font-medium text-slate-600">Confirm New Password</label>
+                        <div className="relative">
+                            <input id="cp-confirm" {...{type: pc.type, value: pc.value, onChange: pc.onChange}}
+                                placeholder="Re-enter new password"
+                                className={`w-full pr-9 pl-3 py-2 text-sm rounded-lg border focus:outline-none focus:ring-2 transition-colors ${
+                                    errors.confirm ? 'border-red-400 focus:ring-red-100 bg-red-50'
+                                    : form.confirm && form.confirm === form.next ? 'border-green-400 focus:ring-green-100 bg-green-50'
+                                    : 'border-slate-300 focus:ring-slate-200'
+                                }`} />
+                            <button type="button" onClick={pc.toggle} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                                {pc.showIcon ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                            </button>
+                        </div>
+                        {errors.confirm && <p className="text-xs text-red-600">{errors.confirm}</p>}
+                    </div>
+
+                    <div className="sm:col-span-3 flex justify-end">
+                        <button type="submit" id="cp-submit" disabled={isLoading}
+                            className="flex items-center gap-2 px-5 py-2 rounded-lg bg-slate-900 text-white text-sm font-medium hover:bg-slate-800 disabled:opacity-60 disabled:cursor-not-allowed transition-colors">
+                            {isLoading
+                                ? <><div className="h-3.5 w-3.5 rounded-full border-2 border-white/30 border-t-white animate-spin" /> Updating...</>
+                                : <><KeyRound className="h-3.5 w-3.5" /> Update Password</>}
+                        </button>
+                    </div>
+                </form>
+            </CardContent>
+        </Card>
     );
 }
