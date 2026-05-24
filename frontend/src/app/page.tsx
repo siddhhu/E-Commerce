@@ -177,9 +177,13 @@ export default function HomePage() {
 
     return (
         <div className="min-h-screen flex flex-col">
+            <PromoBanner />
             <Header />
 
             <main className="flex-1">
+                <div className="container py-4">
+                    <BannerSlider />
+                </div>
                 {/* Hero / Banner Section */}
                 <section className="py-12 md:py-20 bg-white relative overflow-hidden">
                     <div className="container relative z-10">
