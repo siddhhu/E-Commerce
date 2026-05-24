@@ -353,30 +353,36 @@ export default function ProductDetailPage() {
                             {/* Variants */}
                             {variants.length > 1 && (
                                 <div className="space-y-3 py-2">
-                                    <h3 className="text-sm font-semibold">Select Shade:</h3>
+                                    <h3 className="text-sm font-semibold">
+                                        Select Shade: <span className="font-bold text-primary">{((product.attributes as any)?.color_name) || ((product.attributes as any)?.color) || product.name}</span>
+                                    </h3>
                                     <div className="flex flex-wrap gap-3">
                                         {variants.map(v => {
-                                            const color = v.attributes?.color || '#e0a98f'; // fallback color
-                                            const label = color || v.name;
+                                            const colorHex = (v.attributes as any)?.color_hex || (v.attributes as any)?.color;
+                                            const colorName = (v.attributes as any)?.color_name || colorHex || v.name;
                                             
-                                            const isHexOrBasicColor = color ? /^(#[0-9A-F]{3,6}|[a-zA-Z]+)$/i.test(color) : false;
-                                            const colorStyle = isHexOrBasicColor ? { backgroundColor: color.toLowerCase() } : {};
+                                            // If it has a hex code, use it. Otherwise, use the product's primary image as a mini thumbnail
+                                            const hasHex = colorHex && /^(#[0-9A-F]{3,6}|[a-zA-Z]+)$/i.test(colorHex);
+                                            const vImage = v.image_url || v.images?.find((img: any) => img.is_primary)?.image_url || v.images?.[0]?.image_url;
                                             
                                             return (
                                                 <div key={v.id} onClick={() => handleVariantSelect(v)}>
                                                     <div 
                                                         className={cn(
-                                                            "w-8 h-8 rounded-full border-2 shadow-sm transition-all cursor-pointer",
-                                                            v.id === product.id ? "border-slate-800 scale-110" : "border-transparent hover:scale-105"
+                                                            "w-10 h-10 rounded-full border-2 shadow-sm transition-all cursor-pointer relative overflow-hidden",
+                                                            v.id === product.id ? "border-slate-800 scale-110" : "border-slate-200 hover:scale-105"
                                                         )}
-                                                        style={colorStyle}
-                                                        title={label}
-                                                    ></div>
+                                                        style={hasHex ? { backgroundColor: colorHex.toLowerCase() } : {}}
+                                                        title={colorName}
+                                                    >
+                                                        {!hasHex && vImage && (
+                                                            <Image src={vImage} alt={colorName} fill className="object-cover" />
+                                                        )}
+                                                    </div>
                                                 </div>
                                             );
                                         })}
                                     </div>
-                                    <p className="text-sm font-medium mt-2">{((product.attributes as any)?.color) || 'Dawn Magic'}</p>
                                 </div>
                             )}
 

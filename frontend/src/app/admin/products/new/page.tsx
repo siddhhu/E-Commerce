@@ -49,7 +49,8 @@ export default function AdminAddProductPage() {
         category_id: '',
         gst_percentage: '18',
         parent_id: '',
-        color: '',
+        color_hex: '#000000',
+        color_name: '',
         size: '',
         is_active: true
     });
@@ -103,7 +104,8 @@ export default function AdminAddProductPage() {
                 category_id: formData.category_id || undefined,
                 parent_id: formData.parent_id || undefined,
                 attributes: {
-                    color: formData.color || undefined,
+                    color_hex: formData.color_hex !== '#000000' ? formData.color_hex : undefined,
+                    color_name: formData.color_name || undefined,
                     size: formData.size || undefined,
                 },
                 is_active: formData.is_active,
@@ -211,14 +213,25 @@ export default function AdminAddProductPage() {
                                             ))}
                                         </select>
                                     </div>
-                                    <div className="grid gap-4 sm:grid-cols-2">
+                                    <div className="grid gap-4 sm:grid-cols-3">
                                         <div className="space-y-2">
-                                            <Label htmlFor="color">Color</Label>
+                                            <Label htmlFor="color_name">Shade Name</Label>
                                             <Input 
-                                                id="color" name="color" 
-                                                value={formData.color} onChange={handleChange} 
-                                                placeholder="e.g., Red, Blue, #FF0000"
+                                                id="color_name" name="color_name" 
+                                                value={formData.color_name} onChange={handleChange} 
+                                                placeholder="e.g., Ruby Red"
                                             />
+                                        </div>
+                                        <div className="space-y-2 flex flex-col">
+                                            <Label htmlFor="color_hex">Shade Color</Label>
+                                            <div className="flex items-center gap-2">
+                                                <input 
+                                                    type="color" id="color_hex" name="color_hex" 
+                                                    value={formData.color_hex} onChange={handleChange} 
+                                                    className="w-10 h-10 p-1 rounded border cursor-pointer"
+                                                />
+                                                <span className="text-sm text-muted-foreground uppercase">{formData.color_hex}</span>
+                                            </div>
                                         </div>
                                         <div className="space-y-2">
                                             <Label htmlFor="size">Size / Weight</Label>

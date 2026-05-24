@@ -63,7 +63,8 @@ export default function AdminEditProductPage() {
                     image_url: product.image_url || '',
                     category_id: product.category_id || '',
                     parent_id: product.parent_id || '',
-                    color: (product.attributes?.color as string) || '',
+                    color_hex: (product.attributes?.color_hex as string) || (product.attributes?.color as string) || '#000000',
+                    color_name: (product.attributes?.color_name as string) || '',
                     size: (product.attributes?.size as string) || '',
                     gst_percentage: product.gst_percentage?.toString() || '18',
                     is_active: product.is_active
@@ -121,7 +122,8 @@ export default function AdminEditProductPage() {
                 category_id: formData.category_id || undefined,
                 parent_id: formData.parent_id || undefined,
                 attributes: {
-                    color: formData.color || undefined,
+                    color_hex: formData.color_hex !== '#000000' ? formData.color_hex : undefined,
+                    color_name: formData.color_name || undefined,
                     size: formData.size || undefined,
                 },
                 is_active: formData.is_active
@@ -227,14 +229,25 @@ export default function AdminEditProductPage() {
                                             ))}
                                         </select>
                                     </div>
-                                    <div className="grid gap-4 sm:grid-cols-2">
+                                    <div className="grid gap-4 sm:grid-cols-3">
                                         <div className="space-y-2">
-                                            <Label htmlFor="color">Color</Label>
+                                            <Label htmlFor="color_name">Shade Name</Label>
                                             <Input 
-                                                id="color" name="color" 
-                                                value={formData.color} onChange={handleChange} 
-                                                placeholder="e.g., Red, Blue, #FF0000"
+                                                id="color_name" name="color_name" 
+                                                value={formData.color_name} onChange={handleChange} 
+                                                placeholder="e.g., Ruby Red"
                                             />
+                                        </div>
+                                        <div className="space-y-2 flex flex-col">
+                                            <Label htmlFor="color_hex">Shade Color</Label>
+                                            <div className="flex items-center gap-2">
+                                                <input 
+                                                    type="color" id="color_hex" name="color_hex" 
+                                                    value={formData.color_hex} onChange={handleChange} 
+                                                    className="w-10 h-10 p-1 rounded border cursor-pointer"
+                                                />
+                                                <span className="text-sm text-muted-foreground uppercase">{formData.color_hex}</span>
+                                            </div>
                                         </div>
                                         <div className="space-y-2">
                                             <Label htmlFor="size">Size / Weight</Label>
