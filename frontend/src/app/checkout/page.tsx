@@ -272,8 +272,15 @@ export default function CheckoutPage() {
             if (paymentMethod === 'cod') {
                 completeOrderDisplay(createdOrder.id, createdOrder.order_number, 'cod', 'Cash on Delivery');
             } else {
+                // ── ONLINE PAYMENT — Razorpay ────────────────────────────────────
+                // Order is created with payment_status=PENDING.
+                // We MUST verify the payment server-side before marking it paid.
+                // On cancel/failure, we cancel the pending order to restore stock.
                 const amountInPaise = Math.round(getTotal() * 100);
                 try {
+                    // Track whether payment was handled (success or fail) to detect dismiss
+                    let paymentHandled = false;
+
                     const options = {
                         key: "rzp_live_SZO4iQslfD86WW",
                         amount: amountInPaise,
@@ -281,20 +288,74 @@ export default function CheckoutPage() {
                         name: "Pranjay Cosmetics",
                         description: `Order ${createdOrder.order_number}`,
                         image: "/logo.png",
-                        handler: (response: any) => {
-                            completeOrderDisplay(createdOrder.id, createdOrder.order_number, 'paid', 'Online Payment');
-                        },
+                        // Use the Razorpay order ID from the backend (required for verification)
+                        order_id: createdOrder.razorpay_order_id,
                         prefill: { name: address.full_name, email: "customer@example.com", contact: address.phone },
-                        theme: { color: "#0f172a" }
+                        theme: { color: "#0f172a" },
+
+                        handler: async (response: any) => {
+                            // ✅ SUCCESS — but we MUST verify signature server-side first
+                            paymentHandled = true;
+                            try {
+                                await ordersApi.verifyPayment(createdOrder.id, {
+                                    razorpay_payment_id: response.razorpay_payment_id,
+                                    razorpay_order_id: response.razorpay_order_id,
+                                    razorpay_signature: response.razorpay_signature,
+                                });
+                                // Only show success AFTER server confirms the signature
+                                completeOrderDisplay(createdOrder.id, createdOrder.order_number, 'paid', 'Online Payment');
+                            } catch (verifyErr: any) {
+                                // Server rejected the payment (forged/invalid signature)
+                                setIsProcessing(false);
+                                toast({
+                                    title: 'Payment Verification Failed',
+                                    description: 'Your payment could not be verified. Please contact support with your order number: ' + createdOrder.order_number,
+                                    variant: 'destructive',
+                                });
+                            }
+                        },
+
+                        modal: {
+                            ondismiss: async () => {
+                                // ❌ USER DISMISSED (pressed X without paying)
+                                // Cancel the pending order to restore stock and clean up
+                                if (!paymentHandled) {
+                                    paymentHandled = true;
+                                    setIsProcessing(false);
+                                    try {
+                                        await ordersApi.cancel(createdOrder.id);
+                                    } catch (_) { /* best-effort cancel */ }
+                                    toast({
+                                        title: 'Payment Cancelled',
+                                        description: 'Your order has been cancelled. No charges were made.',
+                                        variant: 'default',
+                                    });
+                                }
+                            },
+                        },
                     };
+
                     const rzp = new (window as any).Razorpay(options);
-                    rzp.on('payment.failed', (response: any) => {
+
+                    rzp.on('payment.failed', async (response: any) => {
+                        // ❌ PAYMENT FAILED — cancel the pending order to restore stock
+                        paymentHandled = true;
                         setIsProcessing(false);
-                        toast({ title: 'Payment Failed', description: response.error.description, variant: 'destructive' });
+                        try {
+                            await ordersApi.cancel(createdOrder.id);
+                        } catch (_) { /* best-effort cancel */ }
+                        toast({
+                            title: 'Payment Failed',
+                            description: response.error?.description || 'Your payment was declined. Order has been cancelled.',
+                            variant: 'destructive',
+                        });
                     });
+
                     rzp.open();
                 } catch (error) {
+                    // Failed to open Razorpay — cancel the dangling pending order
                     setIsProcessing(false);
+                    try { await ordersApi.cancel(createdOrder.id); } catch (_) { }
                     toast({ title: 'Payment Error', description: 'Could not initialize payment gateway.', variant: 'destructive' });
                 }
             }

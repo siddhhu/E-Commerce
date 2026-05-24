@@ -377,6 +377,16 @@ export const ordersApi = {
 
     cancel: (orderId: string) =>
         api.post<Order>(`/orders/${orderId}/cancel`),
+
+    /**
+     * Verify Razorpay payment server-side after Razorpay success callback.
+     * MUST be called before showing order success — prevents fake/forged payment confirmations.
+     */
+    verifyPayment: (orderId: string, data: {
+        razorpay_payment_id: string;
+        razorpay_order_id: string;
+        razorpay_signature: string;
+    }) => api.post<Order>(`/orders/${orderId}/verify-payment`, data),
 };
 
 // Admin API
