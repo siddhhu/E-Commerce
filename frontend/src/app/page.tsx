@@ -157,11 +157,6 @@ export default function HomePage() {
             description: 'Authentic products only',
         },
         {
-            icon: Clock,
-            title: 'Quick Delivery',
-            description: '3-5 business days',
-        },
-        {
             icon: Sparkles,
             title: 'Wholesale Pricing',
             description: 'Exclusive dealer rates',
@@ -272,7 +267,14 @@ export default function HomePage() {
                                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
                             </div>
                         ) : (
-                            <div className="flex overflow-x-auto pb-6 gap-6 snap-x hide-scrollbar">
+                            <div className="relative group">
+                                <button 
+                                    onClick={() => document.getElementById('trending-scroll')?.scrollBy({ left: -300, behavior: 'smooth' })} 
+                                    className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 z-10 bg-white p-3 rounded-full shadow-lg hidden group-hover:block border border-slate-100 hover:bg-slate-50 transition-all text-[#d81b60]"
+                                >
+                                    <ArrowRight className="h-5 w-5 rotate-180" />
+                                </button>
+                                <div id="trending-scroll" className="flex overflow-x-auto pb-6 gap-6 snap-x hide-scrollbar scroll-smooth">
                                 {featuredProducts.map((product) => {
                                     const cardProduct: APIProduct = {
                                         id: product.id,
@@ -311,6 +313,13 @@ export default function HomePage() {
                                         </div>
                                     );
                                 })}
+                                </div>
+                                <button 
+                                    onClick={() => document.getElementById('trending-scroll')?.scrollBy({ left: 300, behavior: 'smooth' })} 
+                                    className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 z-10 bg-white p-3 rounded-full shadow-lg hidden group-hover:block border border-slate-100 hover:bg-slate-50 transition-all text-[#d81b60]"
+                                >
+                                    <ArrowRight className="h-5 w-5" />
+                                </button>
                             </div>
                         )}
                     </div>
@@ -352,8 +361,12 @@ export default function HomePage() {
                         </div>
 
                         <div className="flex justify-center gap-4">
-                            <Button size="lg" className="bg-[#d81b60] hover:bg-[#c2185b] text-white rounded-full px-8 border-0">Register as Wholesaler</Button>
-                            <Button size="lg" className="bg-[#cca152] hover:bg-[#b88c3d] text-white rounded-full px-8 border-0">View Bulk Pricing</Button>
+                            <Link href="/login?type=seller">
+                                <Button size="lg" className="bg-[#d81b60] hover:bg-[#c2185b] text-white rounded-full px-8 border-0">Register as Wholesaler</Button>
+                            </Link>
+                            <Link href="/products">
+                                <Button size="lg" className="bg-[#cca152] hover:bg-[#b88c3d] text-white rounded-full px-8 border-0">View Bulk Pricing</Button>
+                            </Link>
                         </div>
                     </div>
                 </section>
@@ -378,7 +391,14 @@ export default function HomePage() {
                     <div className="container max-w-3xl text-center space-y-6">
                         <h2 className="text-3xl font-bold">Join the Pranjay Community</h2>
                         <p className="text-pink-100">Get 10% Off Your First Retail Order & Exclusive Wholesale Alerts</p>
-                        <form className="flex max-w-md mx-auto gap-2" onSubmit={(e) => { e.preventDefault(); }}>
+                        <form 
+                            className="flex max-w-md mx-auto gap-2" 
+                            onSubmit={(e) => { 
+                                e.preventDefault(); 
+                                toast({ title: "Subscribed Successfully!", description: "You've joined the Pranjay community." });
+                                (e.target as HTMLFormElement).reset();
+                            }}
+                        >
                             <Input placeholder="Enter your email address..." className="bg-white/10 border-white/20 text-white placeholder:text-white/50 h-12 rounded-lg" required type="email" />
                             <Button type="submit" className="bg-[#cca152] hover:bg-[#b88c3d] text-white h-12 px-8 rounded-lg border-0">Subscribe</Button>
                         </form>

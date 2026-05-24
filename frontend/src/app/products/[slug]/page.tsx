@@ -465,10 +465,6 @@ export default function ProductDetailPage() {
                                     <Shield className="h-5 w-5" />
                                     <span>100% Genuine</span>
                                 </div>
-                                <div className="flex items-center gap-2">
-                                    <RotateCcw className="h-5 w-5" />
-                                    <span>Easy Returns</span>
-                                </div>
                             </div>
 
                             {/* Description */}
