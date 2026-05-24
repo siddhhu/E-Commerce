@@ -364,24 +364,41 @@ class OrderService:
                 selectinload(Order.shipping_address)
             )
         )
-        return result.scalar_one()
+        order_result = result.scalar_one()
         
-        # Send shipped notification
-        if status == OrderStatus.SHIPPED:
-            try:
-                from app.models.user import User
-                user_result = await self.session.execute(
-                    select(User).where(User.id == order.user_id)
-                )
-                user = user_result.scalar_one()
+        # Send status update notification
+        try:
+            from app.models.user import User
+            from app.services.email_service import email_service
+            user_result = await self.session.execute(
+                select(User).where(User.id == order.user_id)
+            )
+            user = user_result.scalar_one()
+            
+            # Use appropriate email template based on status
+            if status == OrderStatus.SHIPPED:
                 await email_service.send_order_shipped_email(
                     user.email,
                     order.order_number
                 )
-            except Exception as e:
-                print(f"Error sending shipped email: {e}")
+            else:
+                # Add a generic status update method if it doesn't exist, or just log
+                # The user asked to be notified on any change. We will send a welcome/confirmation style email 
+                # or we can create a generic send_order_status_update method in email_service.
+                # Let's call a new method we'll add to email_service
+                if hasattr(email_service, 'send_order_status_update'):
+                    await email_service.send_order_status_update(
+                        user.email,
+                        order.order_number,
+                        status.value,
+                        user.full_name
+                    )
+                else:
+                    print(f"Skipping email for status {status.value} - method not implemented")
+        except Exception as e:
+            print(f"Error sending order status email: {e}")
         
-        return order
+        return order_result
     
     async def update_payment_status(
         self,

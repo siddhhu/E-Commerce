@@ -214,6 +214,57 @@ class EmailService:
             print(f"Error sending shipped email: {e}")
             return False
 
+    async def send_order_status_update(
+        self,
+        to_email: str,
+        order_number: str,
+        new_status: str,
+        customer_name: str = "Customer"
+    ) -> bool:
+        """Send generic order status update notification."""
+        if not self._enabled:
+            self._log_skip("send_order_status_update", to_email)
+            return False
+            
+        status_colors = {
+            "pending": "#f59e0b",
+            "confirmed": "#3b82f6",
+            "processing": "#8b5cf6",
+            "shipped": "#10b981",
+            "delivered": "#059669",
+            "cancelled": "#ef4444"
+        }
+        color = status_colors.get(new_status.lower(), "#d81b60")
+        
+        try:
+            params = {
+                "from": self.from_email,
+                "to": [to_email],
+                "subject": f"Order Status Update - {order_number}",
+                "html": f"""
+                    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                        <h2 style="color: #1a1a1a;">Order Status Update</h2>
+                        <p>Hi {customer_name},</p>
+                        <p>There is an update regarding your recent order <strong>#{order_number}</strong>.</p>
+                        <div style="background: #fcfcfc; border-left: 4px solid {color}; padding: 16px; margin: 20px 0;">
+                            <p style="margin: 0; font-size: 16px;">
+                                Your order status is now: <strong style="color: {color}; text-transform: uppercase;">{new_status.replace('_', ' ')}</strong>
+                            </p>
+                        </div>
+                        <p>If you have any questions, feel free to reach out to our support team.</p>
+                        <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+                        <p style="color: #666; font-size: 12px;">
+                            &copy; 2024 Pranjay. All rights reserved.
+                        </p>
+                    </div>
+                """
+            }
+            resend.Emails.send(params)
+            return True
+        except Exception as e:
+            print(f"Error sending order status email: {e}")
+            return False
+
     async def send_seller_application_received(
         self,
         to_email: str,

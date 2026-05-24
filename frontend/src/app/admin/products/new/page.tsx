@@ -16,7 +16,7 @@ export default function AdminAddProductPage() {
     const router = useRouter();
     const { toast } = useToast();
     const [isLoading, setIsLoading] = useState(false);
-    const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
+    const [selectedImageFiles, setSelectedImageFiles] = useState<File[]>([]);
     const [categories, setCategories] = useState<CategoryRead[]>([]);
     const [products, setProducts] = useState<any[]>([]);
     
@@ -110,8 +110,10 @@ export default function AdminAddProductPage() {
                 slug: formData.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '') || `product-${Date.now()}`
             });
 
-            if (selectedImageFile) {
-                await adminApi.uploadProductImage(created.id, selectedImageFile, true);
+            if (selectedImageFiles.length > 0) {
+                await Promise.all(selectedImageFiles.map(async (file, index) => {
+                    await adminApi.uploadProductImage(created.id, file, index === 0);
+                }));
             }
 
             toast({ title: "Product created successfully!" });
@@ -331,12 +333,22 @@ export default function AdminAddProductPage() {
                                         placeholder="https://example.com/image.jpg"
                                     />
                                     <div className="pt-2">
-                                        <Label>Or upload from device (JPG/PNG/WEBP, max 10MB)</Label>
+                                        <Label>Or upload from device (JPG/PNG/WEBP, multiple allowed)</Label>
                                         <Input
                                             type="file"
+                                            multiple
                                             accept="image/jpeg,image/png,image/webp"
-                                            onChange={(e) => setSelectedImageFile(e.target.files?.[0] || null)}
+                                            onChange={(e) => {
+                                                if (e.target.files) {
+                                                    setSelectedImageFiles(Array.from(e.target.files));
+                                                }
+                                            }}
                                         />
+                                        {selectedImageFiles.length > 0 && (
+                                            <p className="text-sm text-muted-foreground mt-2">
+                                                {selectedImageFiles.length} file(s) selected
+                                            </p>
+                                        )}
                                     </div>
                                     {formData.image_url && (
                                         <div className="mt-2 relative aspect-square rounded-md overflow-hidden bg-slate-100 border">

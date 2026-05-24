@@ -67,6 +67,12 @@ export default function ProductDetailPage() {
         setQuantity((q) => Math.min(Math.max(q, minQty), maxQty));
     }, [product]);
 
+    const handleVariantSelect = (v: any) => {
+        setProduct(v);
+        // Shallow routing to update URL without reloading
+        window.history.replaceState(null, '', `/products/${v.slug}`);
+    };
+
     if (loading) {
         return (
             <div className="min-h-screen flex flex-col">
@@ -348,7 +354,7 @@ export default function ProductDetailPage() {
                                             const colorStyle = isHexOrBasicColor ? { backgroundColor: color.toLowerCase() } : {};
                                             
                                             return (
-                                                <Link href={`/products/${v.slug}`} key={v.id}>
+                                                <div key={v.id} onClick={() => handleVariantSelect(v)}>
                                                     <div 
                                                         className={cn(
                                                             "w-8 h-8 rounded-full border-2 shadow-sm transition-all cursor-pointer",
@@ -357,7 +363,7 @@ export default function ProductDetailPage() {
                                                         style={colorStyle}
                                                         title={label}
                                                     ></div>
-                                                </Link>
+                                                </div>
                                             );
                                         })}
                                     </div>

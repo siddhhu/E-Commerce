@@ -81,11 +81,16 @@ export default function AdminEditProductPage() {
         fetchProductAndCategories();
     }, [productId, toast]);
 
-    const handleImageUpload = async (file: File) => {
+    const handleImageUpload = async (files: File[]) => {
         setIsUploadingImage(true);
         try {
-            const res = await adminApi.uploadProductImage(productId, file, true);
-            setFormData((prev) => ({ ...prev, image_url: res.image_url }));
+            await Promise.all(files.map(async (file, index) => {
+                const res = await adminApi.uploadProductImage(productId, file, index === 0);
+                if (index === 0) {
+                    setFormData((prev) => ({ ...prev, image_url: res.image_url }));
+                }
+            }));
+            toast({ title: 'Images uploaded successfully' });
         } catch (error: any) {
             toast({ title: 'Image upload failed', description: error.message, variant: 'destructive' });
         } finally {
@@ -340,14 +345,17 @@ export default function AdminEditProductPage() {
                                         placeholder="https://example.com/image.jpg"
                                     />
                                     <div className="pt-2">
-                                        <Label>Or upload from device (JPG/PNG/WEBP, max 10MB)</Label>
+                                        <Label>Or upload from device (JPG/PNG/WEBP, multiple allowed)</Label>
                                         <Input
                                             type="file"
+                                            multiple
                                             accept="image/jpeg,image/png,image/webp"
                                             disabled={isUploadingImage}
                                             onChange={(e) => {
-                                                const f = e.target.files?.[0];
-                                                if (f) handleImageUpload(f);
+                                                const files = e.target.files;
+                                                if (files && files.length > 0) {
+                                                    handleImageUpload(Array.from(files));
+                                                }
                                             }}
                                         />
                                         {isUploadingImage && (
