@@ -1,7 +1,6 @@
 """
 Orders Router - Order history endpoints
 """
-import asyncio
 from typing import Optional
 from uuid import UUID
 
@@ -47,15 +46,15 @@ async def list_my_orders(
     if status:
         count_query = count_query.where(Order.status == status)
 
-    orders, count_result = await asyncio.gather(
-        order_service.list_user_orders(
-            user_id=current_user.id,
-            skip=skip,
-            limit=page_size,
-            status=status,
-        ),
-        session.execute(count_query),
+    # NOTE: asyncio.gather is ILLEGAL on the same AsyncSession.
+    # SQLAlchemy AsyncSession cannot handle concurrent operations. Sequential only.
+    orders = await order_service.list_user_orders(
+        user_id=current_user.id,
+        skip=skip,
+        limit=page_size,
+        status=status,
     )
+    count_result = await session.execute(count_query)
     total = count_result.scalar() or 0
 
     items = [

@@ -1,7 +1,6 @@
 """
 Products Router - Public product endpoints
 """
-import asyncio
 from typing import Optional
 from uuid import UUID
 
@@ -78,25 +77,23 @@ async def list_products(
     product_service = ProductService(session)
     skip = (page - 1) * page_size
 
-    # Fire list and count queries in parallel — independent queries on same session
-    # Note: asyncpg allows this when using separate coroutines that don't share a cursor
-    products, total = await asyncio.gather(
-        product_service.list_products(
-            skip=skip,
-            limit=page_size,
-            category_id=category_id,
-            brand_id=brand_id,
-            search=search,
-            min_price=min_price,
-            max_price=max_price,
-            is_featured=is_featured,
-            is_active=True,
-        ),
-        product_service.count_products(
-            category_id=category_id,
-            brand_id=brand_id,
-            is_active=True,
-        ),
+    # NOTE: asyncio.gather on the same SQLAlchemy AsyncSession is ILLEGAL —
+    # the session is not concurrency-safe. Run list then count sequentially.
+    products = await product_service.list_products(
+        skip=skip,
+        limit=page_size,
+        category_id=category_id,
+        brand_id=brand_id,
+        search=search,
+        min_price=min_price,
+        max_price=max_price,
+        is_featured=is_featured,
+        is_active=True,
+    )
+    total = await product_service.count_products(
+        category_id=category_id,
+        brand_id=brand_id,
+        is_active=True,
     )
 
     pages = (total + page_size - 1) // page_size

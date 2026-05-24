@@ -275,11 +275,29 @@ export default function CheckoutPage() {
                 // ── ONLINE PAYMENT — Razorpay ────────────────────────────────────
                 // Order is created with payment_status=PENDING.
                 // We MUST verify the payment server-side before marking it paid.
-                // On cancel/failure, we cancel the pending order to restore stock.
+                // On cancel/failure/dismiss, we cancel the pending order to restore stock.
                 const amountInPaise = Math.round(getTotal() * 100);
                 try {
-                    // Track whether payment was handled (success or fail) to detect dismiss
+                    // Prevent double-cancel if both payment.failed + ondismiss fire
                     let paymentHandled = false;
+
+                    // Helper: cancel the pending order silently, then redirect to cart
+                    const cancelAndRedirect = async (reason: string) => {
+                        if (paymentHandled) return;
+                        paymentHandled = true;
+                        // Restore UI immediately — don't wait for cancel API
+                        setIsProcessing(false);
+                        try {
+                            await ordersApi.cancel(createdOrder.id);
+                        } catch (_) { /* best-effort — order stays PENDING but stock guard runs nightly */ }
+                        toast({
+                            title: reason,
+                            description: 'Your order has been cancelled. No charges were made. Your cart is intact.',
+                            variant: 'default',
+                        });
+                        // Navigate to cart so user sees a clean state (not the checkout form)
+                        router.push('/cart');
+                    };
 
                     const options = {
                         key: "rzp_live_SZO4iQslfD86WW",
@@ -288,13 +306,14 @@ export default function CheckoutPage() {
                         name: "Pranjay Cosmetics",
                         description: `Order ${createdOrder.order_number}`,
                         image: "/logo.png",
-                        // Use the Razorpay order ID from the backend (required for verification)
+                        // order_id links Razorpay to the backend order — REQUIRED for signature verification
                         order_id: createdOrder.razorpay_order_id,
                         prefill: { name: address.full_name, email: "customer@example.com", contact: address.phone },
                         theme: { color: "#0f172a" },
 
                         handler: async (response: any) => {
-                            // ✅ SUCCESS — but we MUST verify signature server-side first
+                            // ✅ USER PAID — verify signature server-side BEFORE showing success
+                            // This prevents anyone forging a Razorpay response to get free orders
                             paymentHandled = true;
                             try {
                                 await ordersApi.verifyPayment(createdOrder.id, {
@@ -302,61 +321,39 @@ export default function CheckoutPage() {
                                     razorpay_order_id: response.razorpay_order_id,
                                     razorpay_signature: response.razorpay_signature,
                                 });
-                                // Only show success AFTER server confirms the signature
+                                // ONLY after server confirms — show success screen
                                 completeOrderDisplay(createdOrder.id, createdOrder.order_number, 'paid', 'Online Payment');
                             } catch (verifyErr: any) {
-                                // Server rejected the payment (forged/invalid signature)
                                 setIsProcessing(false);
                                 toast({
                                     title: 'Payment Verification Failed',
-                                    description: 'Your payment could not be verified. Please contact support with your order number: ' + createdOrder.order_number,
+                                    description: `Payment received but could not be verified. Contact support with Order #${createdOrder.order_number}`,
                                     variant: 'destructive',
                                 });
                             }
                         },
 
                         modal: {
-                            ondismiss: async () => {
-                                // ❌ USER DISMISSED (pressed X without paying)
-                                // Cancel the pending order to restore stock and clean up
-                                if (!paymentHandled) {
-                                    paymentHandled = true;
-                                    setIsProcessing(false);
-                                    try {
-                                        await ordersApi.cancel(createdOrder.id);
-                                    } catch (_) { /* best-effort cancel */ }
-                                    toast({
-                                        title: 'Payment Cancelled',
-                                        description: 'Your order has been cancelled. No charges were made.',
-                                        variant: 'default',
-                                    });
-                                }
-                            },
+                            // Fires when user presses X or clicks outside the modal
+                            ondismiss: () => cancelAndRedirect('Payment Cancelled'),
                         },
                     };
 
                     const rzp = new (window as any).Razorpay(options);
 
                     rzp.on('payment.failed', async (response: any) => {
-                        // ❌ PAYMENT FAILED — cancel the pending order to restore stock
-                        paymentHandled = true;
-                        setIsProcessing(false);
-                        try {
-                            await ordersApi.cancel(createdOrder.id);
-                        } catch (_) { /* best-effort cancel */ }
-                        toast({
-                            title: 'Payment Failed',
-                            description: response.error?.description || 'Your payment was declined. Order has been cancelled.',
-                            variant: 'destructive',
-                        });
+                        // Bank/UPI declined — cancel and redirect to cart
+                        await cancelAndRedirect(
+                            response.error?.description || 'Payment Declined'
+                        );
                     });
 
                     rzp.open();
                 } catch (error) {
-                    // Failed to open Razorpay — cancel the dangling pending order
+                    // Failed to even open Razorpay — cancel the dangling pending order
                     setIsProcessing(false);
                     try { await ordersApi.cancel(createdOrder.id); } catch (_) { }
-                    toast({ title: 'Payment Error', description: 'Could not initialize payment gateway.', variant: 'destructive' });
+                    toast({ title: 'Payment Error', description: 'Could not initialize payment gateway. Please try again.', variant: 'destructive' });
                 }
             }
         } catch (error: any) {
@@ -364,6 +361,7 @@ export default function CheckoutPage() {
             toast({ title: 'Checkout Failed', description: error.message || 'There was a problem processing your order.', variant: 'destructive' });
         }
     };
+
 
 
     const completeOrderDisplay = (id: string, number: string, paymentStatus: string, paymentMethodName: string) => {
