@@ -11,7 +11,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { PromoBanner } from '@/components/layout/PromoBanner';
-import { Star } from 'lucide-react';
+
 import { useToast } from '@/hooks/use-toast';
 import { dummyProducts, Product } from '@/lib/dummy-data';
 import { productsApi, Product as APIProduct } from '@/lib/api';
@@ -295,24 +295,8 @@ export default function ProductDetailPage() {
                                         <Share2 className="h-5 w-5" />
                                     </Button>
                                 </div>
-                                {/* Stars */}
-                                <div className="flex items-center gap-1 mt-2">
-                                    <div className="flex">
-                                        {[...Array(5)].map((_, i) => (
-                                            <Star key={i} className={cn("h-4 w-4", i < 4 ? "fill-yellow-400 text-yellow-400" : "fill-muted text-muted")} />
-                                        ))}
-                                    </div>
-                                    <span className="text-sm font-medium ml-1">12 reviews</span>
-                                </div>
-                                
-                                {/* Bullet points */}
-                                <div className="mt-4 space-y-2 text-sm">
-                                    <p>🌿 <span className="font-semibold">Botanical Extracts:</span> Sandalwood, Licorice, Jojoba.</p>
-                                    <p>💧 <span className="font-semibold">Deeply Moisturizing:</span> Acts as a moisturizing treatment.</p>
-                                    <p>✨ <span className="font-semibold">Smooth & Soft Texture:</span> Enhances skin texture.</p>
-                                    <p>💖 <span className="font-semibold">Shades for Every Occasion:</span> Adds glamour.</p>
-                                </div>
-                            </div>
+
+
 
                             {/* Pricing */}
                             <div className="space-y-2">
