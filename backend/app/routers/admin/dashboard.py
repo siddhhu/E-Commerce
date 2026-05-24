@@ -178,7 +178,8 @@ async def get_recent_orders(
             pass
             
     if is_seller:
-        query = query.join(OrderItem, Order.id == OrderItem.order_id).join(Product, OrderItem.product_id == Product.id).where(Product.seller_id == current_user.id).distinct()
+        seller_orders_subquery = select(OrderItem.order_id).join(Product, OrderItem.product_id == Product.id).where(Product.seller_id == current_user.id)
+        query = query.where(Order.id.in_(seller_orders_subquery))
             
     query = query.order_by(Order.created_at.desc()).limit(limit)
     result = await session.execute(query)
