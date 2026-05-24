@@ -33,6 +33,7 @@ export default function ProductDetailPage() {
     const { addItem: addToCart } = useCartStore();
     const { addItem: addToWishlist, removeItem: removeFromWishlist, isInWishlist } = useWishlistStore();
     const [imgError, setImgError] = useState(false);
+    const [activeImage, setActiveImage] = useState<string | null>(null);
 
     useEffect(() => {
         async function fetchProduct() {
@@ -65,6 +66,7 @@ export default function ProductDetailPage() {
         const minQty = Math.max(1, product.min_order_quantity || 1);
         const maxQty = Math.max(minQty, product.stock_quantity || minQty);
         setQuantity((q) => Math.min(Math.max(q, minQty), maxQty));
+        setActiveImage(null); // Reset image when switching variants
     }, [product]);
 
     const handleVariantSelect = (v: any) => {
@@ -107,7 +109,7 @@ export default function ProductDetailPage() {
     const discount = getDiscountPercentage(product.mrp, product.selling_price);
     const primaryImage = imgError
         ? '/placeholder.jpg'
-        : (product.image_url || product.images?.find((img) => img.is_primary)?.image_url || product.images?.[0]?.image_url || '/placeholder.jpg');
+        : (activeImage || product.image_url || product.images?.find((img) => img.is_primary)?.image_url || product.images?.[0]?.image_url || '/placeholder.jpg');
     const inWishlist = isInWishlist(product.id);
 
     const isOutOfStock = product.stock_quantity <= 0;
@@ -253,19 +255,26 @@ export default function ProductDetailPage() {
                             
                             {/* Thumbnails below main image */}
                             <div className="flex gap-4 overflow-x-auto pb-2">
-                                {product.images?.map((img, i) => (
-                                    <div key={img.id} className={cn(
-                                        "relative w-20 h-20 rounded-lg overflow-hidden border-2 flex-shrink-0",
-                                        i === 0 ? "border-primary" : "border-transparent opacity-70"
-                                    )}>
-                                        <Image
-                                            src={img.image_url}
-                                            alt={img.alt_text || product.name}
-                                            fill
-                                            className="object-cover"
-                                        />
-                                    </div>
-                                ))}
+                                {product.images?.map((img, i) => {
+                                    const isSelected = activeImage === img.image_url || (!activeImage && i === 0);
+                                    return (
+                                        <div 
+                                            key={img.id} 
+                                            onClick={() => setActiveImage(img.image_url)}
+                                            className={cn(
+                                                "relative w-20 h-20 rounded-lg overflow-hidden border-2 flex-shrink-0 cursor-pointer transition-all",
+                                                isSelected ? "border-primary scale-105" : "border-transparent opacity-70 hover:opacity-100"
+                                            )}
+                                        >
+                                            <Image
+                                                src={img.image_url}
+                                                alt={img.alt_text || product.name}
+                                                fill
+                                                className="object-cover"
+                                            />
+                                        </div>
+                                    );
+                                })}
                             </div>
                         </div>
 
