@@ -293,18 +293,18 @@ class OrderService:
         except Exception as e:
             await self.session.rollback()
             raise e
-        
-        # Send notification emails (OFFLOADED TO BACKGROUND TASKS)
+
+        # Send notification emails + generate invoice — ALL offloaded to background tasks
+        # so the HTTP response is returned immediately after commit (~2-3s total).
         if background_tasks:
             try:
-                # Get user email
-                if not user:
-                    from app.models.user import User as _User
-                    user_result = await self.session.execute(
-                        select(_User).where(_User.id == user_id)
-                    )
-                    user = user_result.scalar_one()
-                
+                # Fetch user for email (one extra query but non-blocking since we already committed)
+                from app.models.user import User as _User
+                user_result = await self.session.execute(
+                    select(_User).where(_User.id == user_id)
+                )
+                user = user_result.scalar_one()
+
                 background_tasks.add_task(
                     email_service.send_order_confirmation_email,
                     user.email,
@@ -312,7 +312,7 @@ class OrderService:
                     float(order.total_amount),
                     len(order_items)
                 )
-                
+
                 background_tasks.add_task(
                     email_service.send_order_notification_to_admin,
                     order.order_number,
@@ -322,18 +322,28 @@ class OrderService:
                     len(order_items)
                 )
 
-                # Generate invoice immediately (before response) 
-                # to prevent Vercel Serverless from killing the task mid-upload.
+                # Generate invoice in background — non-blocking.
+                # Note: On Vercel serverless the background task runs as long as the
+                # connection is alive. The invoice may occasionally miss on very short-lived
+                # functions, but the user gets their order confirmation instantly.
                 from app.services.invoice_service import InvoiceService
-                try:
-                    await InvoiceService.generate_and_upload_invoice(order.id, self.session)
-                except Exception as e:
-                    print(f"Error generating invoice synchronously: {e}")
-                
+                from app.database import get_session as _get_session
+                async def _generate_invoice_bg():
+                    """Wrapper: creates its own DB session for the background invoice task."""
+                    try:
+                        async for bg_session in _get_session():
+                            await InvoiceService.generate_and_upload_invoice(order.id, bg_session)
+                            break
+                    except Exception as e:
+                        print(f"[BG] Invoice generation failed for {order.order_number}: {e}")
+
+                background_tasks.add_task(_generate_invoice_bg)
+
             except Exception as e:
                 print(f"Error scheduling order tasks: {e}")
-        
+
         return order
+
     
     async def update_order_status(
         self,
