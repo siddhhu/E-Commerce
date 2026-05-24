@@ -15,8 +15,8 @@ async def check():
     async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
     
     async with async_session() as session:
-        result = await session.execute(text("SELECT email, role, is_active FROM users WHERE email = 'pawantheblizz@gmail.com'"))
+        result = await session.execute(text("SELECT email, seller_username, seller_plain_password FROM users WHERE seller_username = 'parlar-house1506@pranjay.com'"))
         user = result.fetchone()
-        print("User:", user)
+        print("User plain password:", user)
 
 asyncio.run(check())

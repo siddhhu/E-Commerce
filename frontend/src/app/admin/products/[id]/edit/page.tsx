@@ -39,7 +39,8 @@ export default function AdminEditProductPage() {
         color_hex: '#000000',
         color_name: '',
         size: '',
-        is_active: true
+        is_active: true,
+        is_featured: false
     });
 
     useEffect(() => {
@@ -68,7 +69,8 @@ export default function AdminEditProductPage() {
                     color_name: (product.attributes?.color_name as string) || '',
                     size: (product.attributes?.size as string) || '',
                     gst_percentage: product.gst_percentage?.toString() || '18',
-                    is_active: product.is_active
+                    is_active: product.is_active,
+                    is_featured: product.is_featured || false
                 });
             } catch (error: any) {
                 toast({
@@ -101,8 +103,12 @@ export default function AdminEditProductPage() {
     };
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
+        const { name, value, type } = e.target;
+        if (type === 'checkbox') {
+            setFormData(prev => ({ ...prev, [name]: (e.target as HTMLInputElement).checked }));
+        } else {
+            setFormData(prev => ({ ...prev, [name]: value }));
+        }
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -127,7 +133,8 @@ export default function AdminEditProductPage() {
                     color_name: formData.color_name || undefined,
                     size: formData.size || undefined,
                 },
-                is_active: formData.is_active
+                is_active: formData.is_active,
+                is_featured: formData.is_featured,
             });
 
             toast({ title: "Product updated successfully!" });
@@ -316,6 +323,19 @@ export default function AdminEditProductPage() {
                                             <option value="28">28%</option>
                                         </select>
                                     </div>
+                                </div>
+                                <div className="mt-4 pt-4 border-t flex items-center space-x-2">
+                                    <input 
+                                        type="checkbox" 
+                                        id="is_featured" 
+                                        name="is_featured" 
+                                        checked={formData.is_featured} 
+                                        onChange={handleChange} 
+                                        className="h-4 w-4 rounded border-slate-300 text-[#d81b60] focus:ring-[#d81b60]"
+                                    />
+                                    <Label htmlFor="is_featured" className="text-sm font-medium leading-none cursor-pointer">
+                                        Feature this product
+                                    </Label>
                                 </div>
                             </CardContent>
                         </Card>

@@ -52,15 +52,18 @@ export default function AdminAddProductPage() {
         color_hex: '#000000',
         color_name: '',
         size: '',
-        is_active: true
+        is_active: true,
+        is_featured: false
     });
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value, type } = e.target;
         
-        // For number inputs, if empty, keep as empty string to allow clearing
-        // but prevent NaN in state. Submitting empty string will be caught by required/validation.
-        setFormData(prev => ({ ...prev, [name]: value }));
+        if (type === 'checkbox') {
+            setFormData(prev => ({ ...prev, [name]: (e.target as HTMLInputElement).checked }));
+        } else {
+            setFormData(prev => ({ ...prev, [name]: value }));
+        }
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -109,6 +112,7 @@ export default function AdminAddProductPage() {
                     size: formData.size || undefined,
                 },
                 is_active: formData.is_active,
+                is_featured: formData.is_featured,
                 slug: formData.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '') || `product-${Date.now()}`
             });
 
@@ -303,6 +307,19 @@ export default function AdminAddProductPage() {
                                             <option value="28">28%</option>
                                         </select>
                                     </div>
+                                </div>
+                                <div className="mt-4 pt-4 border-t flex items-center space-x-2">
+                                    <input 
+                                        type="checkbox" 
+                                        id="is_featured" 
+                                        name="is_featured" 
+                                        checked={formData.is_featured} 
+                                        onChange={handleChange} 
+                                        className="h-4 w-4 rounded border-slate-300 text-[#d81b60] focus:ring-[#d81b60]"
+                                    />
+                                    <Label htmlFor="is_featured" className="text-sm font-medium leading-none cursor-pointer">
+                                        Feature this product
+                                    </Label>
                                 </div>
                             </CardContent>
                         </Card>

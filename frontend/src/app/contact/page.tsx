@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
+import { apiService } from '@/lib/api-service';
 import { Mail, Phone, MapPin, Loader2 } from 'lucide-react';
 
 export default function ContactPage() {
@@ -17,14 +18,30 @@ export default function ContactPage() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsLoading(true);
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        setIsLoading(false);
-        toast({
-            title: "Message Sent!",
-            description: "We've received your inquiry and will get back to you within 24 hours.",
-        });
-        (e.target as HTMLFormElement).reset();
+        const form = e.target as HTMLFormElement;
+        
+        try {
+            await apiService.submitContactForm({
+                first_name: form.firstName.value,
+                last_name: form.lastName.value,
+                email: form.email.value,
+                subject: form.subject.value,
+                message: form.message.value
+            });
+            toast({
+                title: "Message Sent!",
+                description: "We've received your inquiry and will get back to you within 24 hours.",
+            });
+            form.reset();
+        } catch (error) {
+            toast({
+                title: "Error",
+                description: "Failed to send message. Please try again later.",
+                variant: "destructive"
+            });
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     return (
@@ -64,7 +81,7 @@ export default function ContactPage() {
                                 </div>
                                 <div>
                                     <h3 className="font-semibold text-slate-900">Email Us</h3>
-                                    <p className="text-slate-600 mb-1">support@pranjay.com</p>
+                                    <p className="text-slate-600 mb-1">pawantheblizz@gmail.com</p>
                                     <p className="text-sm text-slate-500">We aim to respond within 24 hours.</p>
                                 </div>
                             </div>

@@ -180,6 +180,29 @@ class APIService {
         }
         return response.json();
     }
+
+    // Contact
+    async submitContactForm(data: {
+        first_name: string;
+        last_name: string;
+        email: string;
+        subject: string;
+        message: string;
+    }): Promise<{message: string}> {
+        const url = `${this.baseUrl}/api/v1/contact`;
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data),
+        });
+
+        if (!response.ok) {
+            throw new Error(`Contact submission failed: ${response.statusText}`);
+        }
+        return response.json();
+    }
 }
 
 export const apiService = new APIService();

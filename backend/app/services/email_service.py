@@ -100,6 +100,36 @@ class EmailService:
             print(f"Error sending welcome email: {e}")
             return False
 
+    async def send_contact_email(self, first_name: str, last_name: str, email: str, subject: str, message: str) -> bool:
+        """Send contact form submission to admin."""
+        if not self._enabled:
+            self._log_skip("send_contact_email", self.admin_email or "pawantheblizz@gmail.com")
+            # If no resend key, we still want to pretend it succeeded for the frontend if they test it without keys
+            return True
+        try:
+            params = {
+                "from": self.from_email,
+                "to": [self.admin_email or "pawantheblizz@gmail.com"],
+                "subject": f"New Contact Form Submission: {subject}",
+                "html": f"""
+                    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                        <h2 style="color: #1a1a1a;">New Contact Form Message</h2>
+                        <p><strong>Name:</strong> {first_name} {last_name}</p>
+                        <p><strong>Email:</strong> {email}</p>
+                        <p><strong>Subject:</strong> {subject}</p>
+                        <p><strong>Message:</strong></p>
+                        <blockquote style="border-left: 4px solid #eee; padding-left: 15px; color: #555;">
+                            {message.replace(chr(10), '<br>')}
+                        </blockquote>
+                    </div>
+                """
+            }
+            resend.Emails.send(params)
+            return True
+        except Exception as e:
+            print(f"Error sending contact email: {e}")
+            return False
+
     async def send_order_confirmation_email(
         self,
         to_email: str,
