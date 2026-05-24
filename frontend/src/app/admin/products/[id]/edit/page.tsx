@@ -36,7 +36,8 @@ export default function AdminEditProductPage() {
         category_id: '',
         gst_percentage: '18',
         parent_id: '',
-        color: '',
+        color_hex: '#000000',
+        color_name: '',
         size: '',
         is_active: true
     });
