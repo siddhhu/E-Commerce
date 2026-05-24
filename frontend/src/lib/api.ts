@@ -349,9 +349,23 @@ export const ordersApi = {
         api.get<Order>(`/orders/${orderId}`),
 
     /**
-     * ONE-SHOT checkout — sends address + cart + payment in a single request.
-     * Eliminates 4 round-trips and 3× Supabase cold-connect penalties on Vercel.
-     * Expected: 4-7s total vs 25-30s with 4 separate calls.
+     * ONLINE PHASE 1: Validate cart + create Razorpay order.
+     * Does NOT create a DB order. Returns razorpay_order_id to pass to Razorpay SDK.
+     * Call this BEFORE opening the Razorpay popup.
+     */
+    prepareCheckout: (data: {
+        cart_items: { product_id: string; quantity: number }[];
+        promo_code?: string;
+    }) => api.post<{ razorpay_order_id: string; amount_paise: number; amount_display: number }>(
+        '/checkout/prepare', data
+    ),
+
+    /**
+     * CHECKOUT COMPLETE: address save + cart sync + DB order creation.
+     * - COD:    call directly, no Razorpay fields needed.
+     * - ONLINE: call ONLY after Razorpay confirms payment. Pass Razorpay details
+     *           so the backend verifies signature BEFORE creating the DB order.
+     *           This means: if payment is cancelled, this is never called → no DB order created.
      */
     completeCheckout: (data: {
         // Address
@@ -369,6 +383,10 @@ export const ordersApi = {
         payment_method: string;
         notes?: string;
         promo_code?: string;
+        // Razorpay — required for payment_method="online"
+        razorpay_payment_id?: string;
+        razorpay_order_id?: string;
+        razorpay_signature?: string;
     }) => api.post<Order>('/checkout/complete', data),
 
     /** Legacy: only used if shipping_address_id is already known. */
@@ -379,8 +397,8 @@ export const ordersApi = {
         api.post<Order>(`/orders/${orderId}/cancel`),
 
     /**
-     * Verify Razorpay payment server-side after Razorpay success callback.
-     * MUST be called before showing order success — prevents fake/forged payment confirmations.
+     * @deprecated Use the two-phase flow (prepareCheckout → Razorpay → completeCheckout).
+     * Kept for legacy compatibility only.
      */
     verifyPayment: (orderId: string, data: {
         razorpay_payment_id: string;

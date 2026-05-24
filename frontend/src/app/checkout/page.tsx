@@ -229,15 +229,6 @@ export default function CheckoutPage() {
         setIsProcessing(true);
 
         try {
-            // ── ONE-SHOT CHECKOUT ─────────────────────────────────────────────
-            // Sends address + cart + payment in a SINGLE request to /checkout/complete.
-            // Previously this was 4 sequential calls each paying a Supabase cold-connect cost:
-            //   POST /users/me/addresses  (~5s)
-            //   DELETE /cart              (~3s)
-            //   POST /cart/items×N        (~5s)
-            //   POST /checkout            (~13s)
-            // Now it's 1 call, 1 cold-connect, targeting 4-7s total.
-
             // Profile update is independent — fire it in parallel if needed
             let profileTask = Promise.resolve<any>(undefined);
             if (docValid && docNumber && !docSavedToProfile) {
@@ -246,123 +237,136 @@ export default function CheckoutPage() {
                 profileTask = authApi.updateProfile(updateData).then(u => setUser(u));
             }
 
-            const checkoutTask = ordersApi.completeCheckout({
-                // Address
-                full_name: address.full_name,
-                phone: address.phone,
-                address_line1: address.address_line1,
-                address_line2: address.address_line2 || undefined,
-                city: address.city,
-                state: address.state,
-                postal_code: address.postal_code,
-                country: 'India',
-                // Cart — frontend Zustand store is source of truth
-                cart_items: items.map(item => ({
-                    product_id: item.product.id,
-                    quantity: item.quantity,
-                })),
-                // Order
-                payment_method: paymentMethod,
-                promo_code: promo_code || undefined,
-            });
-
-            // Both run in parallel — checkout + optional profile update
-            const [createdOrder] = await Promise.all([checkoutTask, profileTask]);
-
             if (paymentMethod === 'cod') {
+                // ── COD: one-shot ─────────────────────────────────────────────
+                // Address + cart sync + order creation in one request.
+                // No payment gateway involved — safe to create order immediately.
+                const [createdOrder] = await Promise.all([
+                    ordersApi.completeCheckout({
+                        full_name: address.full_name,
+                        phone: address.phone,
+                        address_line1: address.address_line1,
+                        address_line2: address.address_line2 || undefined,
+                        city: address.city,
+                        state: address.state,
+                        postal_code: address.postal_code,
+                        country: 'India',
+                        cart_items: items.map(item => ({
+                            product_id: item.product.id,
+                            quantity: item.quantity,
+                        })),
+                        payment_method: 'cod',
+                        promo_code: promo_code || undefined,
+                    }),
+                    profileTask,
+                ]);
                 completeOrderDisplay(createdOrder.id, createdOrder.order_number, 'cod', 'Cash on Delivery');
+
             } else {
-                // ── ONLINE PAYMENT — Razorpay ────────────────────────────────────
-                // Order is created with payment_status=PENDING.
-                // We MUST verify the payment server-side before marking it paid.
-                // On cancel/failure/dismiss, we cancel the pending order to restore stock.
-                const amountInPaise = Math.round(getTotal() * 100);
-                try {
-                    // Prevent double-cancel if both payment.failed + ondismiss fire
-                    let paymentHandled = false;
+                // ── ONLINE: two-phase ─────────────────────────────────────────
+                //
+                // PHASE 1: Prepare — validate cart + create Razorpay order.
+                //          NO DB order is created. Returns razorpay_order_id.
+                //
+                // PHASE 2: Razorpay popup
+                //   ├─ SUCCESS  → PHASE 3: call completeCheckout with Razorpay signature
+                //   │             Backend verifies signature THEN creates DB order with payment_status=PAID
+                //   ├─ CANCEL   → user redirected to /cart. NO completeCheckout call → NO DB order.
+                //   └─ FAILED   → user redirected to /cart. NO completeCheckout call → NO DB order.
+                //
+                // KEY POINT: if payment is not successful, completeCheckout is NEVER called.
+                // No DB order is created, no stock is decremented.
 
-                    // Helper: cancel the pending order silently, then redirect to cart
-                    const cancelAndRedirect = async (reason: string) => {
-                        if (paymentHandled) return;
+                // PHASE 1: Prepare
+                const prep = await ordersApi.prepareCheckout({
+                    cart_items: items.map(item => ({
+                        product_id: item.product.id,
+                        quantity: item.quantity,
+                    })),
+                    promo_code: promo_code || undefined,
+                });
+
+                let paymentHandled = false;
+
+                const handleCancel = (reason: string) => {
+                    if (paymentHandled) return;
+                    paymentHandled = true;
+                    setIsProcessing(false);
+                    toast({
+                        title: reason,
+                        description: 'No charges were made. Your cart is still intact.',
+                        variant: 'default',
+                    });
+                    router.push('/cart');
+                };
+
+                // PHASE 2: Open Razorpay
+                const options = {
+                    key: "rzp_live_SZO4iQslfD86WW",
+                    amount: prep.amount_paise,
+                    currency: "INR",
+                    name: "Pranjay Cosmetics",
+                    description: `Order of ${items.length} item${items.length !== 1 ? 's' : ''}`,
+                    image: "/logo.png",
+                    order_id: prep.razorpay_order_id,  // REQUIRED — links payment to backend
+                    prefill: { name: address.full_name, email: "customer@example.com", contact: address.phone },
+                    theme: { color: "#0f172a" },
+
+                    handler: async (response: any) => {
+                        // ✅ Razorpay confirmed payment — now create the DB order
                         paymentHandled = true;
-                        // Restore UI immediately — don't wait for cancel API
-                        setIsProcessing(false);
                         try {
-                            await ordersApi.cancel(createdOrder.id);
-                        } catch (_) { /* best-effort — order stays PENDING but stock guard runs nightly */ }
-                        toast({
-                            title: reason,
-                            description: 'Your order has been cancelled. No charges were made. Your cart is intact.',
-                            variant: 'default',
-                        });
-                        // Navigate to cart so user sees a clean state (not the checkout form)
-                        router.push('/cart');
-                    };
-
-                    const options = {
-                        key: "rzp_live_SZO4iQslfD86WW",
-                        amount: amountInPaise,
-                        currency: "INR",
-                        name: "Pranjay Cosmetics",
-                        description: `Order ${createdOrder.order_number}`,
-                        image: "/logo.png",
-                        // order_id links Razorpay to the backend order — REQUIRED for signature verification
-                        order_id: createdOrder.razorpay_order_id,
-                        prefill: { name: address.full_name, email: "customer@example.com", contact: address.phone },
-                        theme: { color: "#0f172a" },
-
-                        handler: async (response: any) => {
-                            // ✅ USER PAID — verify signature server-side BEFORE showing success
-                            // This prevents anyone forging a Razorpay response to get free orders
-                            paymentHandled = true;
-                            try {
-                                await ordersApi.verifyPayment(createdOrder.id, {
+                            // PHASE 3: Complete — backend verifies signature then creates order
+                            const [createdOrder] = await Promise.all([
+                                ordersApi.completeCheckout({
+                                    full_name: address.full_name,
+                                    phone: address.phone,
+                                    address_line1: address.address_line1,
+                                    address_line2: address.address_line2 || undefined,
+                                    city: address.city,
+                                    state: address.state,
+                                    postal_code: address.postal_code,
+                                    country: 'India',
+                                    cart_items: items.map(item => ({
+                                        product_id: item.product.id,
+                                        quantity: item.quantity,
+                                    })),
+                                    payment_method: 'online',
+                                    promo_code: promo_code || undefined,
+                                    // Razorpay proof — backend verifies HMAC before creating order
                                     razorpay_payment_id: response.razorpay_payment_id,
                                     razorpay_order_id: response.razorpay_order_id,
                                     razorpay_signature: response.razorpay_signature,
-                                });
-                                // ONLY after server confirms — show success screen
-                                completeOrderDisplay(createdOrder.id, createdOrder.order_number, 'paid', 'Online Payment');
-                            } catch (verifyErr: any) {
-                                setIsProcessing(false);
-                                toast({
-                                    title: 'Payment Verification Failed',
-                                    description: `Payment received but could not be verified. Contact support with Order #${createdOrder.order_number}`,
-                                    variant: 'destructive',
-                                });
-                            }
-                        },
+                                }),
+                                profileTask,
+                            ]);
+                            completeOrderDisplay(createdOrder.id, createdOrder.order_number, 'paid', 'Online Payment');
+                        } catch (err: any) {
+                            setIsProcessing(false);
+                            toast({
+                                title: 'Order Creation Failed',
+                                description: err.message || 'Payment was received but order could not be created. Contact support.',
+                                variant: 'destructive',
+                            });
+                        }
+                    },
 
-                        modal: {
-                            // Fires when user presses X or clicks outside the modal
-                            ondismiss: () => cancelAndRedirect('Payment Cancelled'),
-                        },
-                    };
+                    modal: {
+                        ondismiss: () => handleCancel('Payment Cancelled'),
+                    },
+                };
 
-                    const rzp = new (window as any).Razorpay(options);
-
-                    rzp.on('payment.failed', async (response: any) => {
-                        // Bank/UPI declined — cancel and redirect to cart
-                        await cancelAndRedirect(
-                            response.error?.description || 'Payment Declined'
-                        );
-                    });
-
-                    rzp.open();
-                } catch (error) {
-                    // Failed to even open Razorpay — cancel the dangling pending order
-                    setIsProcessing(false);
-                    try { await ordersApi.cancel(createdOrder.id); } catch (_) { }
-                    toast({ title: 'Payment Error', description: 'Could not initialize payment gateway. Please try again.', variant: 'destructive' });
-                }
+                const rzp = new (window as any).Razorpay(options);
+                rzp.on('payment.failed', (response: any) => {
+                    handleCancel(response.error?.description || 'Payment Failed');
+                });
+                rzp.open();
             }
         } catch (error: any) {
             setIsProcessing(false);
-            toast({ title: 'Checkout Failed', description: error.message || 'There was a problem processing your order.', variant: 'destructive' });
+            toast({ title: 'Checkout Failed', description: error.message || 'There was a problem. Please try again.', variant: 'destructive' });
         }
     };
-
-
 
     const completeOrderDisplay = (id: string, number: string, paymentStatus: string, paymentMethodName: string) => {
         const order: Order = {

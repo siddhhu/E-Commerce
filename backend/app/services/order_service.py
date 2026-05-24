@@ -118,7 +118,11 @@ class OrderService:
         payment_method: str,
         notes: Optional[str] = None,
         promo_code: Optional[str] = None,
-        background_tasks: Optional[BackgroundTasks] = None
+        background_tasks: Optional[BackgroundTasks] = None,
+        # Pre-verified Razorpay details (two-phase checkout — already signature-verified by caller)
+        razorpay_payment_id: Optional[str] = None,
+        razorpay_order_id: Optional[str] = None,
+        razorpay_signature: Optional[str] = None,
     ) -> Order:
         """Create order from user's cart items."""
         import asyncio
@@ -229,24 +233,33 @@ class OrderService:
                 total_amount=total_amount,
                 placed_at=datetime.utcnow()
             )
-            
+
             print(f"Creating order: {order.order_number}, Method: {payment_method}, Total: {total_amount}")
-            
-            # Create Razorpay order if online
+
+            # ── Razorpay handling ──────────────────────────────────────────────
             if payment_method == PaymentMethod.ONLINE.value:
-                payment_service = PaymentService()
-                try:
-                    # Razorpay amount is in paise (total_amount * 100)
-                    amount_in_paise = int(total_amount * 100)
-                    rzp_order = await payment_service.create_order(
-                        amount=amount_in_paise,
-                        receipt=order.order_number
-                    )
-                    order.razorpay_order_id = rzp_order.get("id")
-                    print(f"Razorpay order created: {order.razorpay_order_id}")
-                except Exception as e:
-                    print(f"Error creating Razorpay order: {e}")
-                    raise BadRequestException(f"Failed to initiate online payment: {str(e)}")
+                if razorpay_payment_id and razorpay_order_id and razorpay_signature:
+                    # Two-phase flow: payment already verified by /checkout/prepare + /checkout/complete
+                    # Signature was verified before this function was called — mark as PAID directly.
+                    order.razorpay_payment_id = razorpay_payment_id
+                    order.razorpay_order_id = razorpay_order_id
+                    order.razorpay_signature = razorpay_signature
+                    order.payment_status = PaymentStatus.PAID
+                    print(f"Online order with pre-verified payment: {razorpay_payment_id}")
+                else:
+                    # Legacy path (old /checkout endpoint): create Razorpay order here
+                    payment_service = PaymentService()
+                    try:
+                        amount_in_paise = int(total_amount * 100)
+                        rzp_order = await payment_service.create_order(
+                            amount=amount_in_paise,
+                            receipt=order.order_number
+                        )
+                        order.razorpay_order_id = rzp_order.get("id")
+                        print(f"Razorpay order created (legacy): {order.razorpay_order_id}")
+                    except Exception as e:
+                        print(f"Error creating Razorpay order: {e}")
+                        raise BadRequestException(f"Failed to initiate online payment: {str(e)}")
             
             self.session.add(order)
             await self.session.flush()  # Get order ID
