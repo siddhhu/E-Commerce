@@ -4,8 +4,10 @@ Users Router - User profile endpoints
 import re
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
+from pydantic import BaseModel as _PydanticModel
 
 from app.core.dependencies import get_current_active_user
+from app.core.security import verify_password, hash_password
 from app.database import get_session
 from app.models.user import User, UserRead, UserUpdate
 from app.models.address import Address, AddressCreate, AddressRead, AddressUpdate
@@ -15,6 +17,59 @@ router = APIRouter()
 
 # Indian GST format: 2 digits (state) + 5 alpha (PAN prefix) + 4 digits + 1 alpha + 1 alphanum + Z + 1 alphanum
 _GST_RE = re.compile(r'^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$')
+
+
+# ── Change Password ───────────────────────────────────────────────────────────
+
+class ChangePasswordRequest(_PydanticModel):
+    """Change password request."""
+    current_password: str
+    new_password: str
+
+
+@router.post("/me/change-password", status_code=200)
+async def change_password(
+    data: ChangePasswordRequest,
+    current_user: User = Depends(get_current_active_user),
+    session: AsyncSession = Depends(get_session),
+):
+    """
+    Change the current user's password.
+    Requires the correct current password. Works for admin, seller, and customer.
+    """
+    # Validate current password
+    if not current_user.hashed_password:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="This account uses phone/OTP login and does not have a password set."
+        )
+
+    if not verify_password(data.current_password, current_user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Current password is incorrect."
+        )
+
+    # Validate new password strength
+    if len(data.new_password) < 8:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="New password must be at least 8 characters long."
+        )
+
+    if data.new_password == data.current_password:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="New password must be different from the current password."
+        )
+
+    # Hash and save
+    current_user.hashed_password = hash_password(data.new_password)
+    session.add(current_user)
+    await session.commit()
+
+    return {"message": "Password updated successfully."}
+
 
 
 @router.get("/me", response_model=UserRead)

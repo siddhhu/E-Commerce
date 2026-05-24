@@ -239,6 +239,10 @@ export const authApi = {
         user_type?: 'seller' | 'customer' 
     }) =>
         api.patch<User>('/users/me', data),
+
+    /** Change password — requires current password for verification. */
+    changePassword: (data: { current_password: string; new_password: string }) =>
+        api.post<{ message: string }>('/users/me/change-password', data),
 };
 
 // Users API
