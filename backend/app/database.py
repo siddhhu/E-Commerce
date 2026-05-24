@@ -161,7 +161,40 @@ async def run_startup_migrations() -> None:
             else:
                 await conn.execute(sa.text("ALTER TABLE products ADD COLUMN IF NOT EXISTS gst_percentage INTEGER DEFAULT 18;"))
                 await conn.execute(sa.text("ALTER TABLE products ADD COLUMN IF NOT EXISTS parent_id UUID REFERENCES products(id);"))
-        print("Database: Schema migrations applied successfully.")
+
+        # 4. Performance indexes — idempotent (CREATE INDEX IF NOT EXISTS)
+        if "postgresql" in db_url:
+            print("Database: Ensuring performance indexes...")
+            async with engine.connect() as conn:
+                conn = await conn.execution_options(isolation_level="AUTOCOMMIT")
+                indexes = [
+                    # Products — most filtered columns
+                    "CREATE INDEX IF NOT EXISTS idx_products_is_active ON products (is_active);",
+                    "CREATE INDEX IF NOT EXISTS idx_products_is_featured ON products (is_featured) WHERE is_featured = TRUE;",
+                    "CREATE INDEX IF NOT EXISTS idx_products_category_id ON products (category_id);",
+                    "CREATE INDEX IF NOT EXISTS idx_products_seller_id ON products (seller_id);",
+                    "CREATE INDEX IF NOT EXISTS idx_products_active_featured ON products (is_active, is_featured);",
+                    # Cart items — fetched on every page load when logged in
+                    "CREATE INDEX IF NOT EXISTS idx_cart_items_user_id ON cart_items (user_id);",
+                    # Wishlist
+                    "CREATE INDEX IF NOT EXISTS idx_wishlist_items_user_id ON wishlist_items (user_id);",
+                    # Orders — user history + admin filters
+                    "CREATE INDEX IF NOT EXISTS idx_orders_user_id ON orders (user_id);",
+                    "CREATE INDEX IF NOT EXISTS idx_orders_status ON orders (status);",
+                    "CREATE INDEX IF NOT EXISTS idx_orders_created_at ON orders (created_at DESC);",
+                    "CREATE INDEX IF NOT EXISTS idx_orders_payment_status ON orders (payment_status);",
+                    # Addresses — fetched on checkout page
+                    "CREATE INDEX IF NOT EXISTS idx_addresses_user_id ON addresses (user_id);",
+                    # Order items — seller revenue queries
+                    "CREATE INDEX IF NOT EXISTS idx_order_items_order_id ON order_items (order_id);",
+                    "CREATE INDEX IF NOT EXISTS idx_order_items_product_id ON order_items (product_id);",
+                ]
+                for idx_sql in indexes:
+                    try:
+                        await conn.execute(sa.text(idx_sql))
+                    except Exception as e:
+                        print(f"Database: Index warning (non-fatal): {e}")
+            print("Database: Performance indexes ensured.")
     try:
         # Run with a 20-second timeout so offline development doesn't hang the app startup
         await asyncio.wait_for(run_migrations_impl(), timeout=20.0)

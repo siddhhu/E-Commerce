@@ -1,16 +1,19 @@
 """
 Orders Router - Order history endpoints
 """
+import asyncio
 from typing import Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import func
+from sqlmodel import select
 from pydantic import BaseModel
 
 from app.core.dependencies import get_current_active_user
 from app.database import get_session
-from app.models.order import OrderListRead, OrderRead, OrderStatus
+from app.models.order import Order, OrderListRead, OrderRead, OrderStatus
 from app.models.user import User
 from app.services.order_service import OrderService
 from app.services.payment_service import PaymentService
@@ -35,53 +38,42 @@ async def list_my_orders(
     current_user: User = Depends(get_current_active_user),
     session: AsyncSession = Depends(get_session)
 ):
-    """Get current user's order history."""
+    """Get current user's order history — list + count run in parallel."""
     order_service = OrderService(session)
-    
     skip = (page - 1) * page_size
-    
-    orders = await order_service.list_user_orders(
-        user_id=current_user.id,
-        skip=skip,
-        limit=page_size,
-        status=status
+
+    # Count query (independent of list query — run in parallel)
+    count_query = select(func.count(Order.id)).where(Order.user_id == current_user.id)
+    if status:
+        count_query = count_query.where(Order.status == status)
+
+    orders, count_result = await asyncio.gather(
+        order_service.list_user_orders(
+            user_id=current_user.id,
+            skip=skip,
+            limit=page_size,
+            status=status,
+        ),
+        session.execute(count_query),
     )
-    
-    # Transform to list format
-    items = []
-    for order in orders:
-        product_names = [item.product_name for item in order.items]
-        product_summary = ", ".join(product_names)
-        
-        items.append(OrderListRead(
+    total = count_result.scalar() or 0
+
+    items = [
+        OrderListRead(
             id=order.id,
             order_number=order.order_number,
             status=order.status,
             payment_status=order.payment_status,
             total_amount=order.total_amount,
             items_count=len(order.items),
-            product_summary=product_summary,
+            product_summary=", ".join(item.product_name for item in order.items),
             placed_at=order.placed_at,
-            created_at=order.created_at
-        ))
-    
-    # Count total
-    from sqlalchemy import func
-    from sqlmodel import select
-    from app.models.order import Order
-    
-    count_query = select(func.count(Order.id)).where(Order.user_id == current_user.id)
-    if status:
-        count_query = count_query.where(Order.status == status)
-    result = await session.execute(count_query)
-    total = result.scalar() or 0
-    
-    return PaginatedOrders(
-        items=items,
-        total=total,
-        page=page,
-        page_size=page_size
-    )
+            created_at=order.created_at,
+        )
+        for order in orders
+    ]
+
+    return PaginatedOrders(items=items, total=total, page=page, page_size=page_size)
 
 
 @router.get("/{order_id}", response_model=OrderRead)

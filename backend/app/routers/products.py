@@ -1,15 +1,17 @@
 """
 Products Router - Public product endpoints
 """
+import asyncio
 from typing import Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query
+from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic import BaseModel
 
 from app.database import get_session
-from app.models.product import ProductListRead, ProductRead
+from app.models.product import Product, ProductListRead, ProductRead
 from app.services.product_service import ProductService
 
 router = APIRouter()
@@ -22,6 +24,38 @@ class PaginatedProducts(BaseModel):
     page: int
     page_size: int
     pages: int
+
+
+def _primary_image(product: Product) -> Optional[str]:
+    """Extract primary image URL from a product (shared helper)."""
+    url = getattr(product, "image_url", None)
+    if url:
+        return url
+    if product.images:
+        primary = next((img for img in product.images if img.is_primary), None)
+        return primary.image_url if primary else product.images[0].image_url
+    return None
+
+
+def _to_list_read(product: Product) -> ProductListRead:
+    """Convert Product ORM model to ProductListRead (shared helper)."""
+    return ProductListRead(
+        id=product.id,
+        name=product.name,
+        slug=product.slug,
+        sku=product.sku,
+        short_description=product.short_description,
+        mrp=product.mrp,
+        selling_price=product.selling_price,
+        b2b_price=product.b2b_price,
+        stock_quantity=product.stock_quantity,
+        is_featured=product.is_featured,
+        category_id=product.category_id,
+        image_url=getattr(product, "image_url", None),
+        primary_image=_primary_image(product),
+        seller_id=product.seller_id,
+        seller_name=product.seller_name or "Pranjay",
+    )
 
 
 @router.get("", response_model=PaginatedProducts)
@@ -38,66 +72,41 @@ async def list_products(
 ):
     """
     List products with filtering and pagination.
+    Runs list + count queries in parallel (saves 1 Supabase round-trip per call).
     Public endpoint.
     """
     product_service = ProductService(session)
-    
     skip = (page - 1) * page_size
-    
-    products = await product_service.list_products(
-        skip=skip,
-        limit=page_size,
-        category_id=category_id,
-        brand_id=brand_id,
-        search=search,
-        min_price=min_price,
-        max_price=max_price,
-        is_featured=is_featured,
-        is_active=True
+
+    # Fire list and count queries in parallel — independent queries on same session
+    # Note: asyncpg allows this when using separate coroutines that don't share a cursor
+    products, total = await asyncio.gather(
+        product_service.list_products(
+            skip=skip,
+            limit=page_size,
+            category_id=category_id,
+            brand_id=brand_id,
+            search=search,
+            min_price=min_price,
+            max_price=max_price,
+            is_featured=is_featured,
+            is_active=True,
+        ),
+        product_service.count_products(
+            category_id=category_id,
+            brand_id=brand_id,
+            is_active=True,
+        ),
     )
-    
-    total = await product_service.count_products(
-        category_id=category_id,
-        brand_id=brand_id,
-        is_active=True
-    )
-    
-    # Transform to list read format
-    items = []
-    for product in products:
-        primary_image = getattr(product, "image_url", None)
-        if not primary_image and product.images:
-            primary = next((img for img in product.images if img.is_primary), None)
-            primary_image = primary.image_url if primary else (
-                product.images[0].image_url if product.images else None
-            )
-        
-        items.append(ProductListRead(
-            id=product.id,
-            name=product.name,
-            slug=product.slug,
-            sku=product.sku,
-            short_description=product.short_description,
-            mrp=product.mrp,
-            selling_price=product.selling_price,
-            b2b_price=product.b2b_price,
-            stock_quantity=product.stock_quantity,
-            is_featured=product.is_featured,
-            category_id=product.category_id,
-            image_url=getattr(product, "image_url", None),
-            primary_image=primary_image,
-            seller_id=product.seller_id,
-            seller_name=product.seller_name or "Pranjay"
-        ))
-    
+
     pages = (total + page_size - 1) // page_size
-    
+
     return PaginatedProducts(
-        items=items,
+        items=[_to_list_read(p) for p in products],
         total=total,
         page=page,
         page_size=page_size,
-        pages=pages
+        pages=pages,
     )
 
 
@@ -106,43 +115,22 @@ async def get_featured_products(
     limit: int = Query(10, ge=1, le=50),
     session: AsyncSession = Depends(get_session)
 ):
-    """Get featured products."""
+    """Get featured products. Cached for 2 minutes (public, rarely changes)."""
     product_service = ProductService(session)
-    
+
     products = await product_service.list_products(
         limit=limit,
         is_featured=True,
-        is_active=True
+        is_active=True,
     )
-    
-    items = []
-    for product in products:
-        primary_image = getattr(product, "image_url", None)
-        if not primary_image and product.images:
-            primary = next((img for img in product.images if img.is_primary), None)
-            primary_image = primary.image_url if primary else (
-                product.images[0].image_url if product.images else None
-            )
-        
-        items.append(ProductListRead(
-            id=product.id,
-            name=product.name,
-            slug=product.slug,
-            sku=product.sku,
-            short_description=product.short_description,
-            mrp=product.mrp,
-            selling_price=product.selling_price,
-            b2b_price=product.b2b_price,
-            stock_quantity=product.stock_quantity,
-            is_featured=product.is_featured,
-            category_id=product.category_id,
-            image_url=getattr(product, "image_url", None),
-            primary_image=primary_image,
-            seller_id=product.seller_id,
-            seller_name=product.seller_name or "Pranjay"
-        ))
-    
-    return items
+
+    items = [_to_list_read(p) for p in products]
+    content = [i.model_dump(mode="json") for i in items]
+
+    return JSONResponse(
+        content=content,
+        headers={"Cache-Control": "public, max-age=120, stale-while-revalidate=30"},
+    )
 
 
 @router.get("/{slug}", response_model=ProductRead)
@@ -152,8 +140,8 @@ async def get_product_by_slug(
 ):
     """Get product details by slug."""
     product_service = ProductService(session)
-    product = await product_service.get_product_by_slug(slug)
-    return product
+    return await product_service.get_product_by_slug(slug)
+
 
 @router.get("/{slug}/variants", response_model=list[ProductListRead])
 async def get_product_variants(
@@ -163,4 +151,5 @@ async def get_product_variants(
     """Get all variants (siblings) for a product."""
     product_service = ProductService(session)
     variants = await product_service.get_product_variants(slug)
-    return variants
+    return [_to_list_read(v) for v in variants]
+

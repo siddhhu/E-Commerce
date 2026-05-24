@@ -22,41 +22,49 @@ async def get_wishlist(
     current_user: User = Depends(get_current_active_user),
     session: AsyncSession = Depends(get_session)
 ):
-    """Get current user's wishlist."""
+    """Get current user's wishlist — batch fetches all products in 1 query."""
     result = await session.execute(
         select(WishlistItem).where(WishlistItem.user_id == current_user.id)
     )
     wishlist_items = result.scalars().all()
-    
+
+    if not wishlist_items:
+        return []
+
+    # Batch-fetch all products in ONE query (was N individual queries)
+    product_ids = [item.product_id for item in wishlist_items]
+    products_result = await session.execute(
+        select(Product).where(Product.id.in_(product_ids))
+    )
+    products_map = {p.id: p for p in products_result.scalars().all()}
+
     items = []
     for item in wishlist_items:
-        product_result = await session.execute(
-            select(Product).where(Product.id == item.product_id)
-        )
-        product = product_result.scalar_one_or_none()
-        
-        if product:
-            primary_image = None
-            if product.images:
-                primary = next((img for img in product.images if img.is_primary), None)
-                primary_image = primary.image_url if primary else (
-                    product.images[0].image_url if product.images else None
-                )
-            
-            items.append(WishlistItemWithProduct(
-                id=item.id,
-                user_id=item.user_id,
-                product_id=item.product_id,
-                created_at=item.created_at,
-                product_name=product.name,
-                product_slug=product.slug,
-                product_sku=product.sku,
-                selling_price=float(product.selling_price),
-                mrp=float(product.mrp),
-                primary_image=primary_image,
-                is_in_stock=product.stock_quantity > 0
-            ))
-    
+        product = products_map.get(item.product_id)
+        if not product:
+            continue
+
+        primary_image = None
+        if product.images:
+            primary = next((img for img in product.images if img.is_primary), None)
+            primary_image = primary.image_url if primary else (
+                product.images[0].image_url if product.images else None
+            )
+
+        items.append(WishlistItemWithProduct(
+            id=item.id,
+            user_id=item.user_id,
+            product_id=item.product_id,
+            created_at=item.created_at,
+            product_name=product.name,
+            product_slug=product.slug,
+            product_sku=product.sku,
+            selling_price=float(product.selling_price),
+            mrp=float(product.mrp),
+            primary_image=primary_image,
+            is_in_stock=product.stock_quantity > 0
+        ))
+
     return items
 
 
