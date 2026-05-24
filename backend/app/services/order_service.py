@@ -121,28 +121,30 @@ class OrderService:
         background_tasks: Optional[BackgroundTasks] = None
     ) -> Order:
         """Create order from user's cart items."""
-        # Verify shipping address belongs to user
-        address_result = await self.session.execute(
+        import asyncio
+
+        # ── Parallel fetch: address + cart items at the same time ──────────
+        address_query = self.session.execute(
             select(Address).where(
                 Address.id == shipping_address_id,
                 Address.user_id == user_id
             )
         )
-        address = address_result.scalar_one_or_none()
-        
-        if not address:
-            raise NotFoundException("Shipping address")
-        
-        # Get cart items
-        cart_result = await self.session.execute(
+        cart_query = self.session.execute(
             select(CartItem).where(CartItem.user_id == user_id)
         )
+
+        address_result, cart_result = await asyncio.gather(address_query, cart_query)
+
+        address = address_result.scalar_one_or_none()
+        if not address:
+            raise NotFoundException("Shipping address")
+
         cart_items = cart_result.scalars().all()
-        
         if not cart_items:
             raise BadRequestException("Cart is empty")
-        
-        # Validate stock and calculate totals (BATCH FETCH)
+
+        # ── Batch-fetch all products in one query ──────────────────────────
         product_ids = [item.product_id for item in cart_items]
         product_result = await self.session.execute(
             select(Product).where(Product.id.in_(product_ids))
@@ -268,10 +270,12 @@ class OrderService:
                 product.stock_quantity -= item_data["quantity"]
                 self.session.add(product)
             
-            # Clear cart
-            for cart_item in cart_items:
-                await self.session.delete(cart_item)
-            
+            # Clear cart with a single bulk DELETE (faster than N individual deletes)
+            from sqlalchemy import delete as _sql_delete
+            await self.session.execute(
+                _sql_delete(CartItem).where(CartItem.user_id == user_id)
+            )
+
             await self.session.commit()
 
             # Mark promo as used after successful commit

@@ -46,6 +46,7 @@ export default function CheckoutPage() {
     const [isProcessing, setIsProcessing] = useState(false);
     const [orderPlaced, setOrderPlaced] = useState<Order | null>(null);
     const [isRazorpayReady, setIsRazorpayReady] = useState(false);
+    const [savedAddressId, setSavedAddressId] = useState<string | null>(null); // pre-loaded address
     const [address, setAddress] = useState({
         full_name: '',
         phone: '',
@@ -186,6 +187,30 @@ export default function CheckoutPage() {
     }, [isAuthenticated, isAuthLoading, _hasHydrated, user, router, toast]);
 
 
+    // ── DB Warmup: fire checkout-prep as soon as auth is confirmed ──────────
+    // This pre-warms the Supabase connection so the actual checkout call is fast.
+    useEffect(() => {
+        if (!isAuthenticated || !_hasHydrated || isAuthLoading) return;
+        usersApi.getCheckoutPrep()
+            .then(data => {
+                // If user has a saved default address, pre-fill the form
+                const defaultAddr = data.addresses?.find((a: any) => a.is_default) || data.addresses?.[0];
+                if (defaultAddr) {
+                    setSavedAddressId(defaultAddr.id);
+                    setAddress({
+                        full_name: defaultAddr.full_name || '',
+                        phone: defaultAddr.phone || '',
+                        address_line1: defaultAddr.address_line1 || '',
+                        address_line2: defaultAddr.address_line2 || '',
+                        city: defaultAddr.city || '',
+                        state: defaultAddr.state || '',
+                        postal_code: defaultAddr.postal_code || '',
+                    });
+                }
+            })
+            .catch(() => { /* Non-critical: warmup failed, checkout will still work */ });
+    }, [isAuthenticated, _hasHydrated, isAuthLoading]);
+
     const handlePlaceOrder = async () => {
         if (!validateForm()) return;
         if (items.length === 0) {
@@ -204,22 +229,20 @@ export default function CheckoutPage() {
         setIsProcessing(true);
 
         try {
-            // 1 & 2. Parallel Tasks: Sync cart and Create/Save Address
-            // Note: Profile update is also independent and can be parallelized
-            
+            // 1. Create address (always save a fresh one) + sync profile doc in parallel
+            // Note: cart sync (syncAll) removed — cart is already on backend from when
+            // items were added. We only need the address and optional profile update.
             const addressTask = usersApi.createAddress({ ...address, country: 'India', is_default: true });
-            const syncTask = cartApi.syncAll(items.map(item => ({ product_id: item.product.id, quantity: item.quantity })));
-            
-            // Start profile update task if needed
-            let profileTask = Promise.resolve();
+
+            let profileTask = Promise.resolve<any>(undefined);
             if (docValid && docNumber && !docSavedToProfile) {
                 const updateData: any = {};
                 updateData[docType === 'shop_license' ? 'shop_license' : docType] = docNumber;
                 profileTask = authApi.updateProfile(updateData).then(u => setUser(u));
             }
 
-            // Wait for address and basic tasks (sync/profile)
-            const [savedAddress] = await Promise.all([addressTask, syncTask, profileTask]);
+            // Wait for address + profile update
+            const [savedAddress] = await Promise.all([addressTask, profileTask]);
 
             const createdOrder = await ordersApi.checkout({
                 shipping_address_id: savedAddress.id,

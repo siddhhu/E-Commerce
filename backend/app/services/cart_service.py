@@ -20,45 +20,53 @@ class CartService:
         self.session = session
     
     async def get_cart_items(self, user_id: UUID) -> list[CartItemWithProduct]:
-        """Get all cart items for a user with product details."""
+        """Get all cart items for a user with product details (batch fetch — no N+1)."""
         result = await self.session.execute(
             select(CartItem).where(CartItem.user_id == user_id)
         )
         cart_items = result.scalars().all()
-        
+
+        if not cart_items:
+            return []
+
+        # Batch-fetch ALL products in a single query instead of N individual queries
+        product_ids = [item.product_id for item in cart_items]
+        product_result = await self.session.execute(
+            select(Product).where(Product.id.in_(product_ids))
+        )
+        products = {p.id: p for p in product_result.scalars().all()}
+
         items_with_products = []
         for item in cart_items:
-            # Fetch product
-            product_result = await self.session.execute(
-                select(Product).where(Product.id == item.product_id)
-            )
-            product = product_result.scalar_one_or_none()
-            
-            if product:
-                # Get primary image
-                primary_image = None
-                if product.images:
-                    primary = next((img for img in product.images if img.is_primary), None)
-                    primary_image = primary.image_url if primary else (
-                        product.images[0].image_url if product.images else None
-                    )
-                
-                items_with_products.append(CartItemWithProduct(
-                    id=item.id,
-                    user_id=item.user_id,
-                    product_id=item.product_id,
-                    quantity=item.quantity,
-                    created_at=item.created_at,
-                    updated_at=item.updated_at,
-                    product_name=product.name,
-                    product_slug=product.slug,
-                    product_sku=product.sku,
-                    unit_price=float(product.selling_price),
-                    primary_image=primary_image,
-                    total_price=float(product.selling_price * item.quantity)
-                ))
-        
+            product = products.get(item.product_id)
+            if not product:
+                continue
+
+            # Get primary image
+            primary_image = None
+            if product.images:
+                primary = next((img for img in product.images if img.is_primary), None)
+                primary_image = primary.image_url if primary else (
+                    product.images[0].image_url if product.images else None
+                )
+
+            items_with_products.append(CartItemWithProduct(
+                id=item.id,
+                user_id=item.user_id,
+                product_id=item.product_id,
+                quantity=item.quantity,
+                created_at=item.created_at,
+                updated_at=item.updated_at,
+                product_name=product.name,
+                product_slug=product.slug,
+                product_sku=product.sku,
+                unit_price=float(product.selling_price),
+                primary_image=primary_image,
+                total_price=float(product.selling_price * item.quantity)
+            ))
+
         return items_with_products
+
     
     async def add_to_cart(
         self,
@@ -176,15 +184,11 @@ class CartService:
         await self.session.commit()
     
     async def clear_cart(self, user_id: UUID) -> None:
-        """Clear all items from user's cart."""
-        result = await self.session.execute(
-            select(CartItem).where(CartItem.user_id == user_id)
+        """Clear all items from user's cart (bulk delete — single query)."""
+        from sqlalchemy import delete as sql_delete
+        await self.session.execute(
+            sql_delete(CartItem).where(CartItem.user_id == user_id)
         )
-        cart_items = result.scalars().all()
-        
-        for item in cart_items:
-            await self.session.delete(item)
-        
         await self.session.commit()
     
     async def get_cart_total(self, user_id: UUID) -> dict:

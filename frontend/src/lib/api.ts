@@ -246,6 +246,8 @@ export const usersApi = {
     getAddresses: () => api.get<Address[]>('/users/me/addresses'),
     createAddress: (data: Omit<Address, 'id' | 'user_id' | 'created_at' | 'updated_at'>) =>
         api.post<Address>('/users/me/addresses', data),
+    /** Single round-trip: returns addresses + cart together for the checkout page. */
+    getCheckoutPrep: () => api.get<{ addresses: Address[]; cart: any }>('/checkout-prep'),
     submitSellerApplication: async (file: File) => {
         // 1. Upload the document file
         const formData = new FormData();
@@ -307,18 +309,23 @@ export const cartApi = {
     clear: () => api.delete('/cart'),
 
     syncAll: async (items: { product_id: string; quantity: number }[]) => {
-        // Clear backend cart first, then add all current frontend items
+        // Clear backend cart first, then add all current frontend items IN PARALLEL
         await api.delete('/cart');
-        let synced = 0;
-        for (const item of items) {
-            try {
-                await api.post('/cart/items', item);
-                synced++;
-            } catch (err) {
-                // Skip items with invalid/non-existent product IDs (e.g. stale dummy data)
-                console.warn('Skipping cart item that failed to sync:', item.product_id, err);
+        if (items.length === 0) return 0;
+
+        const results = await Promise.allSettled(
+            items.map(item => api.post('/cart/items', item))
+        );
+
+        const synced = results.filter(r => r.status === 'fulfilled').length;
+        const failed = results.filter(r => r.status === 'rejected');
+
+        failed.forEach((f, i) => {
+            if (f.status === 'rejected') {
+                console.warn('Skipping cart item that failed to sync:', items[i]?.product_id, f.reason);
             }
-        }
+        });
+
         if (synced === 0 && items.length > 0) {
             throw new Error('None of the cart items could be added. Please remove old items and try again.');
         }

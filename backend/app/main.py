@@ -13,7 +13,7 @@ from fastapi.staticfiles import StaticFiles
 from app.config import settings
 from app.database import close_db, init_db, run_startup_migrations
 from app.routers import auth, banners, cart, categories, checkout, orders, products, users, wishlist
-from app.routers import invoices, promo_codes, contact
+from app.routers import invoices, promo_codes, contact, checkout_prep
 # from app.routers.admin import banners as admin_banners, bulk_upload, dashboard, migrate_images
 from app.routers.admin import banners as admin_banners, bulk_upload, dashboard
 from app.routers.admin import orders as admin_orders
@@ -92,6 +92,7 @@ app.include_router(banners.router, prefix=f"{API_PREFIX}/banners", tags=["Banner
 app.include_router(promo_codes.router, prefix=f"{API_PREFIX}/promo-codes", tags=["Promo Codes"])
 app.include_router(invoices.router, prefix=f"{API_PREFIX}/invoices", tags=["Invoices"])
 app.include_router(contact.router, prefix=f"{API_PREFIX}/contact", tags=["Contact"])
+app.include_router(checkout_prep.router, prefix=f"{API_PREFIX}", tags=["Checkout Prep"])
 
 # Admin Routes
 app.include_router(
