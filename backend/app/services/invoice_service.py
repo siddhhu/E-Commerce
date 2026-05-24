@@ -58,7 +58,7 @@ class InvoiceService:
             # Default Pranjay details
             DEFAULT_COMPANY_NAME = "Mahaganpati PVT LTD"
             DEFAULT_COMPANY_GST = "09AAECM0123C1Z5" # Generic Placeholder, user mentioned it's in code
-            DEFAULT_COMPANY_ADDRESS = "123 Commerce St, Startup Hub, India"
+            DEFAULT_COMPANY_ADDRESS = "Darbhanga, Bihar, India"
 
             # Fetch products to get seller info
             from app.models.product import Product
