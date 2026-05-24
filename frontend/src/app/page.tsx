@@ -20,6 +20,9 @@ import { formatPrice, getDiscountPercentage } from '@/lib/utils';
 import { BannerSlider } from '@/components/shop/BannerSlider';
 import { ProductCard } from '@/components/products/ProductCard';
 import { Product as APIProduct } from '@/lib/api';
+import { PromoBanner } from '@/components/layout/PromoBanner';
+import { CheckCircle2, Phone } from 'lucide-react';
+import { Input } from '@/components/ui/input';
 
 export default function HomePage() {
     const router = useRouter();
@@ -251,34 +254,22 @@ export default function HomePage() {
                     </div>
                 </section>
 
-                {/* Featured Products */}
-                <section className="py-16">
+                {/* Trending Now */}
+                <section className="py-12 bg-white">
                     <div className="container">
-                        <div className="flex items-center justify-between mb-8">
-                            <div>
-                                <h2 className="text-2xl md:text-3xl font-bold">
-                                    Featured Products
-                                </h2>
-                                <p className="text-muted-foreground mt-1">
-                                    Our top picks for you
-                                </p>
-                            </div>
-                            <Link href="/products">
-                                <Button variant="outline" className="gap-2">
-                                    View All <ArrowRight className="h-4 w-4" />
-                                </Button>
-                            </Link>
+                        <div className="flex flex-col items-center mb-8">
+                            <h2 className="text-2xl md:text-3xl font-bold flex items-center gap-2">
+                                🔥 Trending Now
+                            </h2>
                         </div>
 
                         {loading ? (
                             <div className="flex items-center justify-center py-12">
                                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                                <span className="ml-2 text-muted-foreground">Loading products...</span>
                             </div>
                         ) : (
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                            <div className="flex overflow-x-auto pb-6 gap-6 snap-x hide-scrollbar">
                                 {featuredProducts.map((product) => {
-                                    // Map APIProductSummary to APIProduct expected by ProductCard
                                     const cardProduct: APIProduct = {
                                         id: product.id,
                                         name: product.name,
@@ -307,12 +298,13 @@ export default function HomePage() {
                                     };
 
                                     return (
-                                        <ProductCard 
-                                            key={product.id} 
-                                            product={cardProduct}
-                                            onAddToCart={() => handleAddToCart(product)}
-                                            onAddToWishlist={() => handleToggleWishlist(product)}
-                                        />
+                                        <div key={product.id} className="min-w-[280px] max-w-[280px] snap-start">
+                                            <ProductCard 
+                                                product={cardProduct}
+                                                onAddToCart={() => handleAddToCart(product)}
+                                                onAddToWishlist={() => handleToggleWishlist(product)}
+                                            />
+                                        </div>
                                     );
                                 })}
                             </div>
@@ -320,70 +312,72 @@ export default function HomePage() {
                     </div>
                 </section>
 
-                {/* Categories */}
-                <section className="py-16 bg-muted/30">
-                    <div className="container">
-                        <div className="flex items-center justify-between mb-8">
-                            <div>
-                                <h2 className="text-2xl md:text-3xl font-bold">
-                                    Shop by Category
-                                </h2>
-                                <p className="text-muted-foreground mt-1">
-                                    Explore our wide range of cosmetics
-                                </p>
+                {/* The Wholesale Advantage */}
+                <section className="py-16 bg-[#fdfaf3] border-y border-[#f0e6d2]">
+                    <div className="container text-center max-w-5xl">
+                        <h3 className="text-sm font-bold tracking-widest uppercase text-slate-500 mb-2">The Wholesale Advantage</h3>
+                        <h2 className="text-3xl md:text-4xl font-extrabold text-slate-900 mb-4">
+                            Grow Your Business with Pranjay Wholesale
+                        </h2>
+                        <p className="text-lg text-slate-600 mb-12">
+                            Unlock premium margins and priority support when you buy in bulk.
+                        </p>
+
+                        <div className="grid md:grid-cols-3 gap-8 mb-12">
+                            <div className="space-y-4">
+                                <div className="mx-auto w-16 h-16 bg-[#f0e6d2] rounded-full flex items-center justify-center">
+                                    <span className="text-2xl">🪙</span>
+                                </div>
+                                <h4 className="font-bold text-lg text-slate-900">Tiered Discounts</h4>
+                                <p className="text-slate-600 text-sm">Save up to 80% on large wholesale orders.</p>
+                            </div>
+                            <div className="space-y-4">
+                                <div className="mx-auto w-16 h-16 bg-[#f0e6d2] rounded-full flex items-center justify-center">
+                                    <span className="text-2xl">📦</span>
+                                </div>
+                                <h4 className="font-bold text-lg text-slate-900">Fast Bulk Dispatch</h4>
+                                <p className="text-slate-600 text-sm">Priority shipping lane for B2B partners.</p>
+                            </div>
+                            <div className="space-y-4">
+                                <div className="mx-auto w-16 h-16 bg-[#f0e6d2] rounded-full flex items-center justify-center">
+                                    <span className="text-2xl">📞</span>
+                                </div>
+                                <h4 className="font-bold text-lg text-slate-900">Dedicated Support</h4>
+                                <p className="text-slate-600 text-sm">Direct line for order tracking and assistance.</p>
                             </div>
                         </div>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                            {categories.map((category) => (
-                                <Link key={category.slug} href={`/products?category=${category.id}`}>
-                                    <Card className="group overflow-hidden hover:shadow-lg transition-all">
-                                        <div className="relative aspect-square bg-muted">
-                                            <Image
-                                                src={categoryImages[category.slug] || 'https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=400'}
-                                                alt={category.name}
-                                                fill
-                                                className="object-cover transition-transform duration-300 group-hover:scale-105"
-                                            />
-                                            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-                                            <div className="absolute bottom-4 left-4 right-4">
-                                                <h3 className="text-lg font-semibold text-white">
-                                                    {category.name}
-                                                </h3>
-                                                <p className="text-sm text-white/80">
-                                                    {category.count} products
-                                                </p>
-                                            </div>
-                                        </div>
-                                    </Card>
-                                </Link>
-                            ))}
+
+                        <div className="flex justify-center gap-4">
+                            <Button size="lg" className="bg-[#d81b60] hover:bg-[#c2185b] text-white rounded-full px-8 border-0">Register as Wholesaler</Button>
+                            <Button size="lg" className="bg-[#cca152] hover:bg-[#b88c3d] text-white rounded-full px-8 border-0">View Bulk Pricing</Button>
                         </div>
                     </div>
                 </section>
 
-                {/* CTA Section */}
-                <section className="py-16 bg-primary text-primary-foreground">
+                {/* Trusted Brands */}
+                <section className="py-12 bg-white">
                     <div className="container text-center">
-                        <h2 className="text-2xl md:text-3xl font-bold mb-4">
-                            Ready to Start Your Wholesale Journey?
-                        </h2>
-                        <p className="text-primary-foreground/80 max-w-md mx-auto mb-8">
-                            Join thousands of retailers who trust Pranjay for their cosmetics
-                            supply.
-                        </p>
-                        {isAuthenticated ? (
-                            <Link href={user?.role === 'admin' || user?.role === 'super_admin' ? '/admin' : '/orders'}>
-                                <Button variant="secondary" size="lg" className="gap-2">
-                                    Go to Dashboard <ArrowRight className="h-4 w-4" />
-                                </Button>
-                            </Link>
-                        ) : (
-                            <Link href="/login">
-                                <Button variant="secondary" size="lg" className="gap-2">
-                                    Get Started <ArrowRight className="h-4 w-4" />
-                                </Button>
-                            </Link>
-                        )}
+                        <h3 className="text-sm font-bold tracking-widest uppercase text-yellow-600 mb-8">🌟 Trusted Brands</h3>
+                        <div className="flex flex-wrap justify-center items-center gap-8 md:gap-16 opacity-70 grayscale hover:grayscale-0 transition-all duration-300">
+                            {/* Mock Logos */}
+                            <span className="font-serif text-2xl font-bold text-slate-800">SHAHNAZ HUSAIN</span>
+                            <span className="font-sans text-3xl font-extrabold tracking-tighter text-slate-800">LAKMÉ</span>
+                            <span className="font-serif text-2xl font-semibold uppercase tracking-widest text-slate-800">L'Oréal<br/><span className="text-sm">PARIS</span></span>
+                            <span className="font-sans text-2xl font-bold uppercase tracking-tight text-slate-800">MAYBELLINE<br/><span className="text-xs tracking-widest">NEW YORK</span></span>
+                            <span className="font-sans text-2xl font-black italic tracking-tighter text-slate-800">COLORBAR</span>
+                        </div>
+                    </div>
+                </section>
+
+                {/* Newsletter Community */}
+                <section className="bg-[#3b2333] text-white py-16">
+                    <div className="container max-w-3xl text-center space-y-6">
+                        <h2 className="text-3xl font-bold">Join the Pranjay Community</h2>
+                        <p className="text-pink-100">Get 10% Off Your First Retail Order & Exclusive Wholesale Alerts</p>
+                        <form className="flex max-w-md mx-auto gap-2" onSubmit={(e) => { e.preventDefault(); }}>
+                            <Input placeholder="Enter your email address..." className="bg-white/10 border-white/20 text-white placeholder:text-white/50 h-12 rounded-lg" required type="email" />
+                            <Button type="submit" className="bg-[#cca152] hover:bg-[#b88c3d] text-white h-12 px-8 rounded-lg border-0">Subscribe</Button>
+                        </form>
                     </div>
                 </section>
             </main>

@@ -10,6 +10,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
+import { PromoBanner } from '@/components/layout/PromoBanner';
+import { Star } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { dummyProducts, Product } from '@/lib/dummy-data';
 import { productsApi, Product as APIProduct } from '@/lib/api';
@@ -211,6 +213,7 @@ export default function ProductDetailPage() {
     return (
         <div className="min-h-screen flex flex-col">
             <Header />
+            <PromoBanner />
 
             <main className="flex-1 py-8">
                 <div className="container">
@@ -241,6 +244,23 @@ export default function ProductDetailPage() {
                                     </span>
                                 )}
                             </div>
+                            
+                            {/* Thumbnails below main image */}
+                            <div className="flex gap-4 overflow-x-auto pb-2">
+                                {product.images?.map((img, i) => (
+                                    <div key={img.id} className={cn(
+                                        "relative w-20 h-20 rounded-lg overflow-hidden border-2 flex-shrink-0",
+                                        i === 0 ? "border-primary" : "border-transparent opacity-70"
+                                    )}>
+                                        <Image
+                                            src={img.image_url}
+                                            alt={img.alt_text || product.name}
+                                            fill
+                                            className="object-cover"
+                                        />
+                                    </div>
+                                ))}
+                            </div>
                         </div>
 
                         {/* Product Details */}
@@ -249,11 +269,6 @@ export default function ProductDetailPage() {
                                 <div className="flex items-start justify-between gap-4">
                                     <div className="flex items-center flex-wrap gap-2">
                                         <h1 className="text-3xl font-bold">{product.name}</h1>
-                                        {product.unit && (
-                                            <span className="bg-muted text-muted-foreground text-sm px-2 py-0.5 rounded-full font-medium">
-                                                {product.unit}
-                                            </span>
-                                        )}
                                     </div>
                                     <Button
                                         variant="ghost"
@@ -265,14 +280,23 @@ export default function ProductDetailPage() {
                                         <Share2 className="h-5 w-5" />
                                     </Button>
                                 </div>
-                                {/* Sold by badge */}
-                                <div className="flex items-center gap-1.5 mt-1.5">
-                                    <span className="text-xs text-muted-foreground">Sold by</span>
-                                    <span className="text-xs font-semibold text-primary bg-primary/8 border border-primary/20 rounded-full px-2.5 py-0.5">
-                                        {(product as any).seller_name || 'Pranjay'}
-                                    </span>
+                                {/* Stars */}
+                                <div className="flex items-center gap-1 mt-2">
+                                    <div className="flex">
+                                        {[...Array(5)].map((_, i) => (
+                                            <Star key={i} className={cn("h-4 w-4", i < 4 ? "fill-yellow-400 text-yellow-400" : "fill-muted text-muted")} />
+                                        ))}
+                                    </div>
+                                    <span className="text-sm font-medium ml-1">12 reviews</span>
                                 </div>
-                                <p className="text-muted-foreground mt-2">{product.short_description}</p>
+                                
+                                {/* Bullet points */}
+                                <div className="mt-4 space-y-2 text-sm">
+                                    <p>🌿 <span className="font-semibold">Botanical Extracts:</span> Sandalwood, Licorice, Jojoba.</p>
+                                    <p>💧 <span className="font-semibold">Deeply Moisturizing:</span> Acts as a moisturizing treatment.</p>
+                                    <p>✨ <span className="font-semibold">Smooth & Soft Texture:</span> Enhances skin texture.</p>
+                                    <p>💖 <span className="font-semibold">Shades for Every Occasion:</span> Adds glamour.</p>
+                                </div>
                             </div>
 
                             {/* Pricing */}
@@ -303,8 +327,9 @@ export default function ProductDetailPage() {
 
                             {/* Wholesale Price Info */}
                             {product.b2b_price && !useWholesale && (
-                                <div className="p-3 bg-amber-50 border border-amber-100 rounded-lg">
-                                    <p className="text-xs text-amber-800">
+                                <div className="p-3 bg-[#fff8e1] rounded-lg inline-flex items-center gap-2">
+                                    <span className="text-lg">⭐</span>
+                                    <p className="text-sm text-slate-800">
                                         Buy {minOrderQty} or more to get the wholesale price of <span className="font-bold">{formatPrice(Number(product.b2b_price))}</span>
                                     </p>
                                 </div>
@@ -312,43 +337,31 @@ export default function ProductDetailPage() {
 
                             {/* Variants */}
                             {variants.length > 1 && (
-                                <div className="space-y-3 py-4 border-y">
-                                    <h3 className="text-sm font-medium text-muted-foreground">Available Options</h3>
+                                <div className="space-y-3 py-2">
+                                    <h3 className="text-sm font-semibold">Select Shade:</h3>
                                     <div className="flex flex-wrap gap-3">
                                         {variants.map(v => {
-                                            const color = v.attributes?.color;
-                                            const size = v.attributes?.size;
-                                            const label = [color, size].filter(Boolean).join(' - ') || v.name;
+                                            const color = v.attributes?.color || '#e0a98f'; // fallback color
+                                            const label = color || v.name;
                                             
-                                            // Handle colors that might not be valid CSS colors (e.g. 'Matte Red')
                                             const isHexOrBasicColor = color ? /^(#[0-9A-F]{3,6}|[a-zA-Z]+)$/i.test(color) : false;
                                             const colorStyle = isHexOrBasicColor ? { backgroundColor: color.toLowerCase() } : {};
                                             
                                             return (
                                                 <Link href={`/products/${v.slug}`} key={v.id}>
-                                                    <Button
-                                                        variant={v.id === product.id ? "default" : "outline"}
-                                                        size="sm"
+                                                    <div 
                                                         className={cn(
-                                                            "h-10 px-4 rounded-xl transition-all shadow-sm",
-                                                            v.id === product.id ? "ring-2 ring-primary ring-offset-2" : "hover:border-primary/50"
+                                                            "w-8 h-8 rounded-full border-2 shadow-sm transition-all cursor-pointer",
+                                                            v.id === product.id ? "border-slate-800 scale-110" : "border-transparent hover:scale-105"
                                                         )}
-                                                    >
-                                                        {color && (
-                                                            <span 
-                                                                className={cn(
-                                                                    "mr-2 w-4 h-4 rounded-full border shadow-inner",
-                                                                    !isHexOrBasicColor ? "bg-muted" : ""
-                                                                )} 
-                                                                style={colorStyle}
-                                                            ></span>
-                                                        )}
-                                                        {label}
-                                                    </Button>
+                                                        style={colorStyle}
+                                                        title={label}
+                                                    ></div>
                                                 </Link>
                                             );
                                         })}
                                     </div>
+                                    <p className="text-sm font-medium mt-2">{((product.attributes as any)?.color) || 'Dawn Magic'}</p>
                                 </div>
                             )}
 
@@ -392,29 +405,29 @@ export default function ProductDetailPage() {
                             </div>
 
                             {/* Actions */}
-                            <div className="flex gap-4">
-                                <Button 
-                                    size="lg" 
-                                    className="flex-1" 
-                                    disabled={isOutOfStock}
-                                    onClick={handleAddToCart}
-                                >
-                                    <ShoppingCart className="h-5 w-5 mr-2" />
-                                    {isOutOfStock ? 'Out of Stock' : 'Add to Cart'}
-                                </Button>
-                                <Button 
-                                    size="lg" 
-                                    variant="secondary" 
-                                    className="flex-1" 
-                                    disabled={isOutOfStock}
-                                    onClick={handleBuyNow}
-                                >
-                                    Buy Now
-                                </Button>
+                            <div className="flex gap-2">
+                                {isOutOfStock ? (
+                                    <Button 
+                                        size="lg" 
+                                        className="flex-1 bg-[#d81b60] hover:bg-[#c2185b] text-white" 
+                                        disabled={true}
+                                    >
+                                        Notify Me When In Stock
+                                    </Button>
+                                ) : (
+                                    <Button 
+                                        size="lg" 
+                                        className="flex-1 bg-[#d81b60] hover:bg-[#c2185b] text-white" 
+                                        onClick={handleAddToCart}
+                                    >
+                                        <ShoppingCart className="h-5 w-5 mr-2" />
+                                        Add to Cart
+                                    </Button>
+                                )}
                                 <Button
                                     size="lg"
                                     variant="outline"
-                                    className={inWishlist ? 'text-primary border-primary' : ''}
+                                    className={cn("bg-[#f0f0f0] border-0 hover:bg-[#e0e0e0] px-4", inWishlist ? 'text-[#d81b60]' : 'text-slate-500')}
                                     onClick={handleToggleWishlist}
                                 >
                                     <Heart className={`h-5 w-5 ${inWishlist ? 'fill-current' : ''}`} />
@@ -422,18 +435,18 @@ export default function ProductDetailPage() {
                             </div>
 
                             {/* Features */}
-                            <div className="grid grid-cols-3 gap-4 pt-6 border-t">
+                            <div className="flex flex-wrap items-center gap-6 pt-6 font-bold text-sm text-slate-800">
                                 <div className="flex items-center gap-2">
-                                    <Truck className="h-5 w-5 text-muted-foreground" />
-                                    <span className="text-sm">Free Shipping</span>
+                                    <Truck className="h-5 w-5" />
+                                    <span>Free Shipping</span>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                    <Shield className="h-5 w-5 text-muted-foreground" />
-                                    <span className="text-sm">100% Genuine</span>
+                                    <Shield className="h-5 w-5" />
+                                    <span>100% Genuine</span>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                    <RotateCcw className="h-5 w-5 text-muted-foreground" />
-                                    <span className="text-sm">Easy Returns</span>
+                                    <RotateCcw className="h-5 w-5" />
+                                    <span>Easy Returns</span>
                                 </div>
                             </div>
 
