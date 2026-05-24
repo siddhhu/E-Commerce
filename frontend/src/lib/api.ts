@@ -348,6 +348,30 @@ export const ordersApi = {
     get: (orderId: string) =>
         api.get<Order>(`/orders/${orderId}`),
 
+    /**
+     * ONE-SHOT checkout — sends address + cart + payment in a single request.
+     * Eliminates 4 round-trips and 3× Supabase cold-connect penalties on Vercel.
+     * Expected: 4-7s total vs 25-30s with 4 separate calls.
+     */
+    completeCheckout: (data: {
+        // Address
+        full_name: string;
+        phone: string;
+        address_line1: string;
+        address_line2?: string;
+        city: string;
+        state: string;
+        postal_code: string;
+        country?: string;
+        // Cart
+        cart_items: { product_id: string; quantity: number }[];
+        // Order
+        payment_method: string;
+        notes?: string;
+        promo_code?: string;
+    }) => api.post<Order>('/checkout/complete', data),
+
+    /** Legacy: only used if shipping_address_id is already known. */
     checkout: (data: { shipping_address_id: string; payment_method: string; notes?: string; promo_code?: string }) =>
         api.post<Order>('/checkout', data),
 

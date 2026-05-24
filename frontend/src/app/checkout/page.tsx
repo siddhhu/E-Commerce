@@ -229,13 +229,16 @@ export default function CheckoutPage() {
         setIsProcessing(true);
 
         try {
-            // Always re-sync the cart to backend before checkout.
-            // The frontend Zustand store (localStorage) is the source of truth —
-            // the backend cart can be empty after a page reload, session change,
-            // or a previous order. syncAll is now parallel (fast, uses Promise.allSettled).
-            const addressTask = usersApi.createAddress({ ...address, country: 'India', is_default: true });
-            const syncTask = cartApi.syncAll(items.map(item => ({ product_id: item.product.id, quantity: item.quantity })));
+            // ── ONE-SHOT CHECKOUT ─────────────────────────────────────────────
+            // Sends address + cart + payment in a SINGLE request to /checkout/complete.
+            // Previously this was 4 sequential calls each paying a Supabase cold-connect cost:
+            //   POST /users/me/addresses  (~5s)
+            //   DELETE /cart              (~3s)
+            //   POST /cart/items×N        (~5s)
+            //   POST /checkout            (~13s)
+            // Now it's 1 call, 1 cold-connect, targeting 4-7s total.
 
+            // Profile update is independent — fire it in parallel if needed
             let profileTask = Promise.resolve<any>(undefined);
             if (docValid && docNumber && !docSavedToProfile) {
                 const updateData: any = {};
@@ -243,14 +246,28 @@ export default function CheckoutPage() {
                 profileTask = authApi.updateProfile(updateData).then(u => setUser(u));
             }
 
-            // All three run in parallel — address creation, cart sync, profile update
-            const [savedAddress] = await Promise.all([addressTask, syncTask, profileTask]);
-
-            const createdOrder = await ordersApi.checkout({
-                shipping_address_id: savedAddress.id,
+            const checkoutTask = ordersApi.completeCheckout({
+                // Address
+                full_name: address.full_name,
+                phone: address.phone,
+                address_line1: address.address_line1,
+                address_line2: address.address_line2 || undefined,
+                city: address.city,
+                state: address.state,
+                postal_code: address.postal_code,
+                country: 'India',
+                // Cart — frontend Zustand store is source of truth
+                cart_items: items.map(item => ({
+                    product_id: item.product.id,
+                    quantity: item.quantity,
+                })),
+                // Order
                 payment_method: paymentMethod,
                 promo_code: promo_code || undefined,
             });
+
+            // Both run in parallel — checkout + optional profile update
+            const [createdOrder] = await Promise.all([checkoutTask, profileTask]);
 
             if (paymentMethod === 'cod') {
                 completeOrderDisplay(createdOrder.id, createdOrder.order_number, 'cod', 'Cash on Delivery');
@@ -286,6 +303,7 @@ export default function CheckoutPage() {
             toast({ title: 'Checkout Failed', description: error.message || 'There was a problem processing your order.', variant: 'destructive' });
         }
     };
+
 
     const completeOrderDisplay = (id: string, number: string, paymentStatus: string, paymentMethodName: string) => {
         const order: Order = {
