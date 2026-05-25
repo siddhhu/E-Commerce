@@ -232,21 +232,28 @@ export default function OrderDetailPage() {
                                     <CardTitle>Payment Details</CardTitle>
                                 </CardHeader>
                                 <CardContent>
-                                    <div className="flex justify-between items-center">
+                                    <div className="flex justify-between items-start gap-4">
                                         <div>
-                                            <p className="font-medium">{order.payment_method}</p>
-                                            <p className="text-sm text-muted-foreground">
-                                                {order.payment_method === 'COD' ? 'Pay on Delivery' : 'Online Payment'}
+                                            <p className="font-medium text-slate-800">
+                                                {order.payment_method === 'COD' ? 'Cash on Delivery (COD)' : 'Online Payment'}
+                                            </p>
+                                            <p className="text-sm text-muted-foreground mt-1 max-w-[250px] leading-snug">
+                                                {order.payment_status === 'paid'
+                                                    ? 'Payment has been successfully completed.'
+                                                    : order.payment_method === 'COD'
+                                                        ? 'You need to pay cash to delivery executive.'
+                                                        : 'Payment is currently pending.'}
                                             </p>
                                         </div>
-                                        <span className={`px-3 py-1 rounded-full text-sm font-medium ${order.payment_status === 'paid'
-                                            ? 'bg-green-100 text-green-700'
-                                            : order.payment_status === 'pending'
-                                                ? 'bg-amber-100 text-amber-700'
-                                                : 'bg-slate-100 text-slate-700'
-                                            }`}>
-                                            {order.payment_status.toUpperCase()}
-                                        </span>
+                                        {order.payment_status === 'paid' ? (
+                                            <span className="shrink-0 px-3 py-1 rounded-full text-sm font-bold bg-green-100 text-green-700">
+                                                PAID
+                                            </span>
+                                        ) : order.payment_method !== 'COD' ? (
+                                            <span className="shrink-0 px-3 py-1 rounded-full text-sm font-bold bg-amber-100 text-amber-700">
+                                                PENDING
+                                            </span>
+                                        ) : null}
                                     </div>
                                 </CardContent>
                             </Card>
