@@ -103,13 +103,13 @@ class EmailService:
     async def send_contact_email(self, first_name: str, last_name: str, email: str, subject: str, message: str) -> bool:
         """Send contact form submission to admin."""
         if not self._enabled:
-            self._log_skip("send_contact_email", self.admin_email or "pawantheblizz@gmail.com")
+            self._log_skip("send_contact_email", self.admin_email or "support@admin.com")
             # If no resend key, we still want to pretend it succeeded for the frontend if they test it without keys
             return True
         try:
             params = {
                 "from": self.from_email,
-                "to": [self.admin_email or "pawantheblizz@gmail.com"],
+                "to": [self.admin_email or "support@admin.com"],
                 "subject": f"New Contact Form Submission: {subject}",
                 "html": f"""
                     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
