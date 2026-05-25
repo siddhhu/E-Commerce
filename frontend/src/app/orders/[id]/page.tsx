@@ -181,10 +181,6 @@ export default function OrderDetailPage() {
                                         <span>{formatPrice(order.subtotal)}</span>
                                     </div>
                                     <div className="flex justify-between text-sm">
-                                        <span className="text-muted-foreground">Tax</span>
-                                        <span>{formatPrice(order.tax_amount)}</span>
-                                    </div>
-                                    <div className="flex justify-between text-sm">
                                         <span className="text-muted-foreground">Shipping</span>
                                         <span className="text-green-600">Free</span>
                                     </div>

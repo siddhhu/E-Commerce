@@ -11,7 +11,9 @@ from pydantic import BaseModel
 
 from app.database import get_session
 from app.models.product import Product, ProductListRead, ProductRead
+from app.models.user import User
 from app.services.product_service import ProductService
+from sqlmodel import select
 
 router = APIRouter()
 
@@ -137,7 +139,21 @@ async def get_product_by_slug(
 ):
     """Get product details by slug."""
     product_service = ProductService(session)
-    return await product_service.get_product_by_slug(slug)
+    product = await product_service.get_product_by_slug(slug)
+
+    # Enrich with seller GST number if product has a seller
+    seller_gst_number: Optional[str] = None
+    if product.seller_id:
+        seller_result = await session.execute(
+            select(User).where(User.id == product.seller_id)
+        )
+        seller = seller_result.scalar_one_or_none()
+        if seller:
+            seller_gst_number = seller.gst_number
+
+    product_data = ProductRead.model_validate(product)
+    product_data.seller_gst_number = seller_gst_number
+    return product_data
 
 
 @router.get("/{slug}/variants", response_model=list[ProductListRead])

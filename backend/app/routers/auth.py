@@ -198,7 +198,7 @@ async def seller_login(
     if user.seller_status != "approved":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Your seller account is not yet approved. Please contact pawantheblizz@gmail.com.",
+            detail="Your seller account is not yet approved. Please contact support@admin.com.",
         )
 
     if not user.hashed_password or not verify_password(data.password, user.hashed_password):

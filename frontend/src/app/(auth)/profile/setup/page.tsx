@@ -122,7 +122,7 @@ export default function ProfileSetupPage() {
                 title: '✅ Application Submitted!',
                 description: contactEmail
                     ? `Your seller application is under review. We'll email you at ${contactEmail} once approved.`
-                    : 'Your seller application is under review. Contact pawantheblizz@gmail.com to follow up.',
+                    : 'Your seller application is under review. Contact support@admin.com to follow up.',
             });
             router.push('/seller/pending');
         } catch (error: any) {
@@ -192,8 +192,8 @@ export default function ProfileSetupPage() {
                                         ? `We'll email your approval status to ${user.contact_email}.`
                                         : 'Contact '}{' '}
                                     {!user?.contact_email && (
-                                        <a href="mailto:pawantheblizz@gmail.com" className="underline font-medium">
-                                            pawantheblizz@gmail.com
+                                        <a href="mailto:support@admin.com" className="underline font-medium">
+                                            support@admin.com
                                         </a>
                                     )}{' '}
                                     {!user?.contact_email && 'to follow up on your application approval.'}
@@ -220,8 +220,8 @@ export default function ProfileSetupPage() {
                                 <p className="font-semibold mb-1">Application Not Approved</p>
                                 <p>
                                     Please contact{' '}
-                                    <a href="mailto:pawantheblizz@gmail.com" className="underline font-medium">
-                                        pawantheblizz@gmail.com
+                                    <a href="mailto:support@admin.com" className="underline font-medium">
+                                        support@admin.com
                                     </a>{' '}
                                     for details or to re-apply.
                                 </p>
@@ -292,8 +292,8 @@ export default function ProfileSetupPage() {
 
                                 <p className="text-xs text-center text-muted-foreground">
                                     After submission, contact{' '}
-                                    <a href="mailto:pawantheblizz@gmail.com" className="underline">
-                                        pawantheblizz@gmail.com
+                                    <a href="mailto:support@admin.com" className="underline">
+                                        support@admin.com
                                     </a>{' '}
                                     if you need to follow up.
                                 </p>

@@ -143,6 +143,7 @@ class ProductRead(ProductBase):
     images: list[ProductImageRead] = []
     seller_id: Optional[UUID] = None
     seller_name: Optional[str] = "Pranjay"
+    seller_gst_number: Optional[str] = None
     parent_id: Optional[UUID] = None
 
 

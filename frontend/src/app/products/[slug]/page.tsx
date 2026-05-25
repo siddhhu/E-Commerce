@@ -317,15 +317,25 @@ export default function ProductDetailPage() {
                                     )}
                                 </div>
                                 
-                                {/* GST Breakdown */}
-                                <div className="text-sm text-muted-foreground border-l-2 border-primary/20 pl-3 py-1 bg-muted/30 rounded-r-md">
-                                    <p>Base Price: <span className="font-medium text-foreground">{formatPrice(baseAmount)}</span></p>
-                                    <p>GST ({gstRate}%): <span className="font-medium text-foreground">{formatPrice(gstAmount)}</span></p>
-                                    <p className="text-[10px] uppercase tracking-wider font-bold mt-1 text-primary/70">Inclusive of all taxes</p>
-                                </div>
-                            </div>
+                                {/* GST info removed from website - price is inclusive of taxes */}
+                                <p className="text-xs text-muted-foreground pl-1">Inclusive of all taxes</p>
 
-                            {/* Wholesale Price Info */}
+                            </div>
+                            {/* Sold By */}
+                            {(product.seller_name || 'Pranjay') && (
+                                <div className="text-xs text-muted-foreground border border-muted rounded-md px-3 py-2 inline-flex flex-wrap items-center gap-x-3 gap-y-1">
+                                    <span>
+                                        <span className="font-medium text-foreground">Sold by:</span>{' '}
+                                        {product.seller_name || 'Pranjay'}
+                                    </span>
+                                    {product.seller_gst_number && (
+                                        <span className="text-muted-foreground">
+                                            GSTIN: <span className="font-mono font-medium text-foreground">{product.seller_gst_number}</span>
+                                        </span>
+                                    )}
+                                </div>
+                            )}
+
                             {product.b2b_price && !useWholesale && (
                                 <div className="p-3 bg-[#fff8e1] rounded-lg inline-flex items-center gap-2">
                                     <span className="text-lg">⭐</span>
@@ -339,7 +349,7 @@ export default function ProductDetailPage() {
                             {variants.length > 1 && (
                                 <div className="space-y-3 py-2">
                                     <h3 className="text-sm font-semibold">
-                                        Select Shade: <span className="font-bold text-primary">{((product.attributes as any)?.color_name) || ((product.attributes as any)?.color) || product.name}</span>
+                                        Select Shade: <span className="font-bold text-primary">{product.name}</span>
                                     </h3>
                                     <div className="flex flex-wrap gap-3">
                                         {variants.map(v => {

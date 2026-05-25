@@ -72,7 +72,7 @@ export function Footer() {
                     <div className="space-y-4">
                         <h3 className="text-sm font-semibold">Contact</h3>
                         <ul className="space-y-2 text-sm text-muted-foreground">
-                            <li>pawantheblizz@gmail.com</li>
+                            <li>support@admin.com</li>
                             <li>+91 98765 43210</li>
                             <li>Mon - Sat, 9:00 AM - 6:00 PM</li>
                         </ul>

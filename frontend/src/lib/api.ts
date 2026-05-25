@@ -605,6 +605,9 @@ export interface Product {
     is_featured: boolean;
     image_url?: string;
     images: ProductImage[];
+    seller_id?: string;
+    seller_name?: string;
+    seller_gst_number?: string;
     created_at: string;
     updated_at: string;
 }

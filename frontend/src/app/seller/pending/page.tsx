@@ -138,11 +138,11 @@ export default function SellerPendingPage() {
                         <p className="text-sm text-slate-400">For early access or queries, contact:</p>
                         <div className="flex flex-col sm:flex-row gap-3 justify-center">
                             <a
-                                href="mailto:pawantheblizz@gmail.com"
+                                href="mailto:support@admin.com"
                                 className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-sm text-slate-300 hover:text-white transition-all"
                             >
                                 <Mail className="h-4 w-4 text-primary" />
-                                pawantheblizz@gmail.com
+                                support@admin.com
                             </a>
                             <a
                                 href="tel:+91XXXXXXXXXX"
