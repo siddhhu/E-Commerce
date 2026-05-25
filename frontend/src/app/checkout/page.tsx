@@ -666,13 +666,10 @@ export default function CheckoutPage() {
                                             <span>{formatPrice(getSubtotal())}</span>
                                         </div>
                                         <div className="flex justify-between">
-                                            <span className="text-muted-foreground">GST (18%)</span>
-                                            <span>{formatPrice(getTax())}</span>
-                                        </div>
-                                        <div className="flex justify-between">
                                             <span className="text-muted-foreground">Shipping</span>
                                             <span className="text-green-600 font-medium">Free</span>
                                         </div>
+                                        <p className="text-xs text-muted-foreground pt-1">Inclusive of all taxes</p>
                                         {docValid && docNumber && (
                                             <div className="flex justify-between text-xs bg-blue-50 text-blue-700 px-2 py-1.5 rounded-lg">
                                                 <span className="font-medium">{docType.toUpperCase()} Applied</span>

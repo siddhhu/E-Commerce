@@ -73,19 +73,19 @@ export default function AdminProductsPage() {
     };
 
     return (
-        <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div className="space-y-4 md:space-y-6">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight text-slate-900">Products</h1>
-                    <p className="text-slate-500 mt-2">Manage your catalog, pricing, and inventory.</p>
+                    <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-slate-900">Products</h1>
+                    <p className="text-slate-500 text-sm mt-1">Manage your catalog, pricing, and inventory.</p>
                 </div>
-                <div className="flex gap-2">
-                    <Button variant="outline" className="gap-2 bg-white" onClick={() => setIsUploadModalOpen(true)}>
-                        <Upload className="h-4 w-4" /> Bulk Upload
+                <div className="flex gap-2 flex-wrap">
+                    <Button variant="outline" size="sm" className="gap-1.5 bg-white" onClick={() => setIsUploadModalOpen(true)}>
+                        <Upload className="h-3.5 w-3.5" /> Bulk Upload
                     </Button>
                     <Link href="/admin/products/new">
-                        <Button className="gap-2">
-                            <Plus className="h-4 w-4" /> Add Product
+                        <Button size="sm" className="gap-1.5">
+                            <Plus className="h-3.5 w-3.5" /> Add Product
                         </Button>
                     </Link>
                 </div>
@@ -109,107 +109,158 @@ export default function AdminProductsPage() {
                     ) : !productsData?.items?.length ? (
                         <div className="p-8 text-center text-slate-500">No products found.</div>
                     ) : (
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-sm text-left">
-                                <thead className="text-xs text-slate-500 uppercase bg-slate-50 border-b">
-                                    <tr>
-                                        <th className="px-6 py-4">Product</th>
-                                        <th className="px-6 py-4">SKU</th>
-                                        <th className="px-6 py-4">Price</th>
-                                        <th className="px-6 py-4">Inventory</th>
-                                        {isAdmin && <th className="px-6 py-4">Added By</th>}
-                                        <th className="px-6 py-4 text-center">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {productsData.items.map((product) => (
-                                        <tr key={product.id} className="bg-white border-b hover:bg-slate-50">
-                                            <td className="px-6 py-4 flex items-center gap-4">
-                                                <div className="h-12 w-12 flex-shrink-0 bg-slate-100 rounded-md overflow-hidden relative border flex items-center justify-center">
-                                                    {product.primary_image ? (
-                                                        <Image 
-                                                            src={getImageUrl(product.primary_image) || ''} 
-                                                            alt={product.name}
-                                                            fill
-                                                            className="object-cover"
-                                                        />
-                                                    ) : (
-                                                        <ImageIcon className="h-5 w-5 text-slate-400" />
+                        <>
+                            {/* ── Desktop Table ───────────────────────────── */}
+                            <div className="hidden md:block overflow-x-auto">
+                                <table className="w-full text-sm text-left">
+                                    <thead className="text-xs text-slate-500 uppercase bg-slate-50 border-b">
+                                        <tr>
+                                            <th className="px-6 py-4">Product</th>
+                                            <th className="px-6 py-4">SKU</th>
+                                            <th className="px-6 py-4">Price</th>
+                                            <th className="px-6 py-4">Inventory</th>
+                                            {isAdmin && <th className="px-6 py-4">Added By</th>}
+                                            <th className="px-6 py-4 text-center">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {productsData.items.map((product) => (
+                                            <tr key={product.id} className="bg-white border-b hover:bg-slate-50">
+                                                <td className="px-6 py-4 flex items-center gap-4">
+                                                    <div className="h-12 w-12 flex-shrink-0 bg-slate-100 rounded-md overflow-hidden relative border flex items-center justify-center">
+                                                        {product.primary_image ? (
+                                                            <Image
+                                                                src={getImageUrl(product.primary_image) || ''}
+                                                                alt={product.name}
+                                                                fill
+                                                                className="object-cover"
+                                                            />
+                                                        ) : (
+                                                            <ImageIcon className="h-5 w-5 text-slate-400" />
+                                                        )}
+                                                    </div>
+                                                    <div>
+                                                        <p className="font-semibold text-slate-900">{product.name}</p>
+                                                        <p className="text-xs text-slate-500 mt-0.5 truncate max-w-[200px]">{product.short_description}</p>
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4 text-slate-600 font-mono text-xs">{product.sku}</td>
+                                                <td className="px-6 py-4">
+                                                    <div className="font-medium text-slate-900">{formatCurrency(product.selling_price)}</div>
+                                                    {product.mrp > product.selling_price && (
+                                                        <div className="text-xs text-slate-500 line-through">{formatCurrency(product.mrp)}</div>
                                                     )}
-                                                </div>
-                                                <div>
-                                                    <p className="font-semibold text-slate-900">{product.name}</p>
-                                                    <p className="text-xs text-slate-500 mt-0.5 truncate max-w-[200px]">{product.short_description}</p>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4 text-slate-600 font-mono text-xs">
-                                                {product.sku}
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <div className="font-medium text-slate-900">{formatCurrency(product.selling_price)}</div>
-                                                {product.mrp > product.selling_price && (
-                                                    <div className="text-xs text-slate-500 line-through">{formatCurrency(product.mrp)}</div>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                                                        product.stock_quantity > 20 ? 'bg-green-100 text-green-800' :
+                                                        product.stock_quantity > 0 ? 'bg-amber-100 text-amber-800' :
+                                                        'bg-red-100 text-red-800'
+                                                    }`}>
+                                                        {product.stock_quantity} in stock
+                                                    </span>
+                                                </td>
+                                                {isAdmin && (
+                                                    <td className="px-6 py-4">
+                                                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-800 border">
+                                                            {product.seller_name || 'Pranjay'}
+                                                        </span>
+                                                    </td>
                                                 )}
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                                                <td className="px-6 py-4 text-center">
+                                                    <div className="flex items-center justify-center gap-1">
+                                                        <Link href={`/admin/products/${product.id}/edit`}>
+                                                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                                                <Edit className="h-4 w-4 text-slate-500" />
+                                                            </Button>
+                                                        </Link>
+                                                        <Button
+                                                            variant="ghost" size="sm" className="h-8 w-8 p-0"
+                                                            onClick={() => handleDeleteProduct(product.id, product.name)}
+                                                        >
+                                                            <Trash2 className="h-4 w-4 text-red-500" />
+                                                        </Button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            {/* ── Mobile Card List ────────────────────────── */}
+                            <div className="md:hidden divide-y divide-slate-100">
+                                {productsData.items.map((product) => (
+                                    <div key={product.id} className="p-4 flex gap-3">
+                                        <div className="h-16 w-16 flex-shrink-0 bg-slate-100 rounded-lg overflow-hidden relative border flex items-center justify-center">
+                                            {product.primary_image ? (
+                                                <Image
+                                                    src={getImageUrl(product.primary_image) || ''}
+                                                    alt={product.name}
+                                                    fill
+                                                    className="object-cover"
+                                                />
+                                            ) : (
+                                                <ImageIcon className="h-6 w-6 text-slate-400" />
+                                            )}
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="font-semibold text-slate-900 truncate">{product.name}</p>
+                                            <p className="text-xs text-slate-500 font-mono mt-0.5">{product.sku}</p>
+                                            <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                                                <span className="text-sm font-bold text-slate-900">{formatCurrency(product.selling_price)}</span>
+                                                <span className={`px-1.5 py-0.5 text-xs font-semibold rounded-full ${
                                                     product.stock_quantity > 20 ? 'bg-green-100 text-green-800' :
                                                     product.stock_quantity > 0 ? 'bg-amber-100 text-amber-800' :
                                                     'bg-red-100 text-red-800'
                                                 }`}>
                                                     {product.stock_quantity} in stock
                                                 </span>
-                                            </td>
-                                            {isAdmin && (
-                                                <td className="px-6 py-4">
-                                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-800 border">
-                                                        {product.seller_name || 'Pranjay'}
-                                                    </span>
-                                                </td>
+                                            </div>
+                                            {isAdmin && product.seller_name && (
+                                                <p className="text-xs text-slate-400 mt-0.5">by {product.seller_name}</p>
                                             )}
-                                            <td className="px-6 py-4 text-center">
-                                                 <div className="flex items-center justify-center gap-1">
-                                                     <Link href={`/admin/products/${product.id}/edit`}>
-                                                         <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                                                             <Edit className="h-4 w-4 text-slate-500" />
-                                                         </Button>
-                                                     </Link>
-                                                     <Button 
-                                                         variant="ghost" 
-                                                         size="sm" 
-                                                         className="h-8 w-8 p-0"
-                                                         onClick={() => handleDeleteProduct(product.id, product.name)}
-                                                     >
-                                                         <Trash2 className="h-4 w-4 text-red-500" />
-                                                     </Button>
-                                                 </div>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
+                                        </div>
+                                        <div className="flex flex-col gap-1 justify-center">
+                                            <Link href={`/admin/products/${product.id}/edit`}>
+                                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                                    <Edit className="h-4 w-4 text-slate-500" />
+                                                </Button>
+                                            </Link>
+                                            <Button
+                                                variant="ghost" size="sm" className="h-8 w-8 p-0"
+                                                onClick={() => handleDeleteProduct(product.id, product.name)}
+                                            >
+                                                <Trash2 className="h-4 w-4 text-red-500" />
+                                            </Button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </>
                     )}
                 </CardContent>
                 
                 {/* Pagination */}
                 {productsData && productsData.total > productsData.page_size && (
-                    <div className="flex items-center justify-between px-6 py-4 border-t">
-                         <div className="text-sm text-slate-500">
-                            Showing <span className="font-medium">{((filters.page - 1) * filters.page_size) + 1}</span> to <span className="font-medium">{Math.min(filters.page * filters.page_size, productsData.total)}</span> of <span className="font-medium">{productsData.total}</span> products
+                    <div className="flex items-center justify-between px-4 md:px-6 py-4 border-t flex-wrap gap-3">
+                        <div className="text-sm text-slate-500">
+                            <span className="font-medium">{((filters.page - 1) * filters.page_size) + 1}</span>
+                            {' – '}
+                            <span className="font-medium">{Math.min(filters.page * filters.page_size, productsData.total)}</span>
+                            {' of '}
+                            <span className="font-medium">{productsData.total}</span>
                         </div>
                         <div className="flex gap-2">
-                            <Button 
-                                variant="outline" 
-                                size="sm" 
+                            <Button
+                                variant="outline" size="sm"
                                 onClick={() => setFilters(f => ({ ...f, page: f.page - 1 }))}
                                 disabled={filters.page === 1}
                             >
                                 <ChevronLeft className="h-4 w-4 mr-1" /> Prev
                             </Button>
-                            <Button 
-                                variant="outline" 
-                                size="sm" 
+                            <Button
+                                variant="outline" size="sm"
                                 onClick={() => setFilters(f => ({ ...f, page: f.page + 1 }))}
                                 disabled={filters.page * filters.page_size >= productsData.total}
                             >

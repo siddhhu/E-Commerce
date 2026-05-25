@@ -71,16 +71,16 @@ export default function CartPage() {
 
             <main className="flex-1 py-8">
                 <div className="container">
-                    <h1 className="text-3xl font-bold mb-8">Shopping Cart</h1>
+                    <h1 className="text-2xl md:text-3xl font-bold mb-6 md:mb-8">Shopping Cart</h1>
 
-                    <div className="grid lg:grid-cols-3 gap-8">
+                    <div className="grid lg:grid-cols-3 gap-6 md:gap-8">
                         {/* Cart Items */}
-                        <div className="lg:col-span-2 space-y-4">
+                        <div className="lg:col-span-2 space-y-3">
                             {items.map((item) => (
                                 <Card key={item.id} className="overflow-hidden">
-                                    <div className="flex gap-4 p-4">
+                                    <div className="flex gap-3 p-3 md:p-4">
                                         {/* Product Image */}
-                                        <div className="relative w-24 h-24 rounded-lg overflow-hidden bg-muted shrink-0">
+                                        <div className="relative w-20 h-20 md:w-24 md:h-24 rounded-lg overflow-hidden bg-muted shrink-0">
                                             {(() => {
                                                 const imgError = Boolean(imgErrors[item.product.id]);
                                                 const imageUrl =
@@ -233,13 +233,10 @@ export default function CartPage() {
                                         </div>
                                     )}
                                     <div className="flex justify-between">
-                                        <span className="text-muted-foreground">GST (18%) (included)</span>
-                                        <span>{formatPrice(getTax())}</span>
-                                    </div>
-                                    <div className="flex justify-between">
                                         <span className="text-muted-foreground">Shipping</span>
                                         <span className="text-green-600">Free</span>
                                     </div>
+                                    <p className="text-xs text-muted-foreground">Inclusive of all taxes</p>
                                     <div className="border-t pt-4 flex justify-between text-lg font-bold">
                                         <span>Total</span>
                                         <span className="text-primary">{formatPrice(getTotal())}</span>

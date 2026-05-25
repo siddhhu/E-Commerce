@@ -80,9 +80,9 @@ export function Footer() {
                 </div>
 
                 <div className="mt-12 pt-8 border-t flex flex-col md:flex-row justify-between items-center gap-4">
-                    <div className="border-t border-slate-800 py-8 text-center text-sm text-slate-400">
+                    <div className="text-center md:text-left text-sm text-slate-400">
                         <p>© {new Date().getFullYear()} Pranjay. All rights reserved.</p>
-                        <p className="mt-2 text-primary/60 font-medium">
+                        <p className="mt-1 text-primary/60 font-medium text-xs">
                             Made with ❤️ by <a href="https://www.linkedin.com/in/siddharth-kumar-907a85169/" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary transition-colors">Siddharth</a>
                         </p>
                     </div>
