@@ -531,28 +531,28 @@ export default function ProductDetailPage() {
                             </div>
 
                             {/* ── Action Buttons (Desktop) ───────────────────── */}
-                            <div className="hidden md:flex gap-3">
+                            <div className="hidden md:flex gap-4">
                                 {isOutOfStock ? (
-                                    <Button size="lg" className="flex-1 h-13 text-base bg-slate-400 cursor-not-allowed" disabled>
+                                    <Button size="lg" className="flex-1 h-14 text-lg bg-slate-400 cursor-not-allowed font-semibold rounded-xl" disabled>
                                         Out of Stock
                                     </Button>
                                 ) : (
                                     <>
                                         <Button
                                             size="lg"
-                                            className="flex-1 h-13 text-base bg-[#d81b60] hover:bg-[#c2185b] text-white shadow-md hover:shadow-lg transition-all"
+                                            className="flex-1 h-14 text-lg font-semibold rounded-xl bg-[#d81b60] hover:bg-[#c2185b] text-white shadow-md hover:shadow-lg transition-all"
                                             onClick={handleAddToCart}
                                         >
-                                            <ShoppingCart className="h-5 w-5 mr-2" />
+                                            <ShoppingCart className="h-6 w-6 mr-2" />
                                             Add to Cart
                                         </Button>
                                         <Button
                                             size="lg"
                                             variant="outline"
-                                            className={cn("h-13 px-4 border-2 transition-all", inWishlist ? 'border-[#d81b60] text-[#d81b60] bg-pink-50' : 'border-slate-300 text-slate-500 hover:border-[#d81b60] hover:text-[#d81b60]')}
+                                            className={cn("h-14 w-14 p-0 rounded-xl border-2 transition-all flex items-center justify-center shrink-0", inWishlist ? 'border-[#d81b60] text-[#d81b60] bg-pink-50' : 'border-slate-300 text-slate-500 hover:border-[#d81b60] hover:text-[#d81b60]')}
                                             onClick={handleToggleWishlist}
                                         >
-                                            <Heart className={cn("h-5 w-5", inWishlist ? 'fill-current' : '')} />
+                                            <Heart className={cn("h-6 w-6", inWishlist ? 'fill-current' : '')} />
                                         </Button>
                                     </>
                                 )}
