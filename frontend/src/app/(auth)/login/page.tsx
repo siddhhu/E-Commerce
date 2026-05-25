@@ -39,6 +39,20 @@ function LoginForm() {
     const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
 
     useEffect(() => {
+        if (searchParams.get('expired') === 'true') {
+            toast({
+                title: 'Session Expired',
+                description: 'Token expired please login again',
+                variant: 'destructive',
+            });
+            // Clean up the URL
+            const url = new URL(window.location.href);
+            url.searchParams.delete('expired');
+            window.history.replaceState({}, '', url);
+        }
+    }, [searchParams, toast]);
+
+    useEffect(() => {
         if (!process.env.NEXT_PUBLIC_FIREBASE_API_KEY) {
             console.error('CRITICAL: Firebase API Key is missing from environment variables!');
         }

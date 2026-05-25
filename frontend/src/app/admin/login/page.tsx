@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuthStore } from '@/store/auth-store';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -10,13 +10,28 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, ShieldCheck } from 'lucide-react';
 
-export default function AdminLoginPage() {
+function AdminLoginForm() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const router = useRouter();
+    const searchParams = useSearchParams();
     const { adminLogin } = useAuthStore();
     const { toast } = useToast();
+
+    useEffect(() => {
+        if (searchParams.get('expired') === 'true') {
+            toast({
+                title: 'Session Expired',
+                description: 'Token expired please login again',
+                variant: 'destructive',
+            });
+            // Clean up the URL
+            const url = new URL(window.location.href);
+            url.searchParams.delete('expired');
+            window.history.replaceState({}, '', url);
+        }
+    }, [searchParams, toast]);
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -113,5 +128,17 @@ export default function AdminLoginPage() {
                 </form>
             </Card>
         </div>
+    );
+}
+
+export default function AdminLoginPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+        }>
+            <AdminLoginForm />
+        </Suspense>
     );
 }

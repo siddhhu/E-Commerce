@@ -61,6 +61,21 @@ class ApiClient {
                 // If not JSON, use status text
                 errorMessage = response.statusText || errorMessage;
             }
+
+            if (response.status === 401) {
+                if (typeof window !== 'undefined') {
+                    if (!window.location.pathname.includes('/login')) {
+                        localStorage.removeItem('access_token');
+                        localStorage.removeItem('refresh_token');
+                        localStorage.removeItem('pranjay-auth');
+                        const isAdmin = window.location.pathname.startsWith('/admin');
+                        const loginUrl = isAdmin ? '/admin/login' : '/login';
+                        window.location.href = `${loginUrl}?expired=true`;
+                    }
+                }
+                throw new Error('Session expired. Please login again.');
+            }
+
             throw new Error(errorMessage);
         }
 
