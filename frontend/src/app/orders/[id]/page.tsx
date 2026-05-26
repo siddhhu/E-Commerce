@@ -235,14 +235,18 @@ export default function OrderDetailPage() {
                                     <div className="flex justify-between items-start gap-4">
                                         <div>
                                             <p className="font-medium text-slate-800">
-                                                {order.payment_method === 'COD' ? 'Cash on Delivery (COD)' : 'Online Payment'}
+                                                {order.payment_status === 'paid'
+                                                    ? 'Paid'
+                                                    : order.payment_method === 'COD'
+                                                        ? 'Cash on Delivery'
+                                                        : 'Payment Incomplete'}
                                             </p>
                                             <p className="text-sm text-muted-foreground mt-1 max-w-[250px] leading-snug">
                                                 {order.payment_status === 'paid'
-                                                    ? 'Payment has been successfully completed.'
+                                                    ? `Successfully paid via ${order.payment_method === 'COD' ? 'Cash' : 'Online'}.`
                                                     : order.payment_method === 'COD'
                                                         ? 'You need to pay cash to delivery executive.'
-                                                        : 'Payment is currently pending.'}
+                                                        : 'Your online payment was not completed.'}
                                             </p>
                                         </div>
                                         {order.payment_status === 'paid' ? (
