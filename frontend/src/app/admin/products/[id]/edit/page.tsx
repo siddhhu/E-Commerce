@@ -32,7 +32,6 @@ export default function AdminEditProductPage() {
         stock_quantity: '',
         short_description: '',
         description: '',
-        description: '',
         image_url: '',
         category_id: '',
         category_ids: [] as string[],
