@@ -17,6 +17,7 @@ export default function AdminProductsPage() {
     const [productsData, setProductsData] = useState<PaginatedProducts | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [filters, setFilters] = useState({ page: 1, page_size: 10, search: '' });
+    const [isInitialized, setIsInitialized] = useState(false);
     const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
     const { toast } = useToast();
     const { user } = useAuthStore();
@@ -24,10 +25,10 @@ export default function AdminProductsPage() {
     const role = (user?.role || '').toString().toLowerCase();
     const isAdmin = role === 'admin' || role === 'super_admin';
 
-    const fetchProducts = async () => {
+    const fetchProducts = async (currentFilters: typeof filters) => {
         setIsLoading(true);
         try {
-            const data = await adminApi.listProducts(filters);
+            const data = await adminApi.listProducts(currentFilters);
             setProductsData(data);
         } catch (error: any) {
              toast({
@@ -50,7 +51,7 @@ export default function AdminProductsPage() {
                 title: "Product deleted",
                 description: `"${name}" has been deleted successfully.`,
             });
-            fetchProducts();
+            fetchProducts(filters);
         } catch (error: any) {
             toast({
                 title: "Error deleting product",
@@ -60,10 +61,30 @@ export default function AdminProductsPage() {
         }
     };
 
+    // Restore state from sessionStorage on mount
     useEffect(() => {
-        const timeoutId = setTimeout(() => fetchProducts(), 300); // debounce
+        const savedPage = sessionStorage.getItem('adminProductsPage');
+        const savedSearch = sessionStorage.getItem('adminProductsSearch');
+        if (savedPage || savedSearch) {
+            setFilters({
+                page: savedPage ? parseInt(savedPage, 10) : 1,
+                page_size: 10,
+                search: savedSearch || ''
+            });
+        }
+        setIsInitialized(true);
+    }, []);
+
+    // Fetch products and save to sessionStorage when filters change
+    useEffect(() => {
+        if (!isInitialized) return;
+        
+        sessionStorage.setItem('adminProductsPage', filters.page.toString());
+        sessionStorage.setItem('adminProductsSearch', filters.search);
+        
+        const timeoutId = setTimeout(() => fetchProducts(filters), 300); // debounce
         return () => clearTimeout(timeoutId);
-    }, [filters.page, filters.search]);
+    }, [filters.page, filters.search, isInitialized]);
 
     const getImageUrl = (url?: string) => {
         if (!url) return null;
@@ -290,7 +311,7 @@ export default function AdminProductsPage() {
                 onClose={() => setIsUploadModalOpen(false)} 
                 onSuccess={() => {
                     setIsUploadModalOpen(false);
-                    fetchProducts();
+                    fetchProducts(filters);
                 }}
             />
         </div>
