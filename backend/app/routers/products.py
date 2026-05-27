@@ -52,6 +52,7 @@ def _to_list_read(product: Product) -> ProductListRead:
         stock_quantity=product.stock_quantity,
         is_featured=product.is_featured,
         category_id=product.category_id,
+        category_ids=product.category_ids or [],
         image_url=getattr(product, "image_url", None),
         primary_image=_primary_image(product),
         seller_id=product.seller_id,
@@ -131,6 +132,39 @@ async def get_featured_products(
         headers={"Cache-Control": "public, max-age=120, stale-while-revalidate=30"},
     )
 
+
+@router.get("/search-index")
+async def get_search_index(
+    session: AsyncSession = Depends(get_session)
+):
+    """
+    Lightweight search index: returns minimal product data for client-side
+    instant search. Cached for 5 minutes. Max 500 products.
+    """
+    product_service = ProductService(session)
+    products = await product_service.list_products(
+        skip=0,
+        limit=500,
+        is_active=True,
+    )
+    items = []
+    for p in products:
+        items.append({
+            "id": str(p.id),
+            "name": p.name,
+            "slug": p.slug,
+            "sku": p.sku,
+            "selling_price": float(p.selling_price),
+            "mrp": float(p.mrp),
+            "image": _primary_image(p),
+            "short_description": p.short_description or "",
+            "seller_name": p.seller_name or "Pranjay",
+        })
+
+    return JSONResponse(
+        content=items,
+        headers={"Cache-Control": "public, max-age=300, stale-while-revalidate=60"},
+    )
 
 @router.get("/{slug}", response_model=ProductRead)
 async def get_product_by_slug(

@@ -1,11 +1,12 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { ShoppingCart, Heart, Menu, Search, X, ChevronDown } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 
-import { categoriesApi, CategoryRead } from '@/lib/api';
+import { categoriesApi, CategoryRead, SearchIndexItem } from '@/lib/api';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,14 +14,19 @@ import { useCartStore } from '@/store/cart-store';
 import { useWishlistStore } from '@/store/wishlist-store';
 import { useOrderStore } from '@/store/order-store';
 import { useAuthStore } from '@/store/auth-store';
-import { cn } from '@/lib/utils';
+import { useSearchStore } from '@/store/search-store';
+import { cn, formatPrice } from '@/lib/utils';
 
 export function Header() {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [searchOpen, setSearchOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
+    const [searchResults, setSearchResults] = useState<SearchIndexItem[]>([]);
+    const [showResults, setShowResults] = useState(false);
     const [categories, setCategories] = useState<CategoryRead[]>([]);
     const [categoriesOpen, setCategoriesOpen] = useState(false);
+    const searchRef = useRef<HTMLDivElement>(null);
+    const mobileSearchRef = useRef<HTMLDivElement>(null);
     
     const pathname = usePathname();
     const router = useRouter();
@@ -31,6 +37,7 @@ export function Header() {
     const clearCart = useCartStore((state) => state.clearCart);
     const clearWishlist = useWishlistStore((state) => state.clearWishlist);
     const clearOrders = useOrderStore((state) => state.clearOrders);
+    const { loadIndex, search: searchIndex } = useSearchStore();
 
     const navLinks = [
         { href: '/', label: 'Home' },
@@ -48,13 +55,52 @@ export function Header() {
             }
         }
         fetchCategories();
+        // Preload search index in background
+        loadIndex();
+    }, []);
+
+    // Live search as user types
+    useEffect(() => {
+        if (searchQuery.trim().length > 0) {
+            const results = searchIndex(searchQuery);
+            setSearchResults(results);
+            setShowResults(true);
+        } else {
+            setSearchResults([]);
+            setShowResults(false);
+        }
+    }, [searchQuery, searchIndex]);
+
+    // Close dropdown on click outside
+    useEffect(() => {
+        function handleClickOutside(e: MouseEvent) {
+            if (
+                searchRef.current && !searchRef.current.contains(e.target as Node) &&
+                mobileSearchRef.current && !mobileSearchRef.current.contains(e.target as Node)
+            ) {
+                setShowResults(false);
+            }
+            if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
+                setShowResults(false);
+            }
+        }
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault();
         if (searchQuery.trim()) {
+            setShowResults(false);
             router.push(`/search?q=${encodeURIComponent(searchQuery)}`);
         }
+    };
+
+    const handleResultClick = (slug: string) => {
+        setShowResults(false);
+        setSearchQuery('');
+        setSearchOpen(false);
+        router.push(`/products/${slug}`);
     };
 
     const handleLogout = () => {
@@ -64,6 +110,77 @@ export function Header() {
         clearOrders();
         setMobileMenuOpen(false);
         router.push('/');
+    };
+
+    const getImageUrl = (url?: string | null) => {
+        if (!url) return null;
+        if (url.startsWith('http')) return url;
+        const baseUrl = process.env.NEXT_PUBLIC_API_URL?.replace('/api/v1', '') || 'http://localhost:8000';
+        return `${baseUrl}${url}`;
+    };
+
+    const SearchResultsDropdown = ({ results, className }: { results: SearchIndexItem[]; className?: string }) => {
+        if (results.length === 0 && searchQuery.trim().length > 1) {
+            return (
+                <div className={cn("absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-2xl z-50 p-4 text-center", className)}>
+                    <p className="text-sm text-muted-foreground">No products found for "{searchQuery}"</p>
+                    <button
+                        onClick={() => { setShowResults(false); router.push(`/search?q=${encodeURIComponent(searchQuery)}`); }}
+                        className="text-sm text-primary font-medium mt-2 hover:underline"
+                    >
+                        Search all products →
+                    </button>
+                </div>
+            );
+        }
+        if (results.length === 0) return null;
+        return (
+            <div className={cn("absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-2xl z-50 overflow-hidden", className)}>
+                <div className="max-h-[360px] overflow-y-auto">
+                    {results.map((item) => {
+                        const imgUrl = getImageUrl(item.image);
+                        const discount = item.mrp > item.selling_price
+                            ? Math.round(((item.mrp - item.selling_price) / item.mrp) * 100)
+                            : 0;
+                        return (
+                            <button
+                                key={item.id}
+                                onClick={() => handleResultClick(item.slug)}
+                                className="flex items-center gap-3 w-full px-4 py-3 hover:bg-slate-50 transition-colors text-left border-b border-slate-50 last:border-b-0"
+                            >
+                                <div className="relative h-12 w-12 rounded-lg overflow-hidden bg-slate-100 flex-shrink-0 border">
+                                    {imgUrl ? (
+                                        <Image src={imgUrl} alt={item.name} fill className="object-cover" />
+                                    ) : (
+                                        <div className="h-full w-full flex items-center justify-center text-slate-400">
+                                            <Search className="h-4 w-4" />
+                                        </div>
+                                    )}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-medium text-slate-900 truncate">{item.name}</p>
+                                    <div className="flex items-center gap-2 mt-0.5">
+                                        <span className="text-sm font-bold text-primary">{formatPrice(item.selling_price)}</span>
+                                        {discount > 0 && (
+                                            <span className="text-xs text-slate-400 line-through">{formatPrice(item.mrp)}</span>
+                                        )}
+                                        {discount > 0 && (
+                                            <span className="text-xs font-semibold text-green-600">{discount}% off</span>
+                                        )}
+                                    </div>
+                                </div>
+                            </button>
+                        );
+                    })}
+                </div>
+                <button
+                    onClick={() => { setShowResults(false); router.push(`/search?q=${encodeURIComponent(searchQuery)}`); }}
+                    className="w-full px-4 py-2.5 text-sm font-medium text-primary hover:bg-primary/5 transition-colors border-t text-center"
+                >
+                    See all results for "{searchQuery}"
+                </button>
+            </div>
+        );
     };
 
     return (
@@ -159,18 +276,22 @@ export function Header() {
                 </nav>
 
                 {/* Search Bar (Desktop) */}
-                <form onSubmit={handleSearch} className="hidden md:flex flex-1 max-w-md mx-6">
-                    <div className="relative w-full">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        <Input
-                            type="search"
-                            placeholder="Search cosmetics..."
-                            className="pl-10 w-full"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                        />
-                    </div>
-                </form>
+                <div ref={searchRef} className="hidden md:flex flex-1 max-w-md mx-6 relative">
+                    <form onSubmit={handleSearch} className="w-full">
+                        <div className="relative w-full">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input
+                                type="search"
+                                placeholder="Search cosmetics..."
+                                className="pl-10 w-full"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                onFocus={() => { if (searchQuery.trim()) setShowResults(true); }}
+                            />
+                        </div>
+                    </form>
+                    {showResults && <SearchResultsDropdown results={searchResults} />}
+                </div>
 
                 {/* Actions */}
                 <div className="flex items-center space-x-2">
@@ -226,7 +347,7 @@ export function Header() {
 
             {/* Mobile Search */}
             {searchOpen && (
-                <div className="md:hidden border-t p-4">
+                <div ref={mobileSearchRef} className="md:hidden border-t p-4 relative">
                     <form onSubmit={handleSearch}>
                         <div className="relative">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -236,10 +357,12 @@ export function Header() {
                                 className="pl-10 w-full"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
+                                onFocus={() => { if (searchQuery.trim()) setShowResults(true); }}
                                 autoFocus
                             />
                         </div>
                     </form>
+                    {showResults && <SearchResultsDropdown results={searchResults} />}
                 </div>
             )}
 

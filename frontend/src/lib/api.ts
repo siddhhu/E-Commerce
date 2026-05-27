@@ -303,6 +303,9 @@ export const productsApi = {
 
     getVariants: (slug: string) =>
         api.get<ProductSummary[]>(`/products/${slug}/variants`),
+
+    getSearchIndex: () =>
+        api.get<SearchIndexItem[]>('/products/search-index'),
 };
 
 // Categories API
@@ -612,6 +615,7 @@ export interface Product {
     gst_percentage?: number;
     min_order_quantity: number;
     category_id?: string;
+    category_ids?: string[];
     brand_id?: string;
     unit: string;
     parent_id?: string;
@@ -649,10 +653,23 @@ export interface ProductSummary {
     gst_percentage?: number;
     is_featured: boolean;
     category_id?: string;
+    category_ids?: string[];
     parent_id?: string;
     primary_image?: string;
     seller_id?: string;
     seller_name?: string;
+}
+
+export interface SearchIndexItem {
+    id: string;
+    name: string;
+    slug: string;
+    sku: string;
+    selling_price: number;
+    mrp: number;
+    image: string | null;
+    short_description: string;
+    seller_name: string;
 }
 
 export interface PaginatedProducts {

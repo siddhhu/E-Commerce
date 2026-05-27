@@ -5,7 +5,7 @@ import { adminApi, ProductSummary, PaginatedProducts } from '@/lib/api';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Search, Plus, Upload, Edit, Trash2, ChevronLeft, ChevronRight, Image as ImageIcon } from 'lucide-react';
+import { Search, Plus, Upload, Edit, Trash2, ChevronLeft, ChevronRight, Image as ImageIcon, Copy } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { formatCurrency } from '@/lib/utils';
 import Link from 'next/link';
@@ -169,13 +169,20 @@ export default function AdminProductsPage() {
                                                 )}
                                                 <td className="px-6 py-4 text-center">
                                                     <div className="flex items-center justify-center gap-1">
+                                                        {isAdmin && (
+                                                            <Link href={`/admin/products/new?duplicate=${product.id}`}>
+                                                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0" title="Duplicate Product">
+                                                                    <Copy className="h-4 w-4 text-slate-500" />
+                                                                </Button>
+                                                            </Link>
+                                                        )}
                                                         <Link href={`/admin/products/${product.id}/edit`}>
-                                                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0" title="Edit Product">
                                                                 <Edit className="h-4 w-4 text-slate-500" />
                                                             </Button>
                                                         </Link>
                                                         <Button
-                                                            variant="ghost" size="sm" className="h-8 w-8 p-0"
+                                                            variant="ghost" size="sm" className="h-8 w-8 p-0" title="Delete Product"
                                                             onClick={() => handleDeleteProduct(product.id, product.name)}
                                                         >
                                                             <Trash2 className="h-4 w-4 text-red-500" />
@@ -222,13 +229,20 @@ export default function AdminProductsPage() {
                                             )}
                                         </div>
                                         <div className="flex flex-col gap-1 justify-center">
+                                            {isAdmin && (
+                                                <Link href={`/admin/products/new?duplicate=${product.id}`}>
+                                                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0" title="Duplicate Product">
+                                                        <Copy className="h-4 w-4 text-slate-500" />
+                                                    </Button>
+                                                </Link>
+                                            )}
                                             <Link href={`/admin/products/${product.id}/edit`}>
-                                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0" title="Edit Product">
                                                     <Edit className="h-4 w-4 text-slate-500" />
                                                 </Button>
                                             </Link>
                                             <Button
-                                                variant="ghost" size="sm" className="h-8 w-8 p-0"
+                                                variant="ghost" size="sm" className="h-8 w-8 p-0" title="Delete Product"
                                                 onClick={() => handleDeleteProduct(product.id, product.name)}
                                             >
                                                 <Trash2 className="h-4 w-4 text-red-500" />

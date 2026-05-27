@@ -9,7 +9,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Save, Loader2 } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { ArrowLeft, Save, Loader2, ChevronDown } from 'lucide-react';
 import Link from 'next/link';
 
 export default function AdminEditProductPage() {
@@ -32,8 +33,10 @@ export default function AdminEditProductPage() {
         stock_quantity: '',
         short_description: '',
         description: '',
+        description: '',
         image_url: '',
         category_id: '',
+        category_ids: [] as string[],
         gst_percentage: '18',
         parent_id: '',
         color_hex: '#000000',
@@ -42,6 +45,7 @@ export default function AdminEditProductPage() {
         is_active: true,
         is_featured: false
     });
+    const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false);
 
     useEffect(() => {
         const fetchProductAndCategories = async () => {
@@ -64,6 +68,7 @@ export default function AdminEditProductPage() {
                     description: product.description || '',
                     image_url: product.image_url || '',
                     category_id: product.category_id || '',
+                    category_ids: product.category_ids || [],
                     parent_id: product.parent_id || '',
                     color_hex: (product.attributes?.color_hex as string) || (product.attributes?.color as string) || '#000000',
                     color_name: (product.attributes?.color_name as string) || '',
@@ -126,7 +131,8 @@ export default function AdminEditProductPage() {
                 short_description: formData.short_description,
                 description: formData.description,
                 image_url: formData.image_url,
-                category_id: formData.category_id || undefined,
+                category_id: formData.category_ids[0] || formData.category_id || undefined,
+                category_ids: formData.category_ids,
                 parent_id: formData.parent_id || undefined,
                 attributes: {
                     color_hex: formData.color_hex !== '#000000' ? formData.color_hex : undefined,
@@ -204,19 +210,69 @@ export default function AdminEditProductPage() {
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor="category_id">Category</Label>
-                                    <select
-                                        id="category_id"
-                                        name="category_id"
-                                        value={formData.category_id}
-                                        onChange={handleChange}
-                                        className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                                    >
-                                        <option value="">Select a category</option>
-                                        {categories.map(cat => (
-                                            <option key={cat.id} value={cat.id}>{cat.name}</option>
-                                        ))}
-                                    </select>
+                                    <Label>Categories</Label>
+                                    <div className="relative">
+                                        <button
+                                            type="button"
+                                            onClick={() => setCategoryDropdownOpen(!categoryDropdownOpen)}
+                                            className="flex min-h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                                        >
+                                            <span className={formData.category_ids.length === 0 ? 'text-muted-foreground' : 'text-foreground'}>
+                                                {formData.category_ids.length === 0
+                                                    ? 'Select categories'
+                                                    : `${formData.category_ids.length} selected`}
+                                            </span>
+                                            <ChevronDown className={`h-4 w-4 transition-transform ${categoryDropdownOpen ? 'rotate-180' : ''}`} />
+                                        </button>
+                                        {categoryDropdownOpen && (
+                                            <div className="absolute z-50 mt-1 w-full rounded-md border bg-white shadow-lg max-h-60 overflow-y-auto">
+                                                {categories.map(cat => (
+                                                    <label
+                                                        key={cat.id}
+                                                        className="flex items-center gap-2 px-3 py-2 hover:bg-slate-50 cursor-pointer text-sm"
+                                                    >
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={formData.category_ids.includes(cat.id)}
+                                                            onChange={(e) => {
+                                                                setFormData(prev => ({
+                                                                    ...prev,
+                                                                    category_ids: e.target.checked
+                                                                        ? [...prev.category_ids, cat.id]
+                                                                        : prev.category_ids.filter(id => id !== cat.id)
+                                                                }));
+                                                            }}
+                                                            className="h-4 w-4 rounded border-slate-300 text-[#d81b60] focus:ring-[#d81b60]"
+                                                        />
+                                                        {cat.name}
+                                                    </label>
+                                                ))}
+                                                {categories.length === 0 && (
+                                                    <div className="px-3 py-2 text-sm text-muted-foreground italic">No categories available</div>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+                                    {/* Selected pills */}
+                                    {formData.category_ids.length > 0 && (
+                                        <div className="flex flex-wrap gap-1.5 mt-2">
+                                            {formData.category_ids.map(catId => {
+                                                const cat = categories.find(c => c.id === catId);
+                                                return cat ? (
+                                                    <span key={catId} className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-pink-100 text-pink-800">
+                                                        {cat.name}
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setFormData(prev => ({ ...prev, category_ids: prev.category_ids.filter(id => id !== catId) }))}
+                                                            className="hover:text-pink-950"
+                                                        >
+                                                            ×
+                                                        </button>
+                                                    </span>
+                                                ) : null;
+                                            })}
+                                        </div>
+                                    )}
                                 </div>
 
                                 {/* Variant Options */}

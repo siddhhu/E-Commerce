@@ -49,6 +49,8 @@ class Product(ProductBase, table=True):
     category_id: Optional[UUID] = Field(default=None, foreign_key="categories.id")
     brand_id: Optional[UUID] = Field(default=None, foreign_key="brands.id")
     attributes: dict = Field(default={}, sa_column=Column(JSON))
+    # Multi-category support: JSON array of category UUIDs
+    category_ids: list = Field(default=[], sa_column=Column(JSON))
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
     
@@ -94,6 +96,7 @@ class ProductCreate(SQLModel):
     min_order_quantity: int = 1
     gst_percentage: int = 18
     category_id: Optional[UUID] = None
+    category_ids: list[str] = []
     brand_id: Optional[UUID] = None
     unit: str = "pcs"
     attributes: dict = {}
@@ -118,6 +121,7 @@ class ProductUpdate(SQLModel):
     min_order_quantity: Optional[int] = None
     gst_percentage: Optional[int] = None
     category_id: Optional[UUID] = None
+    category_ids: Optional[list[str]] = None
     brand_id: Optional[UUID] = None
     unit: Optional[str] = None
     attributes: Optional[dict] = None
@@ -136,6 +140,7 @@ class ProductRead(ProductBase):
     """Schema for reading product."""
     id: UUID
     category_id: Optional[UUID]
+    category_ids: list[str] = []
     brand_id: Optional[UUID]
     attributes: dict
     created_at: datetime
@@ -161,6 +166,7 @@ class ProductListRead(SQLModel):
     gst_percentage: int = 18
     is_featured: bool
     category_id: Optional[UUID] = None
+    category_ids: list[str] = []
     image_url: Optional[str] = None
     primary_image: Optional[str] = None
     seller_id: Optional[UUID] = None

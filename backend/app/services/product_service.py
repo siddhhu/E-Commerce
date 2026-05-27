@@ -57,21 +57,37 @@ class ProductService:
         seller_id: Optional[UUID] = None
     ) -> list[Product]:
         """List products with filters. Pass seller_id to restrict to that seller's products."""
+        from sqlalchemy import cast, String
         query = select(Product).options(selectinload(Product.images))
 
         if is_active is not None:
             query = query.where(Product.is_active == is_active)
         if category_id:
-            query = query.where(Product.category_id == category_id)
+            # Match against both legacy category_id FK and new category_ids JSON array
+            cat_str = str(category_id)
+            query = query.where(
+                or_(
+                    Product.category_id == category_id,
+                    cast(Product.category_ids, String).contains(cat_str)
+                )
+            )
         if brand_id:
             query = query.where(Product.brand_id == brand_id)
         if is_featured is not None:
             query = query.where(Product.is_featured == is_featured)
         if search:
-            query = query.where(
-                Product.name.ilike(f"%{search}%") |
-                Product.description.ilike(f"%{search}%")
-            )
+            # Multi-token AND search across name, description, sku, short_description
+            tokens = [t.strip() for t in search.split() if t.strip()]
+            for token in tokens:
+                pattern = f"%{token}%"
+                query = query.where(
+                    or_(
+                        Product.name.ilike(pattern),
+                        Product.description.ilike(pattern),
+                        Product.sku.ilike(pattern),
+                        Product.short_description.ilike(pattern),
+                    )
+                )
         if min_price is not None:
             query = query.where(Product.selling_price >= min_price)
         if max_price is not None:
@@ -139,6 +155,14 @@ class ProductService:
             from app.core.exceptions import ValidationException
             raise ValidationException("Selling price cannot be greater than MRP")
         
+        # Auto-sync category_id from category_ids (first element)
+        if data.category_ids and len(data.category_ids) > 0:
+            from uuid import UUID as UUIDType
+            try:
+                data.category_id = UUIDType(data.category_ids[0])
+            except (ValueError, IndexError):
+                pass
+        
         # Auto-generate slug if not unique
         slug = data.slug or slugify(data.name)
         existing_slug = await self.session.execute(
@@ -167,6 +191,15 @@ class ProductService:
         product = await self.get_product_by_id(product_id)
         
         update_data = data.model_dump(exclude_unset=True)
+        
+        # Auto-sync category_id from category_ids if provided
+        if 'category_ids' in update_data and update_data['category_ids'] and len(update_data['category_ids']) > 0:
+            from uuid import UUID as UUIDType
+            try:
+                update_data['category_id'] = UUIDType(update_data['category_ids'][0])
+            except (ValueError, IndexError):
+                pass
+        
         for field, value in update_data.items():
             setattr(product, field, value)
         
