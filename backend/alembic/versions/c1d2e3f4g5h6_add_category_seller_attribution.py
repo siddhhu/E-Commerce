@@ -18,7 +18,7 @@ depends_on = None
 
 
 def upgrade():
-    op.add_column('categories', sa.Column('seller_id', sqlmodel.sql.sqltypes.GUID(), nullable=True))
+    op.add_column('categories', sa.Column('seller_id', sa.UUID(), nullable=True))
     op.add_column('categories', sa.Column('seller_name', sqlmodel.sql.sqltypes.AutoString(length=255), server_default="Pranjay", nullable=True))
     op.create_foreign_key('fk_categories_seller_id_users', 'categories', 'users', ['seller_id'], ['id'])
 
