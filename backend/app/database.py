@@ -159,13 +159,18 @@ async def run_startup_migrations() -> None:
                 except Exception:
                     pass
                 try:
-                    await conn.execute(sa.text("ALTER TABLE products ADD COLUMN category_ids JSON;"))
+                    await conn.execute(sa.text("ALTER TABLE products ADD COLUMN category_ids JSON DEFAULT '[]';"))
+                except Exception:
+                    pass
+                try:
+                    await conn.execute(sa.text("UPDATE products SET category_ids = '[]' WHERE category_ids IS NULL;"))
                 except Exception:
                     pass
             else:
                 await conn.execute(sa.text("ALTER TABLE products ADD COLUMN IF NOT EXISTS gst_percentage INTEGER DEFAULT 18;"))
                 await conn.execute(sa.text("ALTER TABLE products ADD COLUMN IF NOT EXISTS parent_id UUID REFERENCES products(id);"))
-                await conn.execute(sa.text("ALTER TABLE products ADD COLUMN IF NOT EXISTS category_ids JSONB;"))
+                await conn.execute(sa.text("ALTER TABLE products ADD COLUMN IF NOT EXISTS category_ids JSONB DEFAULT '[]'::jsonb;"))
+                await conn.execute(sa.text("UPDATE products SET category_ids = '[]'::jsonb WHERE category_ids IS NULL;"))
 
         # 4. Performance indexes — idempotent (CREATE INDEX IF NOT EXISTS)
         if "postgresql" in db_url:
