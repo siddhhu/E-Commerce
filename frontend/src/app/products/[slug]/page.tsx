@@ -87,14 +87,17 @@ export default function ProductDetailPage() {
             if (!params.slug) return;
             setLoading(true);
             try {
-                const data = await productsApi.getBySlug(params.slug as string);
-                setProduct(data);
-                try {
-                    const variantsData = await productsApi.getVariants(params.slug as string);
-                    setVariants(variantsData);
-                } catch (vErr) {
-                    console.error('Failed to fetch variants:', vErr);
-                }
+                // Fetch product and variants in parallel to reduce load time
+                const [productData, variantsData] = await Promise.all([
+                    productsApi.getBySlug(params.slug as string),
+                    productsApi.getVariants(params.slug as string).catch((err) => {
+                        console.error('Failed to fetch variants:', err);
+                        return [];
+                    })
+                ]);
+                
+                setProduct(productData);
+                setVariants(variantsData);
                 setError(false);
             } catch (err) {
                 console.error('Failed to fetch product:', err);

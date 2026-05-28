@@ -139,26 +139,40 @@ async def get_search_index(
 ):
     """
     Lightweight search index: returns minimal product data for client-side
-    instant search. Cached for 5 minutes. Max 500 products.
+    instant search. Cached for 5 minutes. Optimized with direct SQL.
     """
-    product_service = ProductService(session)
-    products = await product_service.list_products(
-        skip=0,
-        limit=500,
-        is_active=True,
+    query = (
+        select(
+            Product.id,
+            Product.name,
+            Product.slug,
+            Product.sku,
+            Product.selling_price,
+            Product.mrp,
+            Product.image_url,
+            Product.short_description,
+            Product.seller_name
+        )
+        .where(Product.is_active == True)
+        .order_by(Product.created_at.desc())
+        .limit(2000)  # Safe to fetch up to 2000 as it's a lightweight tuple query
     )
+    
+    result = await session.execute(query)
+    rows = result.all()
+    
     items = []
-    for p in products:
+    for row in rows:
         items.append({
-            "id": str(p.id),
-            "name": p.name,
-            "slug": p.slug,
-            "sku": p.sku,
-            "selling_price": float(p.selling_price),
-            "mrp": float(p.mrp),
-            "image": _primary_image(p),
-            "short_description": p.short_description or "",
-            "seller_name": p.seller_name or "Pranjay",
+            "id": str(row.id),
+            "name": row.name,
+            "slug": row.slug,
+            "sku": row.sku,
+            "selling_price": float(row.selling_price),
+            "mrp": float(row.mrp),
+            "image": row.image_url,
+            "short_description": row.short_description or "",
+            "seller_name": row.seller_name or "Pranjay",
         })
 
     return JSONResponse(

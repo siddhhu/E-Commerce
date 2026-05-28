@@ -126,8 +126,15 @@ class ProductService:
     
     async def get_product_variants(self, slug: str) -> Sequence[Product]:
         """Get all sibling products including the parent product."""
-        product = await self.get_product_by_slug(slug)
-        target_parent_id = product.parent_id or product.id
+        # Lightweight query just to find the parent_id
+        id_query = select(Product.id, Product.parent_id).where(Product.slug == slug)
+        id_result = await self.session.execute(id_query)
+        row = id_result.first()
+        
+        if not row:
+            raise NotFoundException("Product")
+            
+        target_parent_id = row.parent_id or row.id
         
         query = select(Product).options(
             selectinload(Product.images)
