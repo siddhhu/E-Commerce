@@ -6,12 +6,14 @@ import { ArrowRight, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { bannerApi, Banner } from '@/lib/api';
 
-export function BannerSlider() {
-    const [banners, setBanners] = useState<Banner[]>([]);
+export function BannerSlider({ initialBanners = null }: { initialBanners?: Banner[] | null }) {
+    const [banners, setBanners] = useState<Banner[]>(initialBanners || []);
     const [currentIndex, setCurrentIndex] = useState(0);
-    const [isLoading, setIsLoading] = useState(true);
+    const [isLoading, setIsLoading] = useState(!initialBanners);
 
     useEffect(() => {
+        if (initialBanners !== null) return;
+        
         const fetchBanners = async () => {
             try {
                 const data = await bannerApi.list();
@@ -24,7 +26,7 @@ export function BannerSlider() {
         };
 
         fetchBanners();
-    }, []);
+    }, [initialBanners]);
 
     useEffect(() => {
         if (banners.length <= 1) return;

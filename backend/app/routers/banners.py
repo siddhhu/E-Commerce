@@ -22,4 +22,11 @@ async def list_active_banners(
     Public endpoint.
     """
     banner_service = BannerService(session)
-    return await banner_service.list_banners(is_active=True)
+    banners = await banner_service.list_banners(is_active=True)
+    items = [BannerRead.model_validate(b).model_dump(mode="json") for b in banners]
+    
+    from fastapi.responses import JSONResponse
+    return JSONResponse(
+        content=items,
+        headers={"Cache-Control": "public, max-age=300, stale-while-revalidate=60"},
+    )
