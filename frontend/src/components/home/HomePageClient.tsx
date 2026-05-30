@@ -197,8 +197,53 @@ export default function HomePageClient({
                     <BannerSlider initialBanners={initialBanners} />
                 </div>
 
-
-                {/* Features */}
+                {/* Shop by Brand — dynamic from DB with static fallback */}
+                <section className="pt-8 pb-12 bg-[#f4f4f4]">
+                    <div className="container">
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+                            {(featuredBrands.length > 0 ? featuredBrands : [
+                                { id: '1', name: 'Gillette', logo_url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/87/Gillette_logo.svg/2560px-Gillette_logo.svg.png', max_discount: 14 },
+                                { id: '2', name: 'Head & Shoulders', logo_url: 'https://upload.wikimedia.org/wikipedia/en/thumb/f/fa/Head_and_Shoulders_logo.svg/1200px-Head_and_Shoulders_logo.svg.png', max_discount: 50 },
+                                { id: '3', name: 'Pampers', logo_url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/07/Pampers_Logo.svg/1024px-Pampers_Logo.svg.png', max_discount: 16 },
+                                { id: '4', name: 'Whisper', logo_url: 'https://upload.wikimedia.org/wikipedia/en/thumb/9/90/Whisper_%28brand%29_logo.svg/1200px-Whisper_%28brand%29_logo.svg.png', max_discount: 24 },
+                                { id: '5', name: 'Pantene', logo_url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1a/Pantene_logo.svg/1200px-Pantene_logo.svg.png', max_discount: 50 },
+                                { id: '6', name: 'Oral-B', logo_url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/22/Oral-B_Logo.svg/1200px-Oral-B_Logo.svg.png', max_discount: 48 },
+                                { id: '7', name: 'Old Spice', logo_url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/ab/Old_Spice_logo.svg/1200px-Old_Spice_logo.svg.png', max_discount: 80 },
+                                { id: '8', name: 'Olay', logo_url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f6/Olay_logo.svg/1200px-Olay_logo.svg.png', max_discount: 80 },
+                            ]).map((brand) => (
+                                <Link
+                                    key={brand.id}
+                                    href={brand.id.length < 5 ? '#' : `/products?brand_id=${brand.id}`} // Dummy links for static fallback
+                                    className="flex flex-col group cursor-pointer hover:shadow-lg transition-shadow"
+                                >
+                                    {/* Top part with Logo on gray background (no border) */}
+                                    <div className="h-32 flex items-center justify-center p-6 bg-[#f4f4f4]">
+                                        {brand.logo_url ? (
+                                            <div className="h-full w-full relative">
+                                                <Image
+                                                    src={brand.logo_url}
+                                                    alt={brand.name}
+                                                    fill
+                                                    className="object-contain mix-blend-multiply group-hover:scale-105 transition-transform"
+                                                />
+                                            </div>
+                                        ) : (
+                                            <span className="text-xl font-extrabold text-slate-800 tracking-tight group-hover:text-primary transition-colors">
+                                                {brand.name}
+                                            </span>
+                                        )}
+                                    </div>
+                                    {/* Bottom part with White background and Text */}
+                                    <div className="bg-white py-5 text-center shadow-sm">
+                                        <span className="text-sm font-bold text-slate-700 uppercase tracking-wide">
+                                            {brand.max_discount > 0 ? `Upto ${brand.max_discount}% Off` : 'Exclusive Deals'}
+                                        </span>
+                                    </div>
+                                </Link>
+                            ))}
+                        </div>
+                    </div>
+                </section>                {/* Features */}
                 <section className="py-12 border-b">
                     <div className="container">
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
@@ -337,44 +382,7 @@ export default function HomePageClient({
                     </div>
                 </section>
 
-                {/* Shop by Brand — dynamic from DB */}
-                {featuredBrands.length > 0 && (
-                    <section className="py-12 bg-[#f8f8f8]">
-                        <div className="container">
-                            <h3 className="text-sm font-bold tracking-widest uppercase text-slate-500 mb-2 text-center">Shop by Brand</h3>
-                            <h2 className="text-2xl md:text-3xl font-extrabold text-slate-900 mb-8 text-center">Top Brands with Best Offers</h2>
-                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 md:gap-6">
-                                {featuredBrands.map((brand) => (
-                                    <Link
-                                        key={brand.id}
-                                        href={`/products?brand_id=${brand.id}`}
-                                        className="bg-white rounded-xl p-6 flex flex-col items-center justify-center gap-3 border border-slate-100 hover:shadow-lg hover:border-primary/20 transition-all group cursor-pointer"
-                                    >
-                                        {brand.logo_url ? (
-                                            <div className="h-16 w-32 relative">
-                                                <Image
-                                                    src={brand.logo_url}
-                                                    alt={brand.name}
-                                                    fill
-                                                    className="object-contain group-hover:scale-105 transition-transform"
-                                                />
-                                            </div>
-                                        ) : (
-                                            <span className="text-xl font-extrabold text-slate-800 tracking-tight group-hover:text-primary transition-colors">
-                                                {brand.name}
-                                            </span>
-                                        )}
-                                        {brand.max_discount > 0 && (
-                                            <span className="text-sm font-semibold text-green-700 bg-green-50 px-3 py-1 rounded-full">
-                                                Upto {brand.max_discount}% Off
-                                            </span>
-                                        )}
-                                    </Link>
-                                ))}
-                            </div>
-                        </div>
-                    </section>
-                )}
+
 
                 {/* Newsletter Community */}
                 <section className="bg-[#3b2333] text-white py-16">
