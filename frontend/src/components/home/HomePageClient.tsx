@@ -245,51 +245,40 @@ export default function HomePageClient({
                         </div>
                     </div>
                 </section>
-                {/* Trending Now */}
-                <section className="py-12 bg-white">
-                    <div className="container">
-                        <div className="flex flex-col items-center mb-8">
-                            <h2 className="text-2xl md:text-3xl font-bold flex items-center gap-2">
-                                🔥 Trending Now
-                            </h2>
-                        </div>
-
-                        {loading ? (
-                            <div className="flex items-center justify-center py-12">
-                                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                            </div>
-                        ) : (
-                            <TrendingSlider 
-                                products={featuredProducts.map(product => ({
-                                    id: product.id,
-                                    name: product.name,
-                                    slug: product.slug,
-                                    sku: product.sku,
-                                    short_description: product.short_description || '',
-                                    mrp: Number(product.mrp),
-                                    selling_price: Number(product.selling_price),
-                                    b2b_price: product.b2b_price ? Number(product.b2b_price) : undefined,
-                                    stock_quantity: product.stock_quantity,
-                                    min_order_quantity: 1,
-                                    unit: 'pcs',
-                                    is_active: true,
-                                    is_featured: product.is_featured,
-                                    image_url: product.primary_image || undefined,
-                                    images: product.primary_image ? [{ 
-                                        id: 'p1', 
-                                        product_id: product.id, 
-                                        image_url: product.primary_image, 
-                                        is_primary: true,
-                                        sort_order: 0
-                                    }] : [],
-                                    attributes: {},
-                                    created_at: '',
-                                    updated_at: ''
-                                } as APIProduct))}
-                            />
-                        )}
+                {loading ? (
+                    <div className="flex items-center justify-center py-12">
+                        <Loader2 className="h-8 w-8 animate-spin text-primary" />
                     </div>
-                </section>
+                ) : (
+                    <TrendingSlider 
+                        products={featuredProducts.map(product => ({
+                            id: product.id,
+                            name: product.name,
+                            slug: product.slug,
+                            sku: product.sku,
+                            short_description: product.short_description || '',
+                            mrp: Number(product.mrp),
+                            selling_price: Number(product.selling_price),
+                            b2b_price: product.b2b_price ? Number(product.b2b_price) : undefined,
+                            stock_quantity: product.stock_quantity,
+                            min_order_quantity: 1,
+                            unit: 'pcs',
+                            is_active: true,
+                            is_featured: product.is_featured,
+                            image_url: product.primary_image || undefined,
+                            images: product.primary_image ? [{ 
+                                id: 'p1', 
+                                product_id: product.id, 
+                                image_url: product.primary_image, 
+                                is_primary: true,
+                                sort_order: 0
+                            }] : [],
+                            attributes: {},
+                            created_at: '',
+                            updated_at: ''
+                        } as APIProduct))}
+                    />
+                )}
 
                 {/* Features - Moved below Trending Now */}
                 <section className="py-12 border-b">

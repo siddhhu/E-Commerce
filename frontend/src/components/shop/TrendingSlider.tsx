@@ -75,11 +75,11 @@ export function TrendingSlider({ products }: TrendingSliderProps) {
                 {/* Scrollable Container */}
                 <div 
                     ref={scrollContainerRef}
-                    className="flex overflow-x-auto gap-4 md:gap-6 pb-6 pt-2 px-2 snap-x snap-mandatory hide-scrollbar relative"
+                    className="grid grid-rows-2 grid-flow-col auto-cols-max overflow-x-auto gap-4 md:gap-6 pb-6 pt-2 px-2 snap-x snap-mandatory hide-scrollbar relative"
                     style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
                 >
                     {products.map((product) => (
-                        <div key={product.id} className="min-w-[260px] md:min-w-[280px] max-w-[280px] flex-none snap-start">
+                        <div key={product.id} className="w-[260px] md:w-[280px] snap-start h-full">
                             <ProductCard product={product} />
                         </div>
                     ))}
