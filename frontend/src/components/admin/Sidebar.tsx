@@ -25,6 +25,7 @@ export function AdminSidebar({ open, onClose }: AdminSidebarProps) {
         { name: 'Orders', href: '/admin/orders', icon: ShoppingCart },
         { name: 'Products', href: '/admin/products', icon: Package },
         { name: 'Categories', href: '/admin/categories', icon: Tags },
+        { name: 'Brands', href: '/admin/brands', icon: Store },
         { name: 'Banners', href: '/admin/banners', icon: ImageIcon },
         { name: 'Promo Codes', href: '/admin/promo-codes', icon: TicketPercent },
         { name: 'Users', href: '/admin/users', icon: Users },
@@ -36,6 +37,7 @@ export function AdminSidebar({ open, onClose }: AdminSidebarProps) {
         { name: 'Orders', href: '/admin/orders', icon: ShoppingCart },
         { name: 'Products', href: '/admin/products', icon: Package },
         { name: 'Categories', href: '/admin/categories', icon: Tags },
+        { name: 'Brands', href: '/admin/brands', icon: Store },
         { name: 'Settings', href: '/admin/settings', icon: Settings },
     ];
 
