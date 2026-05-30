@@ -177,8 +177,6 @@ async def get_featured_brands(
     items = []
     for row in rows:
         discount = int(row.max_discount) if row.max_discount else 0
-        if discount <= 0:
-            continue
         items.append({
             "id": str(row.id),
             "name": row.name,

@@ -256,32 +256,6 @@ export function Header() {
                             {link.label}
                         </Link>
                     ))}
-                    {/* Become a Seller — visible to non-authenticated or regular customers */}
-                    {(!isAuthenticated || (user?.seller_status !== 'approved' && user?.role !== 'admin' && user?.role !== 'super_admin')) && (
-                        <Link
-                            href="/login?type=seller"
-                            className="text-sm font-semibold transition-colors hover:text-primary text-[#d81b60]"
-                        >
-                            Become a Seller
-                        </Link>
-                    )}
-                    {!isAuthenticated ? (
-                        <Link
-                            href="/login"
-                            className="text-sm font-medium transition-colors hover:text-primary text-muted-foreground"
-                        >
-                            Login
-                        </Link>
-                    ) : (
-                        <div className="flex items-center space-x-6">
-                            <button
-                                onClick={handleLogout}
-                                className="text-sm font-medium transition-colors hover:text-primary text-muted-foreground"
-                            >
-                                Logout
-                            </button>
-                        </div>
-                    )}
                 </nav>
 
                 {/* Search Bar (Desktop) */}
@@ -303,7 +277,34 @@ export function Header() {
                 </div>
 
                 {/* Actions */}
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-4">
+                    {/* Become a Seller / Login (Desktop only) */}
+                    <div className="hidden md:flex items-center space-x-4 mr-2">
+                        {(!isAuthenticated || (user?.seller_status !== 'approved' && user?.role !== 'admin' && user?.role !== 'super_admin')) && (
+                            <Link
+                                href="/login?type=seller"
+                                className="text-sm font-semibold transition-colors hover:text-primary text-[#d81b60]"
+                            >
+                                Become a Seller
+                            </Link>
+                        )}
+                        {!isAuthenticated ? (
+                            <Link
+                                href="/login"
+                                className="text-sm font-medium transition-colors hover:text-primary text-muted-foreground"
+                            >
+                                Login
+                            </Link>
+                        ) : (
+                            <button
+                                onClick={handleLogout}
+                                className="text-sm font-medium transition-colors hover:text-primary text-muted-foreground"
+                            >
+                                Logout
+                            </button>
+                        )}
+                    </div>
+
                     {/* Mobile Search Toggle */}
                     <Button
                         variant="ghost"

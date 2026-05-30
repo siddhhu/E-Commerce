@@ -417,9 +417,11 @@ export default function HomePageClient({
                                                 {brand.name}
                                             </span>
                                         )}
-                                        <span className="text-sm font-semibold text-green-700 bg-green-50 px-3 py-1 rounded-full">
-                                            Upto {brand.max_discount}% Off
-                                        </span>
+                                        {brand.max_discount > 0 && (
+                                            <span className="text-sm font-semibold text-green-700 bg-green-50 px-3 py-1 rounded-full">
+                                                Upto {brand.max_discount}% Off
+                                            </span>
+                                        )}
                                     </Link>
                                 ))}
                             </div>
