@@ -298,6 +298,9 @@ export const productsApi = {
     getFeatured: (limit = 10) =>
         api.get<Product[]>(`/products/featured?limit=${limit}`),
 
+    getFeaturedBrands: () =>
+        api.get<any[]>('/products/brands/featured'),
+
     getBySlug: (slug: string) =>
         api.get<Product>(`/products/${slug}`),
 

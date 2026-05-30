@@ -76,9 +76,7 @@ export default function HomePageClient({
 
     // Fetch brands with discount data
     useEffect(() => {
-        const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-        fetch(`${API_BASE}/api/v1/products/brands/featured`)
-            .then(res => res.json())
+        productsApi.getFeaturedBrands()
             .then(data => setFeaturedBrands(data))
             .catch(() => {});
     }, []);
@@ -198,58 +196,7 @@ export default function HomePageClient({
                 <div className="container py-4">
                     <BannerSlider initialBanners={initialBanners} />
                 </div>
-                {/* Hero / Banner Section */}
-                <section className="py-12 md:py-20 bg-white relative overflow-hidden">
-                    <div className="container relative z-10">
-                        <div className="grid lg:grid-cols-2 gap-12 items-center">
-                            <div className="space-y-6 max-w-xl">
-                                <h1 className="text-4xl md:text-5xl lg:text-[64px] leading-[1.1] font-extrabold tracking-tight text-[#0a142f]">
-                                    Premium Cosmetics at<br />
-                                    <span className="text-[#d81b60]">Wholesale Prices</span>
-                                </h1>
-                                <p className="text-lg text-slate-500 font-medium leading-relaxed max-w-md">
-                                    Your trusted wholesale cosmetics partner. Access exclusive deals on authentic products from top brands.
-                                </p>
-                                <div className="flex flex-wrap items-center gap-4 pt-2">
-                                    <Link href="/products">
-                                        <Button size="lg" className="bg-[#d81b60] hover:bg-[#c2185b] text-white rounded-lg px-6 h-12 text-base font-semibold border-0 shadow-md">
-                                            Browse Products <ArrowRight className="ml-2 h-4 w-4" />
-                                        </Button>
-                                    </Link>
-                                    {isAuthenticated ? (
-                                        <Link href={user?.role === 'admin' || user?.role === 'super_admin' ? '/admin' : '/orders'}>
-                                            <Button variant="outline" size="lg" className="rounded-lg px-6 h-12 text-base font-semibold border-slate-200 text-slate-700 hover:bg-slate-50">
-                                                My Dashboard
-                                            </Button>
-                                        </Link>
-                                    ) : (
-                                        <Link href="/login">
-                                            <Button variant="outline" size="lg" className="rounded-lg px-6 h-12 text-base font-semibold border-slate-200 text-slate-700 hover:bg-slate-50">
-                                                My Dashboard
-                                            </Button>
-                                        </Link>
-                                    )}
-                                </div>
-                            </div>
-                            <div className="relative">
-                                <div className="aspect-[4/3] relative rounded-3xl overflow-hidden shadow-xl transform rotate-2">
-                                    <Image
-                                        src="https://images.unsplash.com/photo-1596462502278-27bfdc403348?q=80&w=1200"
-                                        alt="Premium Cosmetics Collection"
-                                        fill
-                                        className="object-cover"
-                                        priority
-                                    />
-                                    {/* Soft overlay to match the flatlay background */}
-                                    <div className="absolute inset-0 bg-[#e6d5c3]/20 mix-blend-multiply" />
-                                </div>
-                                {/* Decorative elements */}
-                                <div className="absolute -z-10 -top-10 -right-10 w-64 h-64 bg-pink-100/50 rounded-full blur-3xl" />
-                                <div className="absolute -z-10 -bottom-10 -left-10 w-64 h-64 bg-amber-100/50 rounded-full blur-3xl" />
-                            </div>
-                        </div>
-                    </div>
-                </section>
+
 
                 {/* Features */}
                 <section className="py-12 border-b">
