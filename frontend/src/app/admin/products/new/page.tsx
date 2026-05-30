@@ -2,7 +2,7 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { adminApi, CategoryRead } from '@/lib/api';
+import { adminApi, adminBrandsApi, CategoryRead } from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -28,16 +28,19 @@ function AdminAddProductPageContent() {
     const [isLoading, setIsLoading] = useState(false);
     const [selectedImageFiles, setSelectedImageFiles] = useState<File[]>([]);
     const [categories, setCategories] = useState<CategoryRead[]>([]);
+    const [brands, setBrands] = useState<any[]>([]);
     const [products, setProducts] = useState<any[]>([]);
     
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const [cats, prods] = await Promise.all([
+                const [cats, brnds, prods] = await Promise.all([
                     adminApi.listCategories(),
+                    adminBrandsApi.list(),
                     adminApi.listProducts({ page_size: 100 })
                 ]);
                 setCategories(cats);
+                setBrands(brnds);
                 setProducts(prods.items);
             } catch (err) {
                 console.error("Failed to load data:", err);
@@ -58,6 +61,7 @@ function AdminAddProductPageContent() {
         image_url: '',
         category_id: '',
         category_ids: [] as string[],
+        brand_id: '',
         gst_percentage: '18',
         parent_id: '',
         color_hex: '#000000',
@@ -84,6 +88,7 @@ function AdminAddProductPageContent() {
                         image_url: product.image_url || '',
                         category_id: product.category_id || '',
                         category_ids: (product as any).category_ids || [],
+                        brand_id: product.brand_id || '',
                         gst_percentage: product.gst_percentage?.toString() || '18',
                         parent_id: product.parent_id || '',
                         color_hex: (product.attributes?.color_hex as string) || (product.attributes?.color as string) || '#000000',
@@ -155,6 +160,7 @@ function AdminAddProductPageContent() {
                 image_url: formData.image_url,
                 category_id: formData.category_ids[0] || formData.category_id || undefined,
                 category_ids: formData.category_ids,
+                brand_id: formData.brand_id || undefined,
                 parent_id: formData.parent_id || undefined,
                 attributes: {
                     color_hex: formData.color_hex !== '#000000' ? formData.color_hex : undefined,
@@ -299,6 +305,24 @@ function AdminAddProductPageContent() {
                                             })}
                                         </div>
                                     )}
+                                </div>
+                                
+                                <div className="space-y-2">
+                                    <Label htmlFor="brand_id">Brand</Label>
+                                    <select
+                                        id="brand_id"
+                                        name="brand_id"
+                                        value={formData.brand_id}
+                                        onChange={handleChange}
+                                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                    >
+                                        <option value="">No Brand</option>
+                                        {brands.map(brand => (
+                                            <option key={brand.id} value={brand.id}>
+                                                {brand.name}
+                                            </option>
+                                        ))}
+                                    </select>
                                 </div>
 
                                 {/* Variant Options */}

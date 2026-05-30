@@ -260,6 +260,14 @@ export const authApi = {
         api.post<{ message: string }>('/users/me/change-password', data),
 };
 
+// Admin Brands API
+export const adminBrandsApi = {
+    list: () => api.get<any[]>('/admin/brands'),
+    create: (data: any) => api.post<any>('/admin/brands', data),
+    update: (id: string, data: any) => api.patch<any>(`/admin/brands/${id}`, data),
+    delete: (id: string) => api.delete<{message: string}>(`/admin/brands/${id}`),
+};
+
 // Users API
 export const usersApi = {
     getAddresses: () => api.get<Address[]>('/users/me/addresses'),

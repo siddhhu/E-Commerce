@@ -21,7 +21,7 @@ from app.routers.admin import promo_codes as admin_promo_codes
 from app.routers.admin import products as admin_products
 from app.routers.admin import users as admin_users
 from app.routers.admin import categories as admin_categories
-
+from app.routers.admin import brands as admin_brands
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -103,6 +103,9 @@ app.include_router(
 )
 app.include_router(
     admin_categories.router, prefix=f"{API_PREFIX}/admin/categories", tags=["Admin - Categories"]
+)
+app.include_router(
+    admin_brands.router, prefix=f"{API_PREFIX}/admin/brands", tags=["Admin - Brands"]
 )
 app.include_router(
     admin_orders.router, prefix=f"{API_PREFIX}/admin/orders", tags=["Admin - Orders"]

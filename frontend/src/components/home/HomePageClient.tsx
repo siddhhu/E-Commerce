@@ -22,6 +22,7 @@ import { BannerSlider } from '@/components/shop/BannerSlider';
 import { ProductCard } from '@/components/products/ProductCard';
 import { Product as APIProduct } from '@/lib/api';
 import { PromoBanner } from '@/components/layout/PromoBanner';
+import { TrendingSlider } from '@/components/shop/TrendingSlider';
 import { CheckCircle2, Phone } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 
@@ -243,27 +244,7 @@ export default function HomePageClient({
                             ))}
                         </div>
                     </div>
-                </section>                {/* Features */}
-                <section className="py-12 border-b">
-                    <div className="container">
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                            {features.map((feature) => (
-                                <div key={feature.title} className="flex items-center gap-4">
-                                    <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                                        <feature.icon className="h-6 w-6 text-primary" />
-                                    </div>
-                                    <div>
-                                        <h3 className="font-medium">{feature.title}</h3>
-                                        <p className="text-sm text-muted-foreground">
-                                            {feature.description}
-                                        </p>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
                 </section>
-
                 {/* Trending Now */}
                 <section className="py-12 bg-white">
                     <div className="container">
@@ -278,61 +259,56 @@ export default function HomePageClient({
                                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
                             </div>
                         ) : (
-                            <div className="relative group">
-                                <button 
-                                    onClick={() => document.getElementById('trending-scroll')?.scrollBy({ left: -300, behavior: 'smooth' })} 
-                                    className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 z-10 bg-white p-3 rounded-full shadow-lg hidden group-hover:block border border-slate-100 hover:bg-slate-50 transition-all text-[#d81b60]"
-                                >
-                                    <ArrowRight className="h-5 w-5 rotate-180" />
-                                </button>
-                                <div id="trending-scroll" className="flex overflow-x-auto pb-6 gap-6 snap-x hide-scrollbar scroll-smooth">
-                                {featuredProducts.map((product) => {
-                                    const cardProduct: APIProduct = {
-                                        id: product.id,
-                                        name: product.name,
-                                        slug: product.slug,
-                                        sku: product.sku,
-                                        short_description: product.short_description || '',
-                                        mrp: Number(product.mrp),
-                                        selling_price: Number(product.selling_price),
-                                        b2b_price: product.b2b_price ? Number(product.b2b_price) : undefined,
-                                        stock_quantity: product.stock_quantity,
-                                        min_order_quantity: 1,
-                                        unit: 'pcs',
-                                        is_active: true,
-                                        is_featured: product.is_featured,
-                                        image_url: product.primary_image || undefined,
-                                        images: product.primary_image ? [{ 
-                                            id: 'p1', 
-                                            product_id: product.id, 
-                                            image_url: product.primary_image, 
-                                            is_primary: true,
-                                            sort_order: 0
-                                        }] : [],
-                                        attributes: {},
-                                        created_at: '',
-                                        updated_at: ''
-                                    };
-
-                                    return (
-                                        <div key={product.id} className="min-w-[280px] max-w-[280px] snap-start">
-                                            <ProductCard 
-                                                product={cardProduct}
-                                                onAddToCart={() => handleAddToCart(product)}
-                                                onAddToWishlist={() => handleToggleWishlist(product)}
-                                            />
-                                        </div>
-                                    );
-                                })}
-                                </div>
-                                <button 
-                                    onClick={() => document.getElementById('trending-scroll')?.scrollBy({ left: 300, behavior: 'smooth' })} 
-                                    className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 z-10 bg-white p-3 rounded-full shadow-lg hidden group-hover:block border border-slate-100 hover:bg-slate-50 transition-all text-[#d81b60]"
-                                >
-                                    <ArrowRight className="h-5 w-5" />
-                                </button>
-                            </div>
+                            <TrendingSlider 
+                                products={featuredProducts.map(product => ({
+                                    id: product.id,
+                                    name: product.name,
+                                    slug: product.slug,
+                                    sku: product.sku,
+                                    short_description: product.short_description || '',
+                                    mrp: Number(product.mrp),
+                                    selling_price: Number(product.selling_price),
+                                    b2b_price: product.b2b_price ? Number(product.b2b_price) : undefined,
+                                    stock_quantity: product.stock_quantity,
+                                    min_order_quantity: 1,
+                                    unit: 'pcs',
+                                    is_active: true,
+                                    is_featured: product.is_featured,
+                                    image_url: product.primary_image || undefined,
+                                    images: product.primary_image ? [{ 
+                                        id: 'p1', 
+                                        product_id: product.id, 
+                                        image_url: product.primary_image, 
+                                        is_primary: true,
+                                        sort_order: 0
+                                    }] : [],
+                                    attributes: {},
+                                    created_at: '',
+                                    updated_at: ''
+                                } as APIProduct))}
+                            />
                         )}
+                    </div>
+                </section>
+
+                {/* Features - Moved below Trending Now */}
+                <section className="py-12 border-b">
+                    <div className="container">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            {features.map((feature) => (
+                                <div key={feature.title} className="flex flex-col items-center text-center gap-3 p-6 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors">
+                                    <div className="h-16 w-16 rounded-full bg-white shadow-sm flex items-center justify-center shrink-0 text-primary">
+                                        <feature.icon className="h-8 w-8" />
+                                    </div>
+                                    <div>
+                                        <h3 className="font-bold text-lg mb-1">{feature.title}</h3>
+                                        <p className="text-slate-600">
+                                            {feature.description}
+                                        </p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
                     </div>
                 </section>
 
