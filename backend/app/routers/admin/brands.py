@@ -8,12 +8,13 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlmodel.ext.asyncio.session import AsyncSession
 from sqlmodel import select
 
-from app.db.session import get_session
+from app.database import get_session
 from app.models.brand import Brand, BrandCreate, BrandUpdate, BrandRead
-from app.routers.auth import get_current_admin_user
+from app.core.dependencies import get_current_admin
 
 router = APIRouter(
-    dependencies=[Depends(get_current_admin_user)]
+    tags=["admin-brands"],
+    dependencies=[Depends(get_current_admin)]
 )
 
 @router.get("", response_model=List[BrandRead])
