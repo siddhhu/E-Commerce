@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { adminApi, Banner } from '@/lib/api';
+import { adminApi, Banner, categoriesApi, CategoryRead } from '@/lib/api';
 import {
     Plus, Trash2, Edit2, CheckCircle, XCircle,
     Image as ImageIcon, MoreVertical, ExternalLink
@@ -32,7 +32,11 @@ export default function AdminBannersPage() {
 
     useEffect(() => {
         fetchBanners();
+        // Fetch categories for the category picker
+        categoriesApi.list().then(setCategories).catch(() => {});
     }, []);
+
+    const [categories, setCategories] = useState<CategoryRead[]>([]);
 
     const fetchBanners = async () => {
         setIsLoading(true);
@@ -256,14 +260,32 @@ export default function AdminBannersPage() {
                                 )}
                             </div>
                             <div>
+                                <label className="block text-sm font-medium text-slate-700 mb-1">Link to Category (Optional)</label>
+                                <select
+                                    className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-primary/50 outline-none text-sm"
+                                    value=""
+                                    onChange={(e) => {
+                                        if (e.target.value) {
+                                            setFormData({ ...formData, link_url: `/products?category=${e.target.value}` });
+                                        }
+                                    }}
+                                >
+                                    <option value="">Select a category to auto-fill link</option>
+                                    {categories.map((cat) => (
+                                        <option key={cat.id} value={cat.id}>{cat.name}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div>
                                 <label className="block text-sm font-medium text-slate-700 mb-1">Link URL (Optional)</label>
                                 <input
                                     type="text"
                                     className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-primary/50 outline-none font-mono text-xs"
                                     value={formData.link_url}
                                     onChange={(e) => setFormData({ ...formData, link_url: e.target.value })}
-                                    placeholder="/products/new-arrivals"
+                                    placeholder="/products?category=xxx or /products/new-arrivals"
                                 />
+                                <p className="text-xs text-slate-400 mt-1">Auto-filled from category above, or type any URL</p>
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>

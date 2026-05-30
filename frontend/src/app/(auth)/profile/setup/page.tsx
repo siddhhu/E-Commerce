@@ -121,8 +121,8 @@ export default function ProfileSetupPage() {
             toast({
                 title: '✅ Application Submitted!',
                 description: contactEmail
-                    ? `Your seller application is under review. We'll email you at ${contactEmail} once approved.`
-                    : 'Your seller application is under review. Contact support@admin.com to follow up.',
+                    ? 'Your seller application has been approved. You can now access the seller dashboard.'
+                    : 'Your seller application is under review. Contact support@pranjay.com to follow up.',
             });
             router.push('/seller/pending');
         } catch (error: any) {
@@ -191,11 +191,12 @@ export default function ProfileSetupPage() {
                                     {user?.contact_email
                                         ? `We'll email your approval status to ${user.contact_email}.`
                                         : 'Contact '}{' '}
-                                    {!user?.contact_email && (
-                                        <a href="mailto:support@admin.com" className="underline font-medium">
-                                            support@admin.com
+                                    <p className="text-sm text-slate-500 mt-1">
+                                        Having trouble? Email us at {' '}
+                                        <a href="mailto:support@pranjay.com" className="underline font-medium">
+                                            support@pranjay.com
                                         </a>
-                                    )}{' '}
+                                    </p>{' '}
                                     {!user?.contact_email && 'to follow up on your application approval.'}
                                 </p>
                             </div>
@@ -220,8 +221,8 @@ export default function ProfileSetupPage() {
                                 <p className="font-semibold mb-1">Application Not Approved</p>
                                 <p>
                                     Please contact{' '}
-                                    <a href="mailto:support@admin.com" className="underline font-medium">
-                                        support@admin.com
+                                    <a href="mailto:support@pranjay.com" className="underline font-medium">
+                                        support@pranjay.com
                                     </a>{' '}
                                     for details or to re-apply.
                                 </p>
@@ -290,12 +291,11 @@ export default function ProfileSetupPage() {
                                     ← Back to Profile
                                 </Button>
 
-                                <p className="text-xs text-center text-muted-foreground">
-                                    After submission, contact{' '}
-                                    <a href="mailto:support@admin.com" className="underline">
-                                        support@admin.com
-                                    </a>{' '}
-                                    if you need to follow up.
+                                <p className="mt-4 text-xs text-slate-400 text-center">
+                                    By registering, you agree to our Wholesale Terms of Service. Need help? Contact {' '}
+                                    <a href="mailto:support@pranjay.com" className="underline">
+                                        support@pranjay.com
+                                    </a>
                                 </p>
                             </div>
                         )}

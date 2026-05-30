@@ -578,7 +578,7 @@ export default function CheckoutPage() {
                                         </div>
                                         <div>
                                             <Label htmlFor="phone">Phone Number *</Label>
-                                            <Input id="phone" name="phone" type="tel" value={address.phone} onChange={handleInputChange} placeholder="+91 98765 43210" />
+                                            <Input id="phone" name="phone" type="tel" value={address.phone} onChange={handleInputChange as any} placeholder="+91 78700 53331" />
                                         </div>
                                     </div>
                                     <div>
@@ -596,7 +596,29 @@ export default function CheckoutPage() {
                                         </div>
                                         <div>
                                             <Label htmlFor="state">State *</Label>
-                                            <Input id="state" name="state" value={address.state} onChange={handleInputChange} placeholder="Maharashtra" />
+                                            <select
+                                                id="state"
+                                                name="state"
+                                                value={address.state}
+                                                onChange={handleInputChange as any}
+                                                className="w-full px-3 py-2 border border-input rounded-md bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                                            >
+                                                <option value="">Select State</option>
+                                                {[
+                                                    'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar',
+                                                    'Chhattisgarh', 'Delhi', 'Goa', 'Gujarat', 'Haryana',
+                                                    'Himachal Pradesh', 'Jharkhand', 'Karnataka', 'Kerala',
+                                                    'Madhya Pradesh', 'Maharashtra', 'Manipur', 'Meghalaya',
+                                                    'Mizoram', 'Nagaland', 'Odisha', 'Punjab', 'Rajasthan',
+                                                    'Sikkim', 'Tamil Nadu', 'Telangana', 'Tripura',
+                                                    'Uttar Pradesh', 'Uttarakhand', 'West Bengal',
+                                                    'Andaman and Nicobar Islands', 'Chandigarh',
+                                                    'Dadra and Nagar Haveli and Daman and Diu',
+                                                    'Jammu and Kashmir', 'Ladakh', 'Lakshadweep', 'Puducherry'
+                                                ].map((s) => (
+                                                    <option key={s} value={s}>{s}</option>
+                                                ))}
+                                            </select>
                                         </div>
                                         <div>
                                             <Label htmlFor="postal_code">PIN Code *</Label>

@@ -11,6 +11,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { apiService, APIProduct as APIProductSummary } from '@/lib/api-service';
+import { productsApi } from '@/lib/api';
 import { dummyProducts, getFeaturedProducts as getDummyFeatured, categories, Product as StoreProduct } from '@/lib/dummy-data';
 import { useCartStore } from '@/store/cart-store';
 import { useWishlistStore } from '@/store/wishlist-store';
@@ -35,6 +36,7 @@ export default function HomePageClient({
     const { isAuthenticated, user } = useAuthStore();
     const [featuredProducts, setFeaturedProducts] = useState<APIProductSummary[]>(initialFeaturedProducts || []);
     const [loading, setLoading] = useState(!initialFeaturedProducts);
+    const [featuredBrands, setFeaturedBrands] = useState<any[]>([]);
 
     const { addItem: addToCart } = useCartStore();
     const { addItem: addToWishlist, removeItem: removeFromWishlist, isInWishlist } = useWishlistStore();
@@ -71,6 +73,15 @@ export default function HomePageClient({
 
         fetchFeaturedProducts();
     }, [initialFeaturedProducts]);
+
+    // Fetch brands with discount data
+    useEffect(() => {
+        const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+        fetch(`${API_BASE}/api/v1/products/brands/featured`)
+            .then(res => res.json())
+            .then(data => setFeaturedBrands(data))
+            .catch(() => {});
+    }, []);
 
     const handleAddToCart = (product: APIProductSummary) => {
         const storeProduct: StoreProduct = {
@@ -379,20 +390,42 @@ export default function HomePageClient({
                     </div>
                 </section>
 
-                {/* Trusted Brands */}
-                <section className="py-12 bg-white">
-                    <div className="container text-center">
-                        <h3 className="text-sm font-bold tracking-widest uppercase text-yellow-600 mb-8">🌟 Trusted Brands</h3>
-                        <div className="flex flex-wrap justify-center items-center gap-8 md:gap-16 opacity-70 grayscale hover:grayscale-0 transition-all duration-300">
-                            {/* Mock Logos */}
-                            <span className="font-serif text-2xl font-bold text-slate-800">SHAHNAZ HUSAIN</span>
-                            <span className="font-sans text-3xl font-extrabold tracking-tighter text-slate-800">LAKMÉ</span>
-                            <span className="font-serif text-2xl font-semibold uppercase tracking-widest text-slate-800">L'Oréal<br/><span className="text-sm">PARIS</span></span>
-                            <span className="font-sans text-2xl font-bold uppercase tracking-tight text-slate-800">MAYBELLINE<br/><span className="text-xs tracking-widest">NEW YORK</span></span>
-                            <span className="font-sans text-2xl font-black italic tracking-tighter text-slate-800">COLORBAR</span>
+                {/* Shop by Brand — dynamic from DB */}
+                {featuredBrands.length > 0 && (
+                    <section className="py-12 bg-[#f8f8f8]">
+                        <div className="container">
+                            <h3 className="text-sm font-bold tracking-widest uppercase text-slate-500 mb-2 text-center">Shop by Brand</h3>
+                            <h2 className="text-2xl md:text-3xl font-extrabold text-slate-900 mb-8 text-center">Top Brands with Best Offers</h2>
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 md:gap-6">
+                                {featuredBrands.map((brand) => (
+                                    <Link
+                                        key={brand.id}
+                                        href={`/products?brand_id=${brand.id}`}
+                                        className="bg-white rounded-xl p-6 flex flex-col items-center justify-center gap-3 border border-slate-100 hover:shadow-lg hover:border-primary/20 transition-all group cursor-pointer"
+                                    >
+                                        {brand.logo_url ? (
+                                            <div className="h-16 w-32 relative">
+                                                <Image
+                                                    src={brand.logo_url}
+                                                    alt={brand.name}
+                                                    fill
+                                                    className="object-contain group-hover:scale-105 transition-transform"
+                                                />
+                                            </div>
+                                        ) : (
+                                            <span className="text-xl font-extrabold text-slate-800 tracking-tight group-hover:text-primary transition-colors">
+                                                {brand.name}
+                                            </span>
+                                        )}
+                                        <span className="text-sm font-semibold text-green-700 bg-green-50 px-3 py-1 rounded-full">
+                                            Upto {brand.max_discount}% Off
+                                        </span>
+                                    </Link>
+                                ))}
+                            </div>
                         </div>
-                    </div>
-                </section>
+                    </section>
+                )}
 
                 {/* Newsletter Community */}
                 <section className="bg-[#3b2333] text-white py-16">

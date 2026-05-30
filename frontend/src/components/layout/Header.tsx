@@ -256,6 +256,15 @@ export function Header() {
                             {link.label}
                         </Link>
                     ))}
+                    {/* Become a Seller — visible to non-authenticated or regular customers */}
+                    {(!isAuthenticated || (user?.seller_status !== 'approved' && user?.role !== 'admin' && user?.role !== 'super_admin')) && (
+                        <Link
+                            href="/login?type=seller"
+                            className="text-sm font-semibold transition-colors hover:text-primary text-[#d81b60]"
+                        >
+                            Become a Seller
+                        </Link>
+                    )}
                     {!isAuthenticated ? (
                         <Link
                             href="/login"
@@ -369,7 +378,7 @@ export function Header() {
             {/* Mobile Menu */}
             {mobileMenuOpen && (
                 <div className="md:hidden border-t">
-                    <nav className="flex flex-col p-4 space-y-2">
+                    <nav className="flex flex-col p-4 space-y-2 max-h-[70vh] overflow-y-auto overscroll-contain">
                         {/* Mobile Products with Categories */}
                         <div className="flex flex-col">
                             <button
@@ -423,6 +432,17 @@ export function Header() {
                                 {link.label}
                             </Link>
                         ))}
+
+                        {/* Become a Seller — mobile */}
+                        {(!isAuthenticated || (user?.seller_status !== 'approved' && user?.role !== 'admin' && user?.role !== 'super_admin')) && (
+                            <Link
+                                href="/login?type=seller"
+                                className="px-4 py-2 rounded-md text-sm font-semibold transition-colors hover:bg-muted text-[#d81b60]"
+                                onClick={() => setMobileMenuOpen(false)}
+                            >
+                                Become a Seller
+                            </Link>
+                        )}
 
                         {!isAuthenticated ? (
                             <Link

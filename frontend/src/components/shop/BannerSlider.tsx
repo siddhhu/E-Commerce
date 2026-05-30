@@ -55,36 +55,44 @@ export function BannerSlider({ initialBanners = null }: { initialBanners?: Banne
 
     return (
         <div className="relative group overflow-hidden rounded-2xl h-[400px] md:h-[500px]">
-            {banners.map((banner, index) => (
-                <div
-                    key={banner.id}
-                    className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${
-                        index === currentIndex ? 'opacity-100 z-10' : 'opacity-0 z-0'
-                    }`}
-                >
-                    <img
-                        src={banner.image_url}
-                        alt={banner.title}
-                        className="w-full h-full object-cover"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/20 to-transparent flex items-center">
-                        <div className="container px-8 md:px-16">
-                            <div className="max-w-xl space-y-6 text-white transform transition-all duration-700 translate-y-0 opacity-100">
-                                <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight">
-                                    {banner.title}
-                                </h2>
-                                {banner.link_url && (
-                                    <Link href={banner.link_url}>
+            {banners.map((banner, index) => {
+                const content = (
+                    <div
+                        key={banner.id}
+                        className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${
+                            index === currentIndex ? 'opacity-100 z-10' : 'opacity-0 z-0'
+                        }`}
+                    >
+                        <img
+                            src={banner.image_url}
+                            alt={banner.title}
+                            className="w-full h-full object-cover"
+                        />
+                        <div className={`absolute inset-0 bg-gradient-to-r from-black/60 via-black/20 to-transparent flex items-center ${banner.link_url ? 'cursor-pointer' : ''}`}>
+                            <div className="container px-8 md:px-16">
+                                <div className="max-w-xl space-y-6 text-white transform transition-all duration-700 translate-y-0 opacity-100">
+                                    <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight">
+                                        {banner.title}
+                                    </h2>
+                                    {banner.link_url && (
                                         <Button size="lg" className="bg-primary hover:bg-primary/90 text-white border-none gap-2 mt-4 font-bold h-14 px-8 rounded-full shadow-lg hover:shadow-primary/30 transition-all">
                                             Shop Now <ArrowRight className="h-5 w-5" />
                                         </Button>
-                                    </Link>
-                                )}
+                                    )}
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
-            ))}
+                );
+
+                return banner.link_url ? (
+                    <Link key={banner.id} href={banner.link_url} className="absolute inset-0">
+                        {content}
+                    </Link>
+                ) : (
+                    <div key={banner.id}>{content}</div>
+                );
+            })}
 
             {/* Controls */}
             {banners.length > 1 && (

@@ -133,6 +133,66 @@ async def get_featured_products(
     )
 
 
+@router.get("/brands/featured")
+async def get_featured_brands(
+    session: AsyncSession = Depends(get_session)
+):
+    """
+    Get brands with their maximum discount percentage from actual product data.
+    Cached for 5 minutes.
+    """
+    from sqlalchemy import func, case, cast, Float
+    from app.models.brand import Brand
+
+    query = (
+        select(
+            Brand.id,
+            Brand.name,
+            Brand.slug,
+            Brand.logo_url,
+            func.max(
+                case(
+                    (Product.mrp > 0, (Product.mrp - Product.selling_price) / Product.mrp * 100),
+                    else_=0
+                )
+            ).label("max_discount"),
+        )
+        .join(Product, Product.brand_id == Brand.id)
+        .where(Product.is_active == True)
+        .where(Brand.is_active == True)
+        .group_by(Brand.id, Brand.name, Brand.slug, Brand.logo_url)
+        .having(func.count(Product.id) > 0)
+        .order_by(func.max(
+            case(
+                (Product.mrp > 0, (Product.mrp - Product.selling_price) / Product.mrp * 100),
+                else_=0
+            )
+        ).desc())
+        .limit(12)
+    )
+
+    result = await session.execute(query)
+    rows = result.all()
+
+    items = []
+    for row in rows:
+        discount = int(row.max_discount) if row.max_discount else 0
+        if discount <= 0:
+            continue
+        items.append({
+            "id": str(row.id),
+            "name": row.name,
+            "slug": row.slug,
+            "logo_url": row.logo_url,
+            "max_discount": discount,
+        })
+
+    return JSONResponse(
+        content=items,
+        headers={"Cache-Control": "public, max-age=300, stale-while-revalidate=60"},
+    )
+
+
 @router.get("/search-index")
 async def get_search_index(
     session: AsyncSession = Depends(get_session)
