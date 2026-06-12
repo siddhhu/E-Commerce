@@ -1,5 +1,4 @@
 import Link from 'next/link';
-import Image from 'next/image';
 import { Clock, Mail, Phone, ShieldCheck, Sparkles, Truck } from 'lucide-react';
 
 export function Footer() {
@@ -44,14 +43,14 @@ export function Footer() {
                 <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
                     {/* Brand */}
                     <div className="space-y-4">
-                        <Link href="/" className="flex items-center">
-                            <div className="relative h-12 w-40 -ml-3 logo-glow sm:w-44">
-                                <Image
-                                    src="/logo.png"
-                                    alt="Pranjay Logo"
-                                    fill
-                                    className="object-contain"
-                                />
+                        <Link href="/" className="group inline-flex items-center gap-2">
+                            <div className="logo-glow flex items-center gap-2">
+                                <span className="grid h-9 w-9 place-items-center rounded-2xl bg-gradient-to-br from-primary to-pink-500 text-sm font-black text-white shadow-lg shadow-pink-200 transition-transform group-hover:scale-105">
+                                    P
+                                </span>
+                                <span className="text-2xl font-extrabold tracking-tight bg-gradient-to-r from-primary via-pink-500 to-rose-400 bg-clip-text text-transparent">
+                                    Pranjay
+                                </span>
                             </div>
                         </Link>
                         <p className="max-w-xs text-sm leading-6 text-slate-600">
@@ -111,7 +110,7 @@ export function Footer() {
                     <div className="text-sm text-slate-500">
                         <p className="font-medium">© {new Date().getFullYear()} Pranjay. All rights reserved.</p>
                         <p className="mt-1 text-xs font-semibold text-primary/70">
-                            Made by <a href="https://www.linkedin.com/in/siddharth-kumar-907a85169/" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary transition-colors">Siddharth</a>
+                            Made with love by <a href="https://www.linkedin.com/in/siddharth-kumar-907a85169/" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary transition-colors">siddharth</a>
                         </p>
                     </div>
                     <div className="flex flex-wrap justify-center gap-4 text-sm font-semibold text-slate-500 sm:gap-6">
