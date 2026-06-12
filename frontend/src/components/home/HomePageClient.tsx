@@ -218,8 +218,8 @@ export default function HomePageClient({
 
     return (
         <div className="min-h-screen flex flex-col">
-            <PromoBanner />
             <Header />
+            <PromoBanner />
 
             <main className="flex-1">
                 <div className="container py-4">

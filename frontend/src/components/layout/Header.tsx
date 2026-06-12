@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
-import { ShoppingCart, Heart, Menu, Search, X, ChevronDown } from 'lucide-react';
+import { ShoppingCart, Heart, Menu, Search, X, ChevronDown, Sparkles } from 'lucide-react';
 import { useState, useEffect, useRef, useCallback } from 'react';
 
 import { categoriesApi, CategoryRead, SearchIndexItem } from '@/lib/api';
@@ -184,27 +184,30 @@ export function Header() {
     };
 
     return (
-        <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-            <div className="container flex h-16 items-center justify-between">
+        <header className="sticky top-0 z-50 w-full border-b border-pink-100/80 bg-white/90 shadow-[0_10px_30px_rgba(236,72,153,0.06)] backdrop-blur-xl supports-[backdrop-filter]:bg-white/75">
+            <div className="container flex h-[72px] items-center justify-between gap-3">
                 {/* Logo */}
-                <Link href="/" className="flex items-center">
-                    <div className="logo-glow">
-                        <span className="text-2xl font-extrabold tracking-tight bg-gradient-to-r from-primary to-pink-500 bg-clip-text text-transparent">
+                <Link href="/" className="group flex items-center gap-2">
+                    <div className="logo-glow flex items-center gap-2">
+                        <span className="grid h-9 w-9 place-items-center rounded-2xl bg-gradient-to-br from-primary to-pink-500 text-sm font-black text-white shadow-lg shadow-pink-200 transition-transform group-hover:scale-105">
+                            P
+                        </span>
+                        <span className="text-2xl font-extrabold tracking-tight bg-gradient-to-r from-primary via-pink-500 to-rose-400 bg-clip-text text-transparent">
                             Pranjay
                         </span>
                     </div>
                 </Link>
 
                 {/* Desktop Navigation */}
-                <nav className="hidden md:flex items-center space-x-6">
+                <nav className="hidden md:flex items-center gap-1 rounded-full border border-pink-100 bg-pink-50/40 p-1">
                     {/* Custom Products Link with Dropdown */}
                     <div className="relative group">
                         <Link
                             href="/products"
                             className={cn(
-                                'flex items-center gap-1 text-sm font-medium transition-colors hover:text-primary py-4',
+                                'flex items-center gap-1 rounded-full px-3.5 py-2 text-sm font-semibold transition-all hover:bg-white hover:text-primary hover:shadow-sm',
                                 pathname.startsWith('/products')
-                                    ? 'text-primary'
+                                    ? 'bg-white text-primary shadow-sm'
                                     : 'text-muted-foreground'
                             )}
                         >
@@ -214,10 +217,10 @@ export function Header() {
                         
                         {/* Dropdown Menu */}
                         <div className="absolute left-0 top-full hidden group-hover:block pt-0">
-                            <div className="bg-background border rounded-lg shadow-xl min-w-[200px] py-2 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                            <div className="bg-white border border-pink-100 rounded-2xl shadow-2xl min-w-[220px] py-2 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
                                 <Link 
                                     href="/products"
-                                    className="block px-4 py-2 text-sm hover:bg-accent hover:text-accent-foreground transition-colors font-medium border-b"
+                                    className="block px-4 py-2.5 text-sm hover:bg-pink-50 hover:text-primary transition-colors font-semibold border-b border-pink-50"
                                 >
                                     All Products
                                 </Link>
@@ -227,7 +230,7 @@ export function Header() {
                                             <Link
                                                 key={category.id}
                                                 href={`/products?category=${category.id}`}
-                                                className="block px-4 py-2 text-sm hover:bg-accent hover:text-accent-foreground transition-colors"
+                                                className="block px-4 py-2 text-sm hover:bg-pink-50 hover:text-primary transition-colors"
                                             >
                                                 {category.name}
                                             </Link>
@@ -247,9 +250,9 @@ export function Header() {
                             key={link.href}
                             href={link.href}
                             className={cn(
-                                'text-sm font-medium transition-colors hover:text-primary',
+                                'rounded-full px-3.5 py-2 text-sm font-semibold transition-all hover:bg-white hover:text-primary hover:shadow-sm',
                                 pathname === link.href
-                                    ? 'text-primary'
+                                    ? 'bg-white text-primary shadow-sm'
                                     : 'text-muted-foreground'
                             )}
                         >
@@ -259,14 +262,14 @@ export function Header() {
                 </nav>
 
                 {/* Search Bar (Desktop) */}
-                <div ref={searchRef} className="hidden md:flex flex-1 max-w-md mx-6 relative">
+                <div ref={searchRef} className="hidden md:flex flex-1 max-w-xl mx-4 relative">
                     <form onSubmit={handleSearch} className="w-full">
                         <div className="relative w-full">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-primary" />
                             <Input
                                 type="search"
-                                placeholder="Search cosmetics..."
-                                className="pl-10 w-full"
+                                placeholder="Search lipstick, skincare, salon products..."
+                                className="h-12 w-full rounded-full border-pink-100 bg-white pl-11 pr-4 text-[15px] shadow-inner shadow-pink-50 placeholder:text-slate-400 focus-visible:ring-primary/30"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 onFocus={() => { if (searchQuery.trim()) setShowResults(true); }}
@@ -277,28 +280,29 @@ export function Header() {
                 </div>
 
                 {/* Actions */}
-                <div className="flex items-center space-x-4">
+                <div className="flex items-center gap-2">
                     {/* Become a Seller / Login (Desktop only) */}
-                    <div className="hidden md:flex items-center space-x-4 mr-2">
+                    <div className="hidden md:flex items-center gap-2 mr-1">
                         {(!isAuthenticated || (user?.seller_status !== 'approved' && user?.role !== 'admin' && user?.role !== 'super_admin')) && (
                             <Link
                                 href="/login?type=seller"
-                                className="text-sm font-semibold transition-colors hover:text-primary text-[#d81b60]"
+                                className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-primary to-pink-500 px-4 py-2 text-sm font-bold text-white shadow-md shadow-pink-200 transition-all hover:-translate-y-0.5 hover:shadow-lg"
                             >
+                                <Sparkles className="h-3.5 w-3.5" />
                                 Become a Seller
                             </Link>
                         )}
                         {!isAuthenticated ? (
                             <Link
                                 href="/login"
-                                className="text-sm font-medium transition-colors hover:text-primary text-muted-foreground"
+                                className="rounded-full px-3 py-2 text-sm font-semibold text-muted-foreground transition-colors hover:bg-pink-50 hover:text-primary"
                             >
                                 Login
                             </Link>
                         ) : (
                             <button
                                 onClick={handleLogout}
-                                className="text-sm font-medium transition-colors hover:text-primary text-muted-foreground"
+                                className="rounded-full px-3 py-2 text-sm font-semibold text-muted-foreground transition-colors hover:bg-pink-50 hover:text-primary"
                             >
                                 Logout
                             </button>
@@ -309,7 +313,7 @@ export function Header() {
                     <Button
                         variant="ghost"
                         size="icon"
-                        className="md:hidden"
+                        className="rounded-full hover:bg-pink-50 md:hidden"
                         onClick={() => setSearchOpen(!searchOpen)}
                     >
                         <Search className="h-5 w-5" />
@@ -317,10 +321,10 @@ export function Header() {
 
                     {/* Wishlist */}
                     <Link href="/wishlist">
-                        <Button variant="ghost" size="icon" className="relative">
+                        <Button variant="ghost" size="icon" className="relative rounded-full border border-transparent hover:border-pink-100 hover:bg-pink-50 hover:text-primary">
                             <Heart className="h-5 w-5" />
                             {wishlistCount > 0 && (
-                                <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-primary text-[10px] font-medium text-primary-foreground flex items-center justify-center">
+                                <span className="absolute -top-1 -right-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground shadow-sm">
                                     {wishlistCount}
                                 </span>
                             )}
@@ -329,10 +333,10 @@ export function Header() {
 
                     {/* Cart */}
                     <Link href="/cart">
-                        <Button variant="ghost" size="icon" className="relative">
+                        <Button variant="ghost" size="icon" className="relative rounded-full border border-transparent hover:border-pink-100 hover:bg-pink-50 hover:text-primary">
                             <ShoppingCart className="h-5 w-5" />
                             {cartItemCount > 0 && (
-                                <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-primary text-[10px] font-medium text-primary-foreground flex items-center justify-center">
+                                <span className="absolute -top-1 -right-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground shadow-sm">
                                     {cartItemCount > 99 ? '99+' : cartItemCount}
                                 </span>
                             )}
@@ -343,7 +347,7 @@ export function Header() {
                     <Button
                         variant="ghost"
                         size="icon"
-                        className="md:hidden"
+                        className="rounded-full hover:bg-pink-50 md:hidden"
                         onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                     >
                         {mobileMenuOpen ? (
@@ -357,14 +361,14 @@ export function Header() {
 
             {/* Mobile Search */}
             {searchOpen && (
-                <div ref={mobileSearchRef} className="md:hidden border-t p-4 relative">
+                <div ref={mobileSearchRef} className="md:hidden border-t border-pink-100 bg-white/95 p-4 relative">
                     <form onSubmit={handleSearch}>
                         <div className="relative">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-primary" />
                             <Input
                                 type="search"
                                 placeholder="Search cosmetics..."
-                                className="pl-10 w-full"
+                                className="h-11 w-full rounded-full border-pink-100 pl-11"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 onFocus={() => { if (searchQuery.trim()) setShowResults(true); }}
@@ -378,17 +382,17 @@ export function Header() {
 
             {/* Mobile Menu */}
             {mobileMenuOpen && (
-                <div className="md:hidden border-t">
+                <div className="md:hidden border-t border-pink-100 bg-white/95">
                     <nav className="flex flex-col p-4 space-y-2 max-h-[70vh] overflow-y-auto overscroll-contain">
                         {/* Mobile Products with Categories */}
                         <div className="flex flex-col">
                             <button
                                 onClick={() => setCategoriesOpen(!categoriesOpen)}
                                 className={cn(
-                                    'flex items-center justify-between px-4 py-2 rounded-md text-sm font-medium transition-colors',
+                                    'flex items-center justify-between rounded-xl px-4 py-3 text-sm font-semibold transition-colors',
                                     pathname.startsWith('/products')
                                         ? 'bg-primary/10 text-primary'
-                                        : 'hover:bg-muted'
+                                        : 'hover:bg-pink-50'
                                 )}
                             >
                                 Products
@@ -396,10 +400,10 @@ export function Header() {
                             </button>
                             
                             {categoriesOpen && (
-                                <div className="flex flex-col ml-4 mt-1 border-l pl-2 space-y-1">
+                                <div className="flex flex-col ml-4 mt-1 border-l border-pink-100 pl-2 space-y-1">
                                     <Link
                                         href="/products"
-                                        className="px-4 py-2 rounded-md text-sm hover:bg-muted font-medium"
+                                        className="px-4 py-2 rounded-lg text-sm hover:bg-pink-50 font-medium"
                                         onClick={() => setMobileMenuOpen(false)}
                                     >
                                         All Products
@@ -408,7 +412,7 @@ export function Header() {
                                         <Link
                                             key={category.id}
                                             href={`/products?category=${category.id}`}
-                                            className="px-4 py-2 rounded-md text-sm hover:bg-muted"
+                                            className="px-4 py-2 rounded-lg text-sm hover:bg-pink-50"
                                             onClick={() => setMobileMenuOpen(false)}
                                         >
                                             {category.name}
@@ -423,10 +427,10 @@ export function Header() {
                                 key={link.href}
                                 href={link.href}
                                 className={cn(
-                                    'px-4 py-2 rounded-md text-sm font-medium transition-colors',
+                                    'px-4 py-3 rounded-xl text-sm font-semibold transition-colors',
                                     pathname === link.href
                                         ? 'bg-primary/10 text-primary'
-                                        : 'hover:bg-muted'
+                                        : 'hover:bg-pink-50'
                                 )}
                                 onClick={() => setMobileMenuOpen(false)}
                             >
@@ -438,7 +442,7 @@ export function Header() {
                         {(!isAuthenticated || (user?.seller_status !== 'approved' && user?.role !== 'admin' && user?.role !== 'super_admin')) && (
                             <Link
                                 href="/login?type=seller"
-                                className="px-4 py-2 rounded-md text-sm font-semibold transition-colors hover:bg-muted text-[#d81b60]"
+                                className="rounded-xl bg-gradient-to-r from-primary to-pink-500 px-4 py-3 text-sm font-bold text-white shadow-md shadow-pink-100"
                                 onClick={() => setMobileMenuOpen(false)}
                             >
                                 Become a Seller
@@ -448,7 +452,7 @@ export function Header() {
                         {!isAuthenticated ? (
                             <Link
                                 href="/login"
-                                className="px-4 py-2 rounded-md text-sm font-medium transition-colors hover:bg-muted"
+                                className="px-4 py-3 rounded-xl text-sm font-semibold transition-colors hover:bg-pink-50"
                                 onClick={() => setMobileMenuOpen(false)}
                             >
                                 Login
@@ -457,7 +461,7 @@ export function Header() {
                             <div className="flex flex-col">
                                 <button
                                     onClick={handleLogout}
-                                    className="px-4 py-2 rounded-md text-sm font-medium transition-colors hover:bg-muted text-left"
+                                    className="px-4 py-3 rounded-xl text-sm font-semibold transition-colors hover:bg-pink-50 text-left"
                                 >
                                     Logout
                                 </button>
