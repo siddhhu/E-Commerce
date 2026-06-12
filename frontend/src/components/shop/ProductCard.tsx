@@ -6,6 +6,7 @@ import { useCartStore } from '@/store/cart-store';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { formatCurrency } from '@/lib/utils';
+import { getProductLabels } from '@/lib/product-labels';
 
 interface ProductCardProps {
     product: Product;
@@ -39,6 +40,7 @@ export function ProductCard({ product }: ProductCardProps) {
     const discount = product.mrp > 0 
         ? Math.round(((product.mrp - product.selling_price) / product.mrp) * 100) 
         : 0;
+    const labels = getProductLabels(product).slice(0, 2);
 
     return (
         <Link href={`/products/${product.slug}`} className="block">
@@ -53,11 +55,11 @@ export function ProductCard({ product }: ProductCardProps) {
                                 {discount}% OFF
                             </div>
                         )}
-                        {product.is_featured && (
-                            <div className="bg-[#ff9800] text-white text-[9px] md:text-[10px] font-bold px-2 py-1 rounded-full shadow-sm">
-                                Trending
+                        {labels.map((label) => (
+                            <div key={label.text} className={`${label.className} text-[9px] md:text-[10px] font-bold px-2 py-1 rounded-full shadow-sm`}>
+                                {label.text}
                             </div>
-                        )}
+                        ))}
                     </div>
                     
                     {/* Top Right Wishlist */}

@@ -54,6 +54,8 @@ class ProductService:
         search: Optional[str] = None,
         min_price: Optional[float] = None,
         max_price: Optional[float] = None,
+        min_discount: Optional[float] = None,
+        in_stock: Optional[bool] = None,
         seller_id: Optional[UUID] = None
     ) -> list[Product]:
         """List products with filters. Pass seller_id to restrict to that seller's products."""
@@ -92,6 +94,11 @@ class ProductService:
             query = query.where(Product.selling_price >= min_price)
         if max_price is not None:
             query = query.where(Product.selling_price <= max_price)
+        if min_discount is not None:
+            query = query.where(Product.mrp > 0)
+            query = query.where(((Product.mrp - Product.selling_price) / Product.mrp * 100) >= min_discount)
+        if in_stock is not None:
+            query = query.where(Product.stock_quantity > 0 if in_stock else Product.stock_quantity <= 0)
         if seller_id is not None:
             query = query.where(Product.seller_id == seller_id)
 
@@ -105,6 +112,12 @@ class ProductService:
         category_id: Optional[UUID] = None,
         brand_id: Optional[UUID] = None,
         is_active: bool = True,
+        is_featured: Optional[bool] = None,
+        search: Optional[str] = None,
+        min_price: Optional[float] = None,
+        max_price: Optional[float] = None,
+        min_discount: Optional[float] = None,
+        in_stock: Optional[bool] = None,
         seller_id: Optional[UUID] = None
     ) -> int:
         """Count products with filters."""
@@ -118,6 +131,29 @@ class ProductService:
             query = query.where(Product.category_id == category_id)
         if brand_id:
             query = query.where(Product.brand_id == brand_id)
+        if is_featured is not None:
+            query = query.where(Product.is_featured == is_featured)
+        if search:
+            tokens = [t.strip() for t in search.split() if t.strip()]
+            for token in tokens:
+                pattern = f"%{token}%"
+                query = query.where(
+                    or_(
+                        Product.name.ilike(pattern),
+                        Product.description.ilike(pattern),
+                        Product.sku.ilike(pattern),
+                        Product.short_description.ilike(pattern),
+                    )
+                )
+        if min_price is not None:
+            query = query.where(Product.selling_price >= min_price)
+        if max_price is not None:
+            query = query.where(Product.selling_price <= max_price)
+        if min_discount is not None:
+            query = query.where(Product.mrp > 0)
+            query = query.where(((Product.mrp - Product.selling_price) / Product.mrp * 100) >= min_discount)
+        if in_stock is not None:
+            query = query.where(Product.stock_quantity > 0 if in_stock else Product.stock_quantity <= 0)
         if seller_id is not None:
             query = query.where(Product.seller_id == seller_id)
 

@@ -293,6 +293,10 @@ export const productsApi = {
         category_id?: string;
         brand_id?: string;
         search?: string;
+        min_price?: number;
+        max_price?: number;
+        min_discount?: number;
+        in_stock?: boolean;
     }) => {
         const searchParams = new URLSearchParams();
         if (params) {

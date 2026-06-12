@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Heart, ShoppingCart, Minus, Plus, Truck, Shield, Loader2, Share2, Check, ChevronLeft } from 'lucide-react';
+import { Heart, ShoppingCart, Minus, Plus, Truck, Shield, Loader2, Share2, Check, ChevronLeft, BadgePercent, Sparkles } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Header } from '@/components/layout/Header';
@@ -14,9 +14,11 @@ import { PromoBanner } from '@/components/layout/PromoBanner';
 import { useToast } from '@/hooks/use-toast';
 import { dummyProducts, Product } from '@/lib/dummy-data';
 import { productsApi, Product as APIProduct } from '@/lib/api';
+import { ProductCard } from '@/components/products/ProductCard';
 import { useCartStore } from '@/store/cart-store';
 import { useWishlistStore } from '@/store/wishlist-store';
 import { cn, formatPrice, getDiscountPercentage } from '@/lib/utils';
+import { getProductLabels } from '@/lib/product-labels';
 
 // ── Variant type detection ──────────────────────────────────────────────────
 // Priority order: color/shade → size/weight/volume → name fallback
@@ -74,6 +76,7 @@ export default function ProductDetailPage() {
 
     const [product, setProduct] = useState<APIProduct | null>(null);
     const [variants, setVariants] = useState<any[]>([]);
+    const [relatedProducts, setRelatedProducts] = useState<APIProduct[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(false);
 
@@ -115,6 +118,40 @@ export default function ProductDetailPage() {
         const maxQty = Math.max(minQty, product.stock_quantity || minQty);
         setQuantity((q) => Math.min(Math.max(q, minQty), maxQty));
         setActiveImage(null);
+
+        productsApi.list({
+            page: 1,
+            page_size: 8,
+            category_id: product.category_id || undefined,
+        })
+            .then((res) => {
+                setRelatedProducts(
+                    res.items
+                        .filter((item) => item.id !== product.id)
+                        .slice(0, 4)
+                        .map((item) => ({
+                            id: item.id,
+                            name: item.name,
+                            slug: item.slug,
+                            sku: item.sku,
+                            short_description: item.short_description || '',
+                            mrp: Number(item.mrp),
+                            selling_price: Number(item.selling_price),
+                            b2b_price: item.b2b_price ? Number(item.b2b_price) : undefined,
+                            stock_quantity: item.stock_quantity,
+                            min_order_quantity: 1,
+                            unit: 'pcs',
+                            is_active: true,
+                            is_featured: item.is_featured,
+                            image_url: item.primary_image || undefined,
+                            images: item.primary_image ? [{ id: 'related', product_id: item.id, image_url: item.primary_image, is_primary: true, sort_order: 0 }] : [],
+                            attributes: {},
+                            created_at: '',
+                            updated_at: '',
+                        }))
+                );
+            })
+            .catch(() => setRelatedProducts([]));
     }, [product]);
 
     const handleVariantSelect = (v: any) => {
@@ -158,6 +195,7 @@ export default function ProductDetailPage() {
         ? '/placeholder.jpg'
         : (activeImage || product.image_url || product.images?.find((img) => img.is_primary)?.image_url || product.images?.[0]?.image_url || '/placeholder.jpg');
     const inWishlist = isInWishlist(product.id);
+    const productLabels = getProductLabels(product);
 
     const isOutOfStock = product.stock_quantity <= 0;
     const minOrderQty = Math.max(1, product.min_order_quantity || 1);
@@ -392,20 +430,23 @@ export default function ProductDetailPage() {
                         {/* ── Product Images ─────────────────────────────────── */}
                         <div className="space-y-3">
                             {/* Main Image */}
-                            <div className="relative aspect-square rounded-xl md:rounded-2xl overflow-hidden bg-muted">
+                            <div className="relative aspect-square rounded-2xl md:rounded-3xl overflow-hidden bg-gradient-to-b from-white to-slate-50 border border-slate-100 shadow-sm">
                                 <Image
                                     src={primaryImage}
                                     alt={product.name}
                                     fill
-                                    className="object-cover"
+                                    className="object-contain p-4 md:p-8"
                                     priority
                                     onError={() => setImgError(true)}
                                 />
-                                {discount > 0 && (
-                                    <span className="absolute top-3 left-3 bg-primary text-primary-foreground text-xs font-bold px-2.5 py-1 rounded-md shadow">
-                                        {discount}% OFF
-                                    </span>
-                                )}
+                                <div className="absolute top-3 left-3 flex flex-wrap gap-1.5 max-w-[70%]">
+                                    {discount > 0 && <span className="bg-primary text-primary-foreground text-xs font-bold px-2.5 py-1 rounded-full shadow">{discount}% OFF</span>}
+                                    {productLabels.slice(0, 2).map((label) => (
+                                        <span key={label.text} className={`text-xs font-bold px-2.5 py-1 rounded-full shadow ${label.className}`}>
+                                            {label.text}
+                                        </span>
+                                    ))}
+                                </div>
                                 {/* Share button on image (mobile) */}
                                 <button
                                     onClick={handleShare}
@@ -441,6 +482,13 @@ export default function ProductDetailPage() {
                         <div className="space-y-5">
                             {/* Title row */}
                             <div>
+                                <div className="flex flex-wrap gap-1.5 mb-3">
+                                    {productLabels.map((label) => (
+                                        <span key={label.text} className={`rounded-full px-3 py-1 text-xs font-bold ${label.className}`}>
+                                            {label.text}
+                                        </span>
+                                    ))}
+                                </div>
                                 <h1 className="text-2xl md:text-3xl font-bold text-slate-900 leading-tight">{product.name}</h1>
                                 {product.short_description && (
                                     <p className="text-sm text-muted-foreground mt-1.5 leading-relaxed">{product.short_description}</p>
@@ -482,6 +530,24 @@ export default function ProductDetailPage() {
                                         GSTIN: <span className="font-mono font-medium text-slate-600">{product.seller_gst_number}</span>
                                     </span>
                                 )}
+                            </div>
+
+                            <div className="grid sm:grid-cols-3 gap-3">
+                                <div className="rounded-2xl border border-rose-100 bg-rose-50 p-3">
+                                    <BadgePercent className="h-5 w-5 text-primary mb-1" />
+                                    <p className="text-sm font-bold text-slate-900">Best Offer</p>
+                                    <p className="text-xs text-slate-600">{discount > 0 ? `${discount}% off on MRP` : 'Everyday fair pricing'}</p>
+                                </div>
+                                <div className="rounded-2xl border border-amber-100 bg-amber-50 p-3">
+                                    <Sparkles className="h-5 w-5 text-amber-600 mb-1" />
+                                    <p className="text-sm font-bold text-slate-900">Beauty Pick</p>
+                                    <p className="text-xs text-slate-600">Curated for cosmetic shoppers</p>
+                                </div>
+                                <div className="rounded-2xl border border-emerald-100 bg-emerald-50 p-3">
+                                    <Shield className="h-5 w-5 text-emerald-600 mb-1" />
+                                    <p className="text-sm font-bold text-slate-900">Genuine</p>
+                                    <p className="text-xs text-slate-600">Sold by {product.seller_name || 'Pranjay'}</p>
+                                </div>
                             </div>
 
                             {/* Wholesale nudge */}
@@ -584,6 +650,23 @@ export default function ProductDetailPage() {
                             )}
                         </div>
                     </div>
+
+                    {relatedProducts.length > 0 && (
+                        <section className="mt-14">
+                            <div className="flex items-end justify-between gap-4 mb-5">
+                                <div>
+                                    <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary">You may also like</p>
+                                    <h2 className="text-2xl font-extrabold text-slate-950 mt-1">Related Beauty Finds</h2>
+                                </div>
+                                <Link href="/products" className="text-sm font-bold text-primary hover:underline">View all</Link>
+                            </div>
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6">
+                                {relatedProducts.map((related) => (
+                                    <ProductCard key={related.id} product={related} />
+                                ))}
+                            </div>
+                        </section>
+                    )}
                 </div>
             </main>
 

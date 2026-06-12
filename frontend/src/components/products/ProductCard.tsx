@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Product } from '@/lib/api';
 import { cn, formatPrice, getDiscountPercentage } from '@/lib/utils';
+import { getProductLabels } from '@/lib/product-labels';
 
 interface ProductCardProps {
     product: Product;
@@ -30,6 +31,7 @@ export function ProductCard({
 
     const discount = getDiscountPercentage(product.mrp, product.selling_price);
     const isOutOfStock = product.stock_quantity <= 0;
+    const labels = getProductLabels(product).slice(0, 3);
 
     return (
         <Card className="group overflow-hidden hover:shadow-lg transition-all duration-300">
@@ -46,21 +48,12 @@ export function ProductCard({
 
                 {/* Badges */}
                 <div className="absolute top-2 left-2 flex flex-col gap-1">
-                    {discount > 0 && (
-                        <span className="bg-primary text-primary-foreground text-xs font-semibold px-2 py-1 rounded">
-                            {discount}% OFF
+                    {discount > 0 && <span className="bg-primary text-primary-foreground text-xs font-semibold px-2 py-1 rounded-full">{discount}% OFF</span>}
+                    {labels.map((label) => (
+                        <span key={label.text} className={cn("text-xs font-semibold px-2 py-1 rounded-full shadow-sm", label.className)}>
+                            {label.text}
                         </span>
-                    )}
-                    {product.is_featured && (
-                        <span className="bg-amber-500 text-white text-xs font-semibold px-2 py-1 rounded">
-                            Featured
-                        </span>
-                    )}
-                    {isOutOfStock && (
-                        <span className="bg-destructive text-destructive-foreground text-xs font-semibold px-2 py-1 rounded">
-                            Out of Stock
-                        </span>
-                    )}
+                    ))}
                 </div>
 
                 {/* Quick Actions */}

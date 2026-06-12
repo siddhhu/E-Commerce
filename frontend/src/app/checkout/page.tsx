@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
-import { CreditCard, Banknote, MapPin, ArrowLeft, CheckCircle2, ShoppingBag, FileText, AlertCircle, CheckCircle, Building2 } from 'lucide-react';
+import { CreditCard, Banknote, MapPin, ArrowLeft, CheckCircle2, ShoppingBag, FileText, AlertCircle, CheckCircle, Building2, Shield, Truck } from 'lucide-react';
 
 import Script from 'next/script';
 
@@ -658,6 +658,20 @@ export default function CheckoutPage() {
                                     ))}
                                 </CardContent>
                             </Card>
+
+                            <div className="grid sm:grid-cols-3 gap-3">
+                                {[
+                                    { icon: Shield, title: 'Genuine Products', sub: 'Verified cosmetic catalog' },
+                                    { icon: CheckCircle2, title: 'Easy Support', sub: 'Help with every order' },
+                                    { icon: Truck, title: 'Fast Dispatch', sub: 'Packed for quick delivery' },
+                                ].map(({ icon: Icon, title, sub }) => (
+                                    <div key={title} className="rounded-2xl border border-rose-100 bg-rose-50/50 p-4">
+                                        <Icon className="h-5 w-5 text-primary mb-2" />
+                                        <p className="font-bold text-slate-900 text-sm">{title}</p>
+                                        <p className="text-xs text-slate-600 mt-1">{sub}</p>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
 
                         {/* ── Right Column: Order Summary ── */}
@@ -703,6 +717,21 @@ export default function CheckoutPage() {
                                     <div className="border-t pt-3 flex justify-between text-lg font-bold">
                                         <span>Total</span>
                                         <span className="text-primary">{formatPrice(getTotal())}</span>
+                                    </div>
+
+                                    <div className="grid gap-2 rounded-2xl bg-slate-50 p-3 text-xs text-slate-600">
+                                        <div className="flex items-center gap-2">
+                                            <Shield className="h-4 w-4 text-primary" />
+                                            <span>100% genuine beauty products</span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <CheckCircle2 className="h-4 w-4 text-primary" />
+                                            <span>Support available for order help</span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <Truck className="h-4 w-4 text-primary" />
+                                            <span>Free shipping and fast dispatch</span>
+                                        </div>
                                     </div>
 
                                     {!docValid && user?.user_type === 'seller' && (

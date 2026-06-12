@@ -4,7 +4,7 @@ import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { Filter, Heart, ShoppingCart, Grid3X3, List, Loader2 } from 'lucide-react';
+import { Filter, Heart, ShoppingCart, Grid3X3, List, Loader2, SlidersHorizontal, Sparkles, X } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -14,13 +14,16 @@ import { useCartStore } from '@/store/cart-store';
 import { useWishlistStore } from '@/store/wishlist-store';
 import { useToast } from '@/hooks/use-toast';
 import { formatPrice, getDiscountPercentage } from '@/lib/utils';
-import { productsApi, ProductSummary, Product as APIProduct } from '@/lib/api';
+import { categoriesApi, productsApi, ProductSummary, Product as APIProduct, CategoryRead } from '@/lib/api';
 import { Product as StoreProduct } from '@/lib/dummy-data';
 import { ProductCard } from '@/components/products/ProductCard';
+import { getProductLabels } from '@/lib/product-labels';
 
 function ProductsContent() {
     const searchParams = useSearchParams();
-    const categoryId = searchParams.get('category');
+    const categoryId = searchParams.get('category') || searchParams.get('category_id') || '';
+    const brandId = searchParams.get('brand_id') || '';
+    const searchQuery = searchParams.get('search') || searchParams.get('q') || '';
 
     const router = useRouter();
     const [products, setProducts] = useState<ProductSummary[]>([]);
@@ -30,17 +33,35 @@ function ProductsContent() {
     const [total, setTotal] = useState(0);
     const [error, setError] = useState<string | null>(null);
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+    const [categories, setCategories] = useState<CategoryRead[]>([]);
+    const [brands, setBrands] = useState<any[]>([]);
+    const [selectedCategory, setSelectedCategory] = useState(categoryId);
+    const [selectedBrand, setSelectedBrand] = useState(brandId);
+    const [selectedDiscount, setSelectedDiscount] = useState('');
+    const [priceBand, setPriceBand] = useState('');
+    const [inStockOnly, setInStockOnly] = useState(false);
 
     const { addItem: addToCart } = useCartStore();
     const { addItem: addToWishlist, removeItem: removeFromWishlist, isInWishlist } = useWishlistStore();
     const { toast } = useToast();
 
     useEffect(() => {
-        // Reset state when category changes
+        setSelectedCategory(categoryId);
+        setSelectedBrand(brandId);
+    }, [categoryId, brandId]);
+
+    useEffect(() => {
+        Promise.all([
+            categoriesApi.list().then(setCategories).catch(() => setCategories([])),
+            productsApi.getFeaturedBrands().then(setBrands).catch(() => setBrands([])),
+        ]);
+    }, []);
+
+    useEffect(() => {
         setPage(1);
         setProducts([]);
         fetchProducts(1, true);
-    }, [categoryId]);
+    }, [selectedCategory, selectedBrand, selectedDiscount, priceBand, inStockOnly, searchQuery]);
 
     async function fetchProducts(pageNum: number, isInitial: boolean = false) {
         if (isInitial) {
@@ -49,11 +70,18 @@ function ProductsContent() {
             setLoadingMore(true);
         }
         setError(null);
+        const [minPrice, maxPrice] = priceBand ? priceBand.split('-').map(Number) : [];
         try {
             const response = await productsApi.list({
                 page: pageNum,
                 page_size: 20,
-                category_id: categoryId || undefined,
+                category_id: selectedCategory || undefined,
+                brand_id: selectedBrand || undefined,
+                search: searchQuery || undefined,
+                min_price: minPrice || undefined,
+                max_price: maxPrice || undefined,
+                min_discount: selectedDiscount ? Number(selectedDiscount) : undefined,
+                in_stock: inStockOnly || undefined,
             });
             
             if (isInitial) {
@@ -76,6 +104,24 @@ function ProductsContent() {
         setPage(nextPage);
         fetchProducts(nextPage);
     };
+
+    const updateQuery = (key: string, value: string) => {
+        const params = new URLSearchParams(searchParams.toString());
+        if (value) params.set(key, value);
+        else params.delete(key);
+        router.replace(`/products?${params.toString()}`, { scroll: false });
+    };
+
+    const clearFilters = () => {
+        setSelectedCategory('');
+        setSelectedBrand('');
+        setSelectedDiscount('');
+        setPriceBand('');
+        setInStockOnly(false);
+        router.replace('/products', { scroll: false });
+    };
+
+    const activeFilterCount = [selectedCategory, selectedBrand, selectedDiscount, priceBand, inStockOnly ? 'stock' : ''].filter(Boolean).length;
 
     const handleAddToCart = (product: ProductSummary) => {
         const storeProduct: StoreProduct = {
@@ -160,12 +206,26 @@ function ProductsContent() {
 
     return (
         <div className="container">
-            {/* Header */}
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
+            <div className="mb-8 rounded-3xl bg-gradient-to-br from-[#321527] via-[#5b1b40] to-[#e91e63] p-6 md:p-9 text-white overflow-hidden relative">
+                <div className="absolute -right-16 -top-16 h-44 w-44 rounded-full bg-white/15 blur-2xl" />
+                <div className="relative max-w-3xl">
+                    <p className="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-xs font-bold uppercase tracking-wide">
+                        <Sparkles className="h-3.5 w-3.5" /> Pranjay Beauty Catalog
+                    </p>
+                    <h1 className="mt-4 text-3xl md:text-5xl font-extrabold tracking-tight">
+                        Shop cosmetics, salon essentials and wholesale-ready deals.
+                    </h1>
+                    <p className="mt-3 text-pink-100">
+                        Filter by brand, category, discount, price and stock to find the right product faster.
+                    </p>
+                </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-5">
                 <div>
-                    <h1 className="text-3xl font-bold">All Products</h1>
+                    <h2 className="text-2xl font-bold">All Products</h2>
                     <p className="text-muted-foreground mt-1">
-                        {loading ? 'Loading...' : `${products.length} products found`}
+                        {loading ? 'Loading...' : `${total} products found`}
                     </p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -186,6 +246,85 @@ function ProductsContent() {
                 </div>
             </div>
 
+            <div className="grid lg:grid-cols-[280px_1fr] gap-6">
+                <aside className="lg:sticky lg:top-24 h-fit rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                    <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-2 font-bold text-slate-900">
+                            <SlidersHorizontal className="h-4 w-4 text-primary" /> Filters
+                        </div>
+                        {activeFilterCount > 0 && (
+                            <button onClick={clearFilters} className="text-xs font-bold text-primary hover:underline">Clear</button>
+                        )}
+                    </div>
+
+                    <div className="space-y-4">
+                        <div>
+                            <label className="text-xs font-bold uppercase tracking-wide text-slate-500">Category</label>
+                            <select
+                                value={selectedCategory}
+                                onChange={(e) => { setSelectedCategory(e.target.value); updateQuery('category', e.target.value); }}
+                                className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/30"
+                            >
+                                <option value="">All categories</option>
+                                {categories.map((category) => (
+                                    <option key={category.id} value={category.id}>{category.name}</option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <div>
+                            <label className="text-xs font-bold uppercase tracking-wide text-slate-500">Brand</label>
+                            <select
+                                value={selectedBrand}
+                                onChange={(e) => { setSelectedBrand(e.target.value); updateQuery('brand_id', e.target.value); }}
+                                className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/30"
+                            >
+                                <option value="">All brands</option>
+                                {brands.map((brand) => (
+                                    <option key={brand.id} value={brand.id}>{brand.name}</option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <div>
+                            <label className="text-xs font-bold uppercase tracking-wide text-slate-500">Discount</label>
+                            <div className="mt-2 grid grid-cols-2 gap-2">
+                                {['10', '25', '40', '60'].map((value) => (
+                                    <button
+                                        key={value}
+                                        onClick={() => setSelectedDiscount(selectedDiscount === value ? '' : value)}
+                                        className={`rounded-full border px-3 py-2 text-xs font-bold transition-colors ${selectedDiscount === value ? 'border-primary bg-primary text-white' : 'border-slate-200 hover:border-primary/50'}`}
+                                    >
+                                        {value}%+ off
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className="text-xs font-bold uppercase tracking-wide text-slate-500">Price</label>
+                            <select
+                                value={priceBand}
+                                onChange={(e) => setPriceBand(e.target.value)}
+                                className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/30"
+                            >
+                                <option value="">All prices</option>
+                                <option value="0-199">Under ₹199</option>
+                                <option value="200-499">₹200 - ₹499</option>
+                                <option value="500-999">₹500 - ₹999</option>
+                                <option value="1000-999999">₹1000+</option>
+                            </select>
+                        </div>
+
+                        <label className="flex items-center justify-between rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold">
+                            In stock only
+                            <input type="checkbox" checked={inStockOnly} onChange={(e) => setInStockOnly(e.target.checked)} className="h-4 w-4 accent-primary" />
+                        </label>
+                    </div>
+                </aside>
+
+                <div>
+
             {/* Loading State */}
             {loading && (
                 <div className="flex items-center justify-center py-20">
@@ -197,7 +336,7 @@ function ProductsContent() {
             {/* Products Grid */}
             {!loading && products.length > 0 && (
                 <div className={viewMode === 'grid'
-                    ? "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"
+                    ? "grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-6"
                     : "space-y-4"
                 }>
                     {products.map((product) => {
@@ -231,6 +370,7 @@ function ProductsContent() {
 
                         if (viewMode === 'list') {
                             const discount = getDiscountPercentage(product.mrp, product.selling_price);
+                            const labels = getProductLabels(product).slice(0, 3);
                             return (
                                 <Card key={product.id} className="overflow-hidden hover:shadow-lg transition-all">
                                     <div className="flex">
@@ -255,6 +395,13 @@ function ProductsContent() {
                                                         {product.name}
                                                     </h3>
                                                 </Link>
+                                                <div className="flex flex-wrap gap-1.5 mt-2">
+                                                    {labels.map((label) => (
+                                                        <span key={label.text} className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${label.className}`}>
+                                                            {label.text}
+                                                        </span>
+                                                    ))}
+                                                </div>
                                                 <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
                                                     {product.short_description}
                                                 </p>
@@ -320,10 +467,19 @@ function ProductsContent() {
 
             {/* Empty State */}
             {!loading && products.length === 0 && (
-                <div className="text-center py-20">
-                    <p className="text-muted-foreground">No products found</p>
+                <div className="text-center py-20 rounded-2xl bg-slate-50 border">
+                    <Filter className="h-10 w-10 mx-auto text-slate-300 mb-3" />
+                    <p className="font-bold text-slate-900">No products found</p>
+                    <p className="text-muted-foreground mt-1">Try removing a filter or browsing all products.</p>
+                    {activeFilterCount > 0 && (
+                        <Button variant="outline" className="mt-4" onClick={clearFilters}>
+                            <X className="h-4 w-4 mr-2" /> Clear Filters
+                        </Button>
+                    )}
                 </div>
             )}
+                </div>
+            </div>
         </div>
     );
 }

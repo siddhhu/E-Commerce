@@ -69,6 +69,8 @@ async def list_products(
     search: Optional[str] = None,
     min_price: Optional[float] = None,
     max_price: Optional[float] = None,
+    min_discount: Optional[float] = None,
+    in_stock: Optional[bool] = None,
     is_featured: Optional[bool] = None,
     session: AsyncSession = Depends(get_session)
 ):
@@ -90,12 +92,20 @@ async def list_products(
         search=search,
         min_price=min_price,
         max_price=max_price,
+        min_discount=min_discount,
+        in_stock=in_stock,
         is_featured=is_featured,
         is_active=True,
     )
     total = await product_service.count_products(
         category_id=category_id,
         brand_id=brand_id,
+        search=search,
+        min_price=min_price,
+        max_price=max_price,
+        min_discount=min_discount,
+        in_stock=in_stock,
+        is_featured=is_featured,
         is_active=True,
     )
 
