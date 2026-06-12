@@ -3,6 +3,7 @@
 from datetime import datetime
 from decimal import Decimal
 
+from sqlalchemy import or_
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 
@@ -23,6 +24,21 @@ class PromoCodeService:
     async def list_promo_codes(self, skip: int = 0, limit: int = 50) -> list[PromoCode]:
         result = await self.session.execute(
             select(PromoCode).order_by(PromoCode.created_at.desc()).offset(skip).limit(limit)
+        )
+        return result.scalars().all()
+
+    async def list_active_public(self, limit: int = 6) -> list[PromoCode]:
+        now = datetime.utcnow()
+        result = await self.session.execute(
+            select(PromoCode)
+            .where(
+                PromoCode.is_active == True,  # noqa: E712
+                PromoCode.discount_value > 0,
+                or_(PromoCode.expires_at == None, PromoCode.expires_at >= now),  # noqa: E711
+                or_(PromoCode.max_uses == None, PromoCode.used_count < PromoCode.max_uses),  # noqa: E711
+            )
+            .order_by(PromoCode.updated_at.desc())
+            .limit(limit)
         )
         return result.scalars().all()
 

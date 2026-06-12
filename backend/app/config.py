@@ -39,6 +39,11 @@ class Settings(BaseSettings):
     supabase_url: Optional[str] = None
     supabase_key: Optional[str] = None
     supabase_bucket: str = "products"
+
+    # Invoice seller details for marketplace/admin-owned products
+    invoice_company_name: str = "Pranjay"
+    invoice_company_gst: Optional[str] = None
+    invoice_company_address: str = "India"
     
     # Razorpay Settings
     razorpay_key_id: str = "rzp_live_SZO4iQslfD86WW"

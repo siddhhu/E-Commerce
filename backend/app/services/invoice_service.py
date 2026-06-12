@@ -12,12 +12,8 @@ from sqlmodel import select
 
 from app.models.order import Order
 from app.models.user import User
+from app.config import settings
 from app.services.storage_service import storage_service
-
-# Default Pranjay Details (Placeholder)
-DEFAULT_COMPANY_NAME = "Pranjay Marketplace"
-DEFAULT_COMPANY_GST = "29ABCDE1234F1Z5"
-DEFAULT_COMPANY_ADDRESS = "123 Commerce St, Startup Hub, India"
 
 class InvoicePDF(FPDF):
     def header(self):
@@ -43,7 +39,11 @@ class InvoiceService:
         try:
             # Fetch order with items
             from sqlalchemy.orm import selectinload
-            order_query = select(Order).options(selectinload(Order.items)).where(Order.id == order_id)
+            order_query = (
+                select(Order)
+                .options(selectinload(Order.items), selectinload(Order.user))
+                .where(Order.id == order_id)
+            )
             result = await session.execute(order_query)
             order = result.scalar_one_or_none()
             
@@ -55,11 +55,6 @@ class InvoiceService:
                 print(f"InvoiceService: Order {order_id} already has an invoice.")
                 return order.invoice_url
 
-            # Default Pranjay details
-            DEFAULT_COMPANY_NAME = "Mahaganpati PVT LTD"
-            DEFAULT_COMPANY_GST = "09AAECM0123C1Z5" # Generic Placeholder, user mentioned it's in code
-            DEFAULT_COMPANY_ADDRESS = "Darbhanga, Bihar, India"
-
             # Fetch products to get seller info
             from app.models.product import Product
             product_ids = [item.product_id for item in order.items if item.product_id]
@@ -68,16 +63,26 @@ class InvoiceService:
                 prod_result = await session.execute(select(Product).where(Product.id.in_(product_ids)))
                 products = {p.id: p for p in prod_result.scalars().all()}
 
+            seller_ids = {p.seller_id for p in products.values() if p.seller_id}
+            seller_users: dict[uuid.UUID, User] = {}
+            if seller_ids:
+                seller_result = await session.execute(select(User).where(User.id.in_(seller_ids)))
+                seller_users = {seller.id: seller for seller in seller_result.scalars().all()}
+
             # Group items by seller
             seller_groups = {}
             for item in order.items:
                 prod = products.get(item.product_id)
-                seller_name = prod.seller_name if prod and prod.seller_name else DEFAULT_COMPANY_NAME
-                
-                # We could also fetch seller GST if we linked to User table, 
-                # but for now we'll use the default Pranjay GST for Pranjay, or a generic one for others.
-                seller_gst = DEFAULT_COMPANY_GST if seller_name == DEFAULT_COMPANY_NAME else "SELLER-GST-PENDING"
-                seller_address = DEFAULT_COMPANY_ADDRESS if seller_name == DEFAULT_COMPANY_NAME else "Seller Address"
+                seller = seller_users.get(prod.seller_id) if prod and prod.seller_id else None
+
+                if seller:
+                    seller_name = seller.business_name or seller.full_name or prod.seller_name or settings.invoice_company_name
+                    seller_gst = seller.gst_number or ""
+                    seller_address = "Registered seller on Pranjay"
+                else:
+                    seller_name = prod.seller_name if prod and prod.seller_name else settings.invoice_company_name
+                    seller_gst = settings.invoice_company_gst or ""
+                    seller_address = settings.invoice_company_address
                 
                 key = (seller_name, seller_gst, seller_address)
                 if key not in seller_groups:
@@ -96,7 +101,8 @@ class InvoiceService:
                 pdf.cell(0, 6, seller_name, ln=True)
                 pdf.set_font('helvetica', '', 10)
                 pdf.cell(0, 6, seller_address, ln=True)
-                pdf.cell(0, 6, f'GSTIN: {seller_gst}', ln=True)
+                if seller_gst:
+                    pdf.cell(0, 6, f'GSTIN: {seller_gst}', ln=True)
                 pdf.ln(5)
 
                 # --- Order Details ---
@@ -112,8 +118,11 @@ class InvoiceService:
                 pdf.set_font('helvetica', '', 10)
                 
                 shipping_data = order.shipping_address_data or {}
-                cust_name = shipping_data.get('full_name', 'Customer')
+                buyer = order.user
+                cust_name = buyer.business_name or shipping_data.get('full_name', 'Customer')
                 pdf.cell(0, 6, cust_name, ln=True)
+                if buyer and buyer.gst_number:
+                    pdf.cell(0, 6, f'Buyer GSTIN: {buyer.gst_number}', ln=True)
                 pdf.cell(0, 6, shipping_data.get('address_line1', ''), ln=True)
                 if shipping_data.get('address_line2'):
                     pdf.cell(0, 6, shipping_data.get('address_line2', ''), ln=True)

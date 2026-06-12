@@ -134,7 +134,11 @@ class UserService:
     async def submit_seller_application(
         self,
         user_id: UUID,
-        invoice_url: str
+        invoice_url: str,
+        bank_account_holder_name: str,
+        bank_account_number: str,
+        bank_ifsc: str,
+        bank_name: str | None = None,
     ) -> User:
         """
         Seller submits their registration invoice/document.
@@ -147,6 +151,10 @@ class UserService:
             raise BadRequestException("Your seller account is already approved.")
 
         user.seller_invoice_url = invoice_url
+        user.bank_account_holder_name = bank_account_holder_name.strip()
+        user.bank_account_number = bank_account_number.strip()
+        user.bank_ifsc = bank_ifsc.strip().upper()
+        user.bank_name = bank_name.strip() if bank_name else None
         user.seller_status = "pending"
         user.updated_at = datetime.utcnow()
 
@@ -207,6 +215,23 @@ class UserService:
         if user.seller_status == "approved" and user.seller_username and user.seller_plain_password:
             # Already approved with credentials — return existing credentials
             return user, user.seller_plain_password or ""
+
+        missing_fields = []
+        if not user.business_name:
+            missing_fields.append("business name")
+        if not user.gst_number:
+            missing_fields.append("GST number")
+        if not user.bank_account_holder_name:
+            missing_fields.append("bank account holder name")
+        if not user.bank_account_number:
+            missing_fields.append("bank account number")
+        if not user.bank_ifsc:
+            missing_fields.append("IFSC")
+        if missing_fields:
+            raise BadRequestException(
+                "Cannot approve seller until these details are provided: "
+                + ", ".join(missing_fields)
+            )
 
         username = user.seller_username or self._generate_seller_username(user)
         plain_password = self._generate_plain_password()

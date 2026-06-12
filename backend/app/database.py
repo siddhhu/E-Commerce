@@ -173,6 +173,27 @@ async def run_startup_migrations() -> None:
                 await conn.execute(sa.text("UPDATE products SET category_ids = '[]'::jsonb WHERE category_ids IS NULL;"))
 
         # 4. Performance indexes — idempotent (CREATE INDEX IF NOT EXISTS)
+        print("Database: Running seller bank detail schema migrations...")
+        async with engine.connect() as conn:
+            conn = await conn.execution_options(isolation_level="AUTOCOMMIT")
+            if "sqlite" in db_url:
+                for sql in [
+                    "ALTER TABLE users ADD COLUMN bank_account_holder_name VARCHAR(255);",
+                    "ALTER TABLE users ADD COLUMN bank_account_number VARCHAR(40);",
+                    "ALTER TABLE users ADD COLUMN bank_ifsc VARCHAR(11);",
+                    "ALTER TABLE users ADD COLUMN bank_name VARCHAR(255);",
+                ]:
+                    try:
+                        await conn.execute(sa.text(sql))
+                    except Exception:
+                        pass
+            else:
+                await conn.execute(sa.text("ALTER TABLE users ADD COLUMN IF NOT EXISTS bank_account_holder_name VARCHAR(255);"))
+                await conn.execute(sa.text("ALTER TABLE users ADD COLUMN IF NOT EXISTS bank_account_number VARCHAR(40);"))
+                await conn.execute(sa.text("ALTER TABLE users ADD COLUMN IF NOT EXISTS bank_ifsc VARCHAR(11);"))
+                await conn.execute(sa.text("ALTER TABLE users ADD COLUMN IF NOT EXISTS bank_name VARCHAR(255);"))
+
+        # 5. Performance indexes — idempotent (CREATE INDEX IF NOT EXISTS)
         if "postgresql" in db_url:
             print("Database: Ensuring performance indexes...")
             async with engine.connect() as conn:

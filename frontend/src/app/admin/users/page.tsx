@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { adminApi, User, SellerCredentials } from '@/lib/api';
 import {
     Search, ShieldCheck, XCircle, Building2, FileText, Mail, Phone, Calendar,
-    Store, Clock, CheckCircle2, Copy, Eye, EyeOff
+    Store, Clock, CheckCircle2, Copy, Eye, EyeOff, Landmark
 } from 'lucide-react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -197,7 +197,7 @@ export default function AdminUsersPage() {
                                                     </span>
                                                     <Badge variant="warning" className="text-[10px]">PENDING</Badge>
                                                 </div>
-                                                <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-sm text-slate-600 mt-2">
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-2 text-sm text-slate-600 mt-2">
                                                     <div className="flex items-center gap-1">
                                                         <Mail className="h-3 w-3" /> {seller.email}
                                                     </div>
@@ -221,6 +221,38 @@ export default function AdminUsersPage() {
                                                             </a>
                                                         </div>
                                                     )}
+                                                </div>
+                                                <div className="mt-4 grid gap-3 lg:grid-cols-2">
+                                                    <div className="rounded-lg border border-amber-200 bg-white/80 p-3 text-xs">
+                                                        <div className="flex items-center gap-2 font-bold uppercase tracking-wide text-amber-700">
+                                                            <FileText className="h-3.5 w-3.5" />
+                                                            GST Review
+                                                        </div>
+                                                        <p className="mt-2 text-slate-700">
+                                                            Business: <span className="font-semibold">{seller.business_name || '—'}</span>
+                                                        </p>
+                                                        <p className="mt-1 font-mono text-slate-700">
+                                                            GST: {seller.gst_number || 'Not provided'}
+                                                        </p>
+                                                    </div>
+                                                    <div className="rounded-lg border border-blue-100 bg-white/80 p-3 text-xs">
+                                                        <div className="flex items-center gap-2 font-bold uppercase tracking-wide text-blue-700">
+                                                            <Landmark className="h-3.5 w-3.5" />
+                                                            Bank Verification
+                                                        </div>
+                                                        <p className="mt-2 text-slate-700">
+                                                            Holder: <span className="font-semibold">{seller.bank_account_holder_name || '—'}</span>
+                                                        </p>
+                                                        <p className="mt-1 font-mono text-slate-700">
+                                                            A/C: {seller.bank_account_number || 'Not provided'}
+                                                        </p>
+                                                        <p className="mt-1 font-mono text-slate-700">
+                                                            IFSC: {seller.bank_ifsc || 'Not provided'}
+                                                        </p>
+                                                        {seller.bank_name && (
+                                                            <p className="mt-1 text-slate-700">Bank: {seller.bank_name}</p>
+                                                        )}
+                                                    </div>
                                                 </div>
                                                 <p className="text-xs text-slate-400 mt-1">
                                                     Applied: {formatDate(seller.updated_at)}
@@ -424,6 +456,22 @@ export default function AdminUsersPage() {
                                                     </a>
                                                 </div>
                                             )}
+                                            <div>
+                                                <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Account Holder</p>
+                                                <p className="font-medium mt-0.5">{selected.bank_account_holder_name || '—'}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Bank Account</p>
+                                                <p className="font-mono font-medium mt-0.5">{selected.bank_account_number || '—'}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-xs font-bold uppercase tracking-wider text-slate-400">IFSC</p>
+                                                <p className="font-mono font-medium mt-0.5">{selected.bank_ifsc || '—'}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Bank Name</p>
+                                                <p className="font-medium mt-0.5">{selected.bank_name || '—'}</p>
+                                            </div>
                                         </>
                                     )}
                                 </div>

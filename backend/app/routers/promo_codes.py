@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.dependencies import get_current_active_user
 from app.database import get_session
+from app.models.promo_code import PromoCodeRead
 from app.models.user import User
 from app.services.promo_code_service import PromoCodeService
 
@@ -22,6 +23,16 @@ class PromoValidateRequest(BaseModel):
 class PromoValidateResponse(BaseModel):
     code: str
     discount_amount: float
+
+
+@router.get("/active", response_model=list[PromoCodeRead])
+async def list_active_promo_codes(
+    limit: int = 6,
+    session: AsyncSession = Depends(get_session),
+):
+    service = PromoCodeService(session)
+    promos = await service.list_active_public(limit=max(1, min(limit, 10)))
+    return [PromoCodeRead.model_validate(promo) for promo in promos]
 
 
 @router.post("/validate", response_model=PromoValidateResponse)

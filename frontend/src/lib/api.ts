@@ -185,6 +185,7 @@ async function postMultipart<T>(endpoint: string, formData: FormData): Promise<T
 
 // Promo Codes API
 export const promoCodesApi = {
+    active: () => api.get<PromoCode[]>('/promo-codes/active'),
     validate: (code: string, subtotal: number) =>
         api.post<{ code: string; discount_amount: number }>(`/promo-codes/validate`, { code, subtotal }),
 };
@@ -275,13 +276,21 @@ export const usersApi = {
         api.post<Address>('/users/me/addresses', data),
     /** Single round-trip: returns addresses + cart together for the checkout page. */
     getCheckoutPrep: () => api.get<{ addresses: Address[]; cart: any }>('/checkout-prep'),
-    submitSellerApplication: async (file: File) => {
+    submitSellerApplication: async (
+        file: File,
+        bankDetails: {
+            bank_account_holder_name: string;
+            bank_account_number: string;
+            bank_ifsc: string;
+            bank_name?: string;
+        }
+    ) => {
         // 1. Upload the document file
         const formData = new FormData();
         formData.append('file', file);
         const { invoice_url } = await postMultipart<{ invoice_url: string }>('/invoices/upload', formData);
         // 2. Submit the application with the uploaded URL
-        return api.post<User>('/users/me/seller-application', { invoice_url });
+        return api.post<User>('/users/me/seller-application', { invoice_url, ...bankDetails });
     },
 };
 
@@ -606,6 +615,10 @@ export interface User {
     seller_invoice_url?: string | null;
     seller_username?: string | null;
     seller_plain_password?: string | null;
+    bank_account_holder_name?: string | null;
+    bank_account_number?: string | null;
+    bank_ifsc?: string | null;
+    bank_name?: string | null;
     created_at: string;
     updated_at: string;
 }

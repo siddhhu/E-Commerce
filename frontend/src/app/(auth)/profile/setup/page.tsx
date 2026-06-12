@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { Loader2, User as UserIcon, Upload, CheckCircle2, Clock, XCircle, FileText, Mail } from 'lucide-react';
+import { Loader2, User as UserIcon, Upload, CheckCircle2, Clock, XCircle, FileText, Mail, Landmark } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -26,6 +26,10 @@ export default function ProfileSetupPage() {
     // Step: 'profile' → fill details, 'invoice' → upload document (sellers only)
     const [step, setStep] = useState<'profile' | 'invoice'>('profile');
     const [invoiceFile, setInvoiceFile] = useState<File | null>(null);
+    const [bankAccountHolderName, setBankAccountHolderName] = useState('');
+    const [bankAccountNumber, setBankAccountNumber] = useState('');
+    const [bankIfsc, setBankIfsc] = useState('');
+    const [bankName, setBankName] = useState('');
     const [isUploadingInvoice, setIsUploadingInvoice] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -42,6 +46,10 @@ export default function ProfileSetupPage() {
             if (user?.contact_email) setContactEmail(user.contact_email);
             if (user?.business_name) setBusinessName(user.business_name);
             if (user?.gst_number) setGstNumber(user.gst_number);
+            if (user?.bank_account_holder_name) setBankAccountHolderName(user.bank_account_holder_name);
+            if (user?.bank_account_number) setBankAccountNumber(user.bank_account_number);
+            if (user?.bank_ifsc) setBankIfsc(user.bank_ifsc);
+            if (user?.bank_name) setBankName(user.bank_name);
             if (user?.user_type) setBusinessType(user.user_type as 'seller' | 'customer');
 
             // If seller and already has pending/approved status, go straight to invoice step
@@ -114,9 +122,40 @@ export default function ProfileSetupPage() {
             });
             return;
         }
+        const accountNumber = bankAccountNumber.replace(/\D/g, '');
+        const ifsc = bankIfsc.trim().toUpperCase();
+        if (!bankAccountHolderName.trim()) {
+            toast({
+                title: 'Account holder required',
+                description: 'Please enter the bank account holder name exactly as per bank records.',
+                variant: 'destructive',
+            });
+            return;
+        }
+        if (accountNumber.length < 9 || accountNumber.length > 18) {
+            toast({
+                title: 'Invalid account number',
+                description: 'Bank account number must be 9 to 18 digits.',
+                variant: 'destructive',
+            });
+            return;
+        }
+        if (!/^[A-Z]{4}0[A-Z0-9]{6}$/.test(ifsc)) {
+            toast({
+                title: 'Invalid IFSC',
+                description: 'Please enter a valid IFSC code, for example HDFC0001234.',
+                variant: 'destructive',
+            });
+            return;
+        }
         setIsUploadingInvoice(true);
         try {
-            const updatedUser = await usersApi.submitSellerApplication(invoiceFile);
+            const updatedUser = await usersApi.submitSellerApplication(invoiceFile, {
+                bank_account_holder_name: bankAccountHolderName.trim(),
+                bank_account_number: accountNumber,
+                bank_ifsc: ifsc,
+                bank_name: bankName.trim() || undefined,
+            });
             setUser(updatedUser);
             toast({
                 title: '✅ Application Submitted!',
@@ -266,6 +305,63 @@ export default function ProfileSetupPage() {
                                             <p className="text-xs text-muted-foreground">PDF, JPG, or PNG • Max 10MB</p>
                                         </div>
                                     )}
+                                </div>
+
+                                <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-4 space-y-3">
+                                    <div className="flex items-start gap-2">
+                                        <div className="mt-0.5 rounded-full bg-primary/10 p-2 text-primary">
+                                            <Landmark className="h-4 w-4" />
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-semibold text-slate-900">Settlement bank details</p>
+                                            <p className="text-xs text-slate-600 leading-relaxed">
+                                                Add the account where seller payouts should be sent. These details are reviewed by super admin and should be correct the first time.
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="bank_account_holder_name">Account holder name *</Label>
+                                        <Input
+                                            id="bank_account_holder_name"
+                                            value={bankAccountHolderName}
+                                            onChange={(e) => setBankAccountHolderName(e.target.value)}
+                                            placeholder="Name as per bank account"
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="bank_account_number">Account number *</Label>
+                                        <Input
+                                            id="bank_account_number"
+                                            inputMode="numeric"
+                                            value={bankAccountNumber}
+                                            onChange={(e) => setBankAccountNumber(e.target.value.replace(/\D/g, '').slice(0, 18))}
+                                            placeholder="9 to 18 digit account number"
+                                        />
+                                    </div>
+                                    <div className="grid sm:grid-cols-2 gap-3">
+                                        <div className="space-y-2">
+                                            <Label htmlFor="bank_ifsc">IFSC *</Label>
+                                            <Input
+                                                id="bank_ifsc"
+                                                value={bankIfsc}
+                                                onChange={(e) => setBankIfsc(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 11))}
+                                                placeholder="HDFC0001234"
+                                                className="font-mono"
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label htmlFor="bank_name">Bank name</Label>
+                                            <Input
+                                                id="bank_name"
+                                                value={bankName}
+                                                onChange={(e) => setBankName(e.target.value)}
+                                                placeholder="Optional"
+                                            />
+                                        </div>
+                                    </div>
+                                    <p className="rounded-lg bg-amber-50 border border-amber-100 px-3 py-2 text-xs text-amber-800">
+                                        This bank account is treated as a one-time onboarding detail. Contact admin support if it ever needs correction after submission.
+                                    </p>
                                 </div>
 
                                 {!user?.contact_email && (

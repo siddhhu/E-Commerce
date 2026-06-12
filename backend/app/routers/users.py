@@ -233,6 +233,10 @@ from fastapi import BackgroundTasks
 class SellerApplicationRequest(_BaseModel):
     """Submit a seller registration application."""
     invoice_url: str    # URL of the uploaded document (already in Supabase Storage)
+    bank_account_holder_name: str
+    bank_account_number: str
+    bank_ifsc: str
+    bank_name: str | None = None
 
 
 @router.post("/me/seller-application", response_model=UserRead, status_code=200)
@@ -253,7 +257,24 @@ async def submit_seller_application(
     from app.services.email_service import email_service
 
     user_service = UserService(session)
-    user = await user_service.submit_seller_application(current_user.id, data.invoice_url)
+    bank_account_number = "".join(ch for ch in data.bank_account_number.strip() if ch.isdigit())
+    bank_ifsc = data.bank_ifsc.strip().upper()
+    if len(bank_account_number) < 9 or len(bank_account_number) > 18:
+        raise BadRequestException("Bank account number must be 9 to 18 digits")
+    import re
+    if not re.fullmatch(r"^[A-Z]{4}0[A-Z0-9]{6}$", bank_ifsc):
+        raise BadRequestException("Invalid IFSC code format")
+    if not data.bank_account_holder_name.strip():
+        raise BadRequestException("Bank account holder name is required")
+
+    user = await user_service.submit_seller_application(
+        current_user.id,
+        data.invoice_url,
+        data.bank_account_holder_name,
+        bank_account_number,
+        bank_ifsc,
+        data.bank_name,
+    )
 
     # Fire notification emails in background
     # Use contact_email if set (login email is auto-generated from phone for OTP users)
@@ -276,5 +297,4 @@ async def submit_seller_application(
     )
 
     return user
-
 

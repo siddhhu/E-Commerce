@@ -70,6 +70,10 @@ class UserBase(SQLModel):
     seller_username: Optional[str] = Field(default=None, max_length=255)  # Generated @pranjay.com email
     # Plain password stored temporarily for super-admin to read & share.
     seller_plain_password: Optional[str] = Field(default=None)
+    bank_account_holder_name: Optional[str] = Field(default=None, max_length=255)
+    bank_account_number: Optional[str] = Field(default=None, max_length=40)
+    bank_ifsc: Optional[str] = Field(default=None, max_length=11)
+    bank_name: Optional[str] = Field(default=None, max_length=255)
 
 
 class User(UserBase, table=True):
@@ -100,6 +104,10 @@ class UserCreate(SQLModel):
     aadhaar: Optional[str] = None
     shop_license: Optional[str] = None
     user_type: UserType = UserType.customer
+    bank_account_holder_name: Optional[str] = None
+    bank_account_number: Optional[str] = None
+    bank_ifsc: Optional[str] = None
+    bank_name: Optional[str] = None
 
 
 class UserUpdate(SQLModel):
