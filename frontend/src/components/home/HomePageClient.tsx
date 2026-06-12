@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { ArrowRight, Sparkles, Truck, Shield, Clock, Heart, ShoppingCart, Loader2 } from 'lucide-react';
 
@@ -48,7 +47,7 @@ export default function HomePageClient({
         
         async function fetchFeaturedProducts() {
             try {
-                const products = await apiService.getFeaturedProducts(8);
+                const products = await apiService.getFeaturedProducts(200);
                 setFeaturedProducts(products);
             } catch (err) {
                 console.error('Failed to fetch featured products, using dummy data:', err);
@@ -200,24 +199,46 @@ export default function HomePageClient({
 
                 {/* Shop by Brand — dynamic from DB */}
                 {featuredBrands.length > 0 && (
-                    <section className="pt-8 pb-12 bg-[#f4f4f4]">
+                    <section className="py-12 bg-gradient-to-br from-rose-50 via-white to-amber-50 border-y border-rose-100/70">
                         <div className="container">
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+                            <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-5 mb-8">
+                                <div className="max-w-2xl">
+                                    <div className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-xs font-bold uppercase tracking-wide text-[#d81b60] shadow-sm ring-1 ring-rose-100">
+                                        <Sparkles className="h-3.5 w-3.5" />
+                                        Brand offers live now
+                                    </div>
+                                    <h2 className="mt-4 text-3xl md:text-4xl font-extrabold tracking-tight text-slate-950">
+                                        Shop by Brand. Get Better Discounts.
+                                    </h2>
+                                    <p className="mt-3 text-slate-600 text-base md:text-lg">
+                                        Explore trusted beauty and personal-care brands with the strongest deals highlighted upfront.
+                                    </p>
+                                </div>
+                                <Link href="/products" className="inline-flex items-center gap-2 text-sm font-bold text-[#d81b60] hover:text-[#b9164f]">
+                                    View all products
+                                    <ArrowRight className="h-4 w-4" />
+                                </Link>
+                            </div>
+
+                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
                                 {featuredBrands.map((brand) => (
                                     <Link
                                         key={brand.id}
                                         href={`/products?brand_id=${brand.id}`}
-                                        className="flex flex-col group cursor-pointer hover:shadow-lg transition-shadow"
+                                        className="group overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200/70 transition-all hover:-translate-y-1 hover:shadow-xl hover:ring-rose-200"
                                     >
-                                        {/* Top part with Logo on gray background (no border) */}
-                                        <div className="h-32 flex items-center justify-center p-6 bg-[#f4f4f4]">
+                                        <div className="relative h-32 md:h-36 flex items-center justify-center p-6 bg-gradient-to-br from-slate-50 to-white">
+                                            <div className="absolute left-3 top-3 rounded-full bg-[#d81b60] px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide text-white shadow-sm">
+                                                {brand.max_discount && brand.max_discount > 0 ? `Up to ${brand.max_discount}% off` : 'Hot deals'}
+                                            </div>
                                             {brand.logo_url ? (
-                                                <div className="h-full w-full relative">
-                                                    <Image
+                                                <div className="h-full w-full flex items-center justify-center">
+                                                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                                                    <img
                                                         src={brand.logo_url}
                                                         alt={brand.name}
-                                                        fill
-                                                        className="object-contain mix-blend-multiply group-hover:scale-105 transition-transform"
+                                                        className="max-h-full max-w-full object-contain mix-blend-multiply transition-transform group-hover:scale-105"
+                                                        loading="lazy"
                                                     />
                                                 </div>
                                             ) : (
@@ -226,14 +247,31 @@ export default function HomePageClient({
                                                 </span>
                                             )}
                                         </div>
-                                        {/* Bottom part with White background and Text */}
-                                        <div className="bg-white py-5 text-center shadow-sm">
-                                            <span className="text-sm font-bold text-slate-700 uppercase tracking-wide">
-                                                {brand.max_discount && brand.max_discount > 0 ? `Upto ${brand.max_discount}% Off` : 'Exclusive Deals'}
-                                            </span>
+                                        <div className="p-4">
+                                            <div className="flex items-center justify-between gap-3">
+                                                <div>
+                                                    <p className="text-sm font-extrabold text-slate-900 line-clamp-1">{brand.name}</p>
+                                                    <p className="text-xs text-slate-500 mt-0.5">Featured brand picks</p>
+                                                </div>
+                                                <div className="h-9 w-9 rounded-full bg-rose-50 text-[#d81b60] flex items-center justify-center transition-colors group-hover:bg-[#d81b60] group-hover:text-white">
+                                                    <ArrowRight className="h-4 w-4" />
+                                                </div>
+                                            </div>
                                         </div>
                                     </Link>
                                 ))}
+                            </div>
+
+                            <div className="mt-8 grid gap-3 md:grid-cols-3">
+                                <div className="rounded-xl bg-white/80 px-4 py-3 text-sm font-semibold text-slate-700 shadow-sm ring-1 ring-white">
+                                    Verified brand catalog
+                                </div>
+                                <div className="rounded-xl bg-white/80 px-4 py-3 text-sm font-semibold text-slate-700 shadow-sm ring-1 ring-white">
+                                    Better margins on bulk orders
+                                </div>
+                                <div className="rounded-xl bg-white/80 px-4 py-3 text-sm font-semibold text-slate-700 shadow-sm ring-1 ring-white">
+                                    Fresh deals before Trending Now
+                                </div>
                             </div>
                         </div>
                     </section>

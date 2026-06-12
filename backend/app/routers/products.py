@@ -112,7 +112,7 @@ async def list_products(
 
 @router.get("/featured", response_model=list[ProductListRead])
 async def get_featured_products(
-    limit: int = Query(10, ge=1, le=50),
+    limit: int = Query(10, ge=1, le=200),
     session: AsyncSession = Depends(get_session)
 ):
     """Get featured products. Cached for 2 minutes (public, rarely changes)."""
@@ -271,4 +271,3 @@ async def get_product_variants(
     product_service = ProductService(session)
     variants = await product_service.get_product_variants(slug)
     return [_to_list_read(v) for v in variants]
-

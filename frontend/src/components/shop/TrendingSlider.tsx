@@ -12,14 +12,23 @@ interface TrendingSliderProps {
 export function TrendingSlider({ products }: TrendingSliderProps) {
     const scrollContainerRef = useRef<HTMLDivElement>(null);
     const [scrollProgress, setScrollProgress] = useState(0);
+    const [visibleCount, setVisibleCount] = useState(20);
+
+    const visibleProducts = products.slice(0, visibleCount);
+    const hasMoreProducts = visibleCount < products.length;
 
     const scroll = (direction: 'left' | 'right') => {
         if (scrollContainerRef.current) {
             const container = scrollContainerRef.current;
             const scrollAmount = container.clientWidth * 0.8; // Scroll by 80% of container width
-            container.scrollBy({
-                left: direction === 'left' ? -scrollAmount : scrollAmount,
-                behavior: 'smooth'
+            if (direction === 'right' && hasMoreProducts) {
+                setVisibleCount((count) => Math.min(count + 20, products.length));
+            }
+            requestAnimationFrame(() => {
+                container.scrollBy({
+                    left: direction === 'left' ? -scrollAmount : scrollAmount,
+                    behavior: 'smooth'
+                });
             });
         }
     };
@@ -43,6 +52,11 @@ export function TrendingSlider({ products }: TrendingSliderProps) {
         }
     }, [products]);
 
+    useEffect(() => {
+        setVisibleCount(Math.min(20, products.length || 20));
+        setScrollProgress(0);
+    }, [products]);
+
     if (!products || products.length === 0) return null;
 
     return (
@@ -50,9 +64,14 @@ export function TrendingSlider({ products }: TrendingSliderProps) {
             <div className="container relative">
                 <div className="flex items-center justify-center gap-2 mb-8">
                     <span className="text-3xl">🔥</span>
-                    <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight">
-                        Trending Now
-                    </h2>
+                    <div className="text-center">
+                        <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight">
+                            Trending Now
+                        </h2>
+                        <p className="text-sm text-slate-500 mt-1">
+                            {hasMoreProducts ? `Showing ${visibleProducts.length} of ${products.length} featured products` : `${products.length} featured products`}
+                        </p>
+                    </div>
                 </div>
 
                 {/* Left/Right Navigation Buttons */}
@@ -78,7 +97,7 @@ export function TrendingSlider({ products }: TrendingSliderProps) {
                     className="grid grid-rows-2 grid-flow-col auto-cols-max overflow-x-auto gap-4 md:gap-6 pb-6 pt-2 px-2 snap-x snap-mandatory hide-scrollbar relative"
                     style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
                 >
-                    {products.map((product) => (
+                    {visibleProducts.map((product) => (
                         <div key={product.id} className="w-[260px] md:w-[280px] snap-start h-full">
                             <ProductCard product={product} />
                         </div>

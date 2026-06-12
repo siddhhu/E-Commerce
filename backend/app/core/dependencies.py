@@ -89,7 +89,8 @@ async def get_current_super_admin(
     current_user: User = Depends(get_current_active_user)
 ) -> User:
     """Get current super admin user."""
-    if current_user.role != UserRole.SUPER_ADMIN:
+    role_val = getattr(current_user.role, 'value', str(current_user.role)).upper()
+    if role_val != UserRole.SUPER_ADMIN.value:
         raise ForbiddenException("Super admin access required")
     return current_user
 

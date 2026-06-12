@@ -12,7 +12,7 @@ export default async function HomePage() {
 
     try {
         const [featuredRes, bannersRes] = await Promise.all([
-            apiService.getFeaturedProducts(8).catch((err) => {
+            apiService.getFeaturedProducts(200).catch((err) => {
                 console.error("Server fetch error (featured):", err);
                 return null;
             }),
