@@ -229,7 +229,7 @@ export default function HomePageClient({
                                     >
                                         <div className="relative h-32 md:h-36 flex items-center justify-center p-6 bg-gradient-to-br from-slate-50 to-white">
                                             <div className="absolute left-3 top-3 rounded-full bg-[#d81b60] px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide text-white shadow-sm">
-                                                {brand.max_discount && brand.max_discount > 0 ? `Up to ${brand.max_discount}% off` : 'Hot deals'}
+                                                {brand.max_discount && brand.max_discount > 0 ? `Live deal: ${brand.max_discount}% off` : 'Brand picks'}
                                             </div>
                                             {brand.logo_url ? (
                                                 <div className="h-full w-full flex items-center justify-center">

@@ -14,6 +14,13 @@ from app.database import get_session
 from app.models.user import User, UserRole
 
 
+def _normalized_role(role: object) -> str:
+    """Normalize enum/string role values from DB, API, and legacy rows."""
+    raw = getattr(role, "value", str(role))
+    value = raw.split(".")[-1].replace("-", "_").replace(" ", "_").upper()
+    return value
+
+
 async def get_current_user(
     authorization: Optional[str] = Header(None),
     session: AsyncSession = Depends(get_session)
@@ -74,7 +81,7 @@ async def get_current_admin(
     This allows sellers to access /admin/* routes (orders, products, dashboard)
     while super-admin-only routes still use get_current_super_admin.
     """
-    role_val = getattr(current_user.role, 'value', str(current_user.role)).upper()
+    role_val = _normalized_role(current_user.role)
     is_admin = role_val in ["ADMIN", "SUPER_ADMIN"]
     is_approved_seller = (
         current_user.seller_status == "approved"
@@ -89,7 +96,7 @@ async def get_current_super_admin(
     current_user: User = Depends(get_current_active_user)
 ) -> User:
     """Get current super admin user."""
-    role_val = getattr(current_user.role, 'value', str(current_user.role)).upper()
+    role_val = _normalized_role(current_user.role)
     if role_val != UserRole.SUPER_ADMIN.value:
         raise ForbiddenException("Super admin access required")
     return current_user
