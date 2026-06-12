@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Sparkles } from 'lucide-react';
 import { ProductCard } from './ProductCard';
 import { Product } from '@/lib/api';
 
@@ -60,12 +60,14 @@ export function TrendingSlider({ products }: TrendingSliderProps) {
     if (!products || products.length === 0) return null;
 
     return (
-        <section className="py-12 bg-white">
+        <section className="py-10 md:py-12 bg-white">
             <div className="container relative">
-                <div className="flex items-center justify-center gap-2 mb-8">
-                    <span className="text-3xl">🔥</span>
+                <div className="flex items-center justify-center gap-2 mb-6 md:mb-8">
+                    <span className="h-10 w-10 rounded-full bg-rose-50 text-[#e91e63] flex items-center justify-center">
+                        <Sparkles className="h-5 w-5" />
+                    </span>
                     <div className="text-center">
-                        <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight">
+                        <h2 className="text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight">
                             Trending Now
                         </h2>
                         <p className="text-sm text-slate-500 mt-1">
@@ -94,11 +96,11 @@ export function TrendingSlider({ products }: TrendingSliderProps) {
                 {/* Scrollable Container */}
                 <div 
                     ref={scrollContainerRef}
-                    className="grid grid-rows-2 grid-flow-col auto-cols-max overflow-x-auto gap-4 md:gap-6 pb-6 pt-2 px-2 snap-x snap-mandatory hide-scrollbar relative"
+                    className="grid grid-rows-2 grid-flow-col auto-cols-max overflow-x-auto gap-3 md:gap-6 pb-6 pt-2 px-1 md:px-2 snap-x snap-mandatory hide-scrollbar relative"
                     style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
                 >
                     {visibleProducts.map((product) => (
-                        <div key={product.id} className="w-[260px] md:w-[280px] snap-start h-full">
+                        <div key={product.id} className="w-[42vw] min-w-[158px] max-w-[190px] sm:w-[220px] sm:max-w-none md:w-[280px] snap-start h-full">
                             <ProductCard product={product} />
                         </div>
                     ))}

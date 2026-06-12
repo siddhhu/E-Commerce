@@ -276,6 +276,56 @@ export default function HomePageClient({
                         </div>
                     </section>
                 )}
+
+                <section className="py-10 bg-white">
+                    <div className="container">
+                        <div className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
+                            <div className="rounded-2xl bg-[#2f1727] text-white p-6 md:p-8 overflow-hidden relative">
+                                <div className="absolute -right-16 -top-16 h-40 w-40 rounded-full bg-[#e91e63]/30 blur-2xl" />
+                                <div className="relative max-w-xl">
+                                    <p className="text-xs font-bold uppercase tracking-[0.2em] text-pink-200">Beauty edit</p>
+                                    <h2 className="mt-3 text-2xl md:text-4xl font-extrabold leading-tight">
+                                        Curated cosmetic deals for daily glam and wholesale shelves.
+                                    </h2>
+                                    <p className="mt-3 text-sm md:text-base text-pink-100">
+                                        Find fast-moving makeup, skincare, and salon essentials with pricing that works for both retail shoppers and business buyers.
+                                    </p>
+                                    <div className="mt-6 flex flex-wrap gap-3">
+                                        <Link href="/products?search=makeup" className="rounded-full bg-white px-4 py-2 text-sm font-bold text-[#2f1727] hover:bg-pink-50 transition-colors">
+                                            Makeup picks
+                                        </Link>
+                                        <Link href="/products?search=skincare" className="rounded-full bg-white/10 px-4 py-2 text-sm font-bold text-white ring-1 ring-white/20 hover:bg-white/20 transition-colors">
+                                            Skincare deals
+                                        </Link>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <Link href="/products?search=lipstick" className="rounded-2xl border border-rose-100 bg-rose-50 p-5 hover:shadow-lg transition-all">
+                                    <p className="text-xs font-bold uppercase tracking-wide text-[#d81b60]">Color cosmetics</p>
+                                    <h3 className="mt-2 text-lg font-extrabold text-slate-950">Lipsticks, liners and more</h3>
+                                    <p className="mt-2 text-xs text-slate-600">High-demand beauty staples.</p>
+                                </Link>
+                                <Link href="/products?search=facial" className="rounded-2xl border border-amber-100 bg-amber-50 p-5 hover:shadow-lg transition-all">
+                                    <p className="text-xs font-bold uppercase tracking-wide text-amber-700">Skin glow</p>
+                                    <h3 className="mt-2 text-lg font-extrabold text-slate-950">Facials and skincare kits</h3>
+                                    <p className="mt-2 text-xs text-slate-600">Great for salon counters.</p>
+                                </Link>
+                                <Link href="/products?search=shampoo" className="rounded-2xl border border-slate-200 bg-slate-50 p-5 hover:shadow-lg transition-all">
+                                    <p className="text-xs font-bold uppercase tracking-wide text-slate-600">Hair care</p>
+                                    <h3 className="mt-2 text-lg font-extrabold text-slate-950">Daily care essentials</h3>
+                                    <p className="mt-2 text-xs text-slate-600">Useful, repeat-order products.</p>
+                                </Link>
+                                <Link href="/products" className="rounded-2xl border border-pink-100 bg-white p-5 hover:shadow-lg transition-all">
+                                    <p className="text-xs font-bold uppercase tracking-wide text-[#d81b60]">Explore all</p>
+                                    <h3 className="mt-2 text-lg font-extrabold text-slate-950">Browse full catalog</h3>
+                                    <p className="mt-2 text-xs text-slate-600">Discover more offers.</p>
+                                </Link>
+                            </div>
+                        </div>
+                    </div>
+                </section>
                 {loading ? (
                     <div className="flex items-center justify-center py-12">
                         <Loader2 className="h-8 w-8 animate-spin text-primary" />

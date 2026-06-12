@@ -40,7 +40,7 @@ export function BannerSlider({ initialBanners = null }: { initialBanners?: Banne
 
     if (isLoading) {
         return (
-            <div className="h-[400px] w-full bg-slate-100 flex items-center justify-center rounded-2xl animate-pulse">
+            <div className="aspect-[16/10] md:aspect-[16/7] lg:h-[500px] w-full bg-slate-100 flex items-center justify-center rounded-xl md:rounded-2xl animate-pulse">
                 <Loader2 className="h-8 w-8 animate-spin text-primary/30" />
             </div>
         );
@@ -54,7 +54,7 @@ export function BannerSlider({ initialBanners = null }: { initialBanners?: Banne
     const prevSlide = () => setCurrentIndex((prev) => (prev - 1 + banners.length) % banners.length);
 
     return (
-        <div className="relative group overflow-hidden rounded-2xl h-[400px] md:h-[500px]">
+        <div className="relative group overflow-hidden rounded-xl md:rounded-2xl aspect-[16/10] md:aspect-[16/7] lg:h-[500px] bg-slate-100">
             {banners.map((banner, index) => {
                 const isActive = index === currentIndex;
                 return (
@@ -67,17 +67,17 @@ export function BannerSlider({ initialBanners = null }: { initialBanners?: Banne
                         <img
                             src={banner.image_url}
                             alt={banner.title}
-                            className="w-full h-full object-cover"
+                            className="w-full h-full object-contain md:object-cover"
                         />
-                        <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/20 to-transparent flex items-center pointer-events-none">
-                            <div className="container px-8 md:px-16">
-                                <div className="max-w-xl space-y-6 text-white transform transition-all duration-700 translate-y-0 opacity-100 pointer-events-auto">
-                                    <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight">
+                        <div className="absolute inset-x-0 bottom-0 md:inset-0 bg-gradient-to-t md:bg-gradient-to-r from-black/65 via-black/20 to-transparent flex items-end md:items-center pointer-events-none">
+                            <div className="w-full px-5 pb-6 md:container md:px-16 md:pb-0">
+                                <div className="max-w-xl space-y-3 md:space-y-6 text-white transform transition-all duration-700 translate-y-0 opacity-100 pointer-events-auto">
+                                    <h2 className="text-xl sm:text-2xl md:text-5xl lg:text-6xl font-bold leading-tight drop-shadow-sm">
                                         {banner.title}
                                     </h2>
                                     {banner.link_url && (
                                         <Link href={banner.link_url} className="inline-block relative z-20">
-                                            <Button size="lg" className="bg-primary hover:bg-primary/90 text-white border-none gap-2 mt-4 font-bold h-14 px-8 rounded-full shadow-lg hover:shadow-primary/30 transition-all cursor-pointer">
+                                            <Button size="lg" className="bg-primary hover:bg-primary/90 text-white border-none gap-2 mt-1 md:mt-4 font-bold h-10 md:h-14 px-5 md:px-8 rounded-full shadow-lg hover:shadow-primary/30 transition-all cursor-pointer">
                                                 Shop Now <ArrowRight className="h-5 w-5" />
                                             </Button>
                                         </Link>
@@ -102,19 +102,19 @@ export function BannerSlider({ initialBanners = null }: { initialBanners?: Banne
                 <>
                     <button
                         onClick={prevSlide}
-                        className="absolute left-4 top-1/2 -translate-y-1/2 z-20 h-10 w-10 rounded-full bg-white/20 backdrop-blur-md text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white/40"
+                        className="absolute left-3 md:left-4 top-1/2 -translate-y-1/2 z-20 h-9 w-9 md:h-10 md:w-10 rounded-full bg-white/25 backdrop-blur-md text-white flex items-center justify-center md:opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white/40"
                     >
                         <ChevronLeft className="h-6 w-6" />
                     </button>
                     <button
                         onClick={nextSlide}
-                        className="absolute right-4 top-1/2 -translate-y-1/2 z-20 h-10 w-10 rounded-full bg-white/20 backdrop-blur-md text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white/40"
+                        className="absolute right-3 md:right-4 top-1/2 -translate-y-1/2 z-20 h-9 w-9 md:h-10 md:w-10 rounded-full bg-white/25 backdrop-blur-md text-white flex items-center justify-center md:opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white/40"
                     >
                         <ChevronRight className="h-6 w-6" />
                     </button>
 
                     {/* Indicators */}
-                    <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex gap-2">
+                    <div className="absolute bottom-3 md:bottom-6 left-1/2 -translate-x-1/2 z-20 flex gap-2">
                         {banners.map((_, i) => (
                             <button
                                 key={i}
