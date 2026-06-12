@@ -201,6 +201,60 @@ async def get_featured_brands(
     )
 
 
+@router.get("/brands")
+async def get_product_brands(
+    session: AsyncSession = Depends(get_session)
+):
+    """
+    Get all active brands that have active products.
+    Used for public product filters.
+    """
+    from sqlalchemy import func, case
+    from app.models.brand import Brand
+
+    discount_expr = func.max(
+        case(
+            (Product.mrp > 0, (Product.mrp - Product.selling_price) / Product.mrp * 100),
+            else_=0
+        )
+    )
+
+    query = (
+        select(
+            Brand.id,
+            Brand.name,
+            Brand.slug,
+            Brand.logo_url,
+            discount_expr.label("max_discount"),
+            func.count(Product.id).label("product_count"),
+        )
+        .join(Product, Product.brand_id == Brand.id)
+        .where(Product.is_active == True)
+        .where(Brand.is_active == True)
+        .group_by(Brand.id, Brand.name, Brand.slug, Brand.logo_url)
+        .having(func.count(Product.id) > 0)
+        .order_by(Brand.name.asc())
+    )
+
+    result = await session.execute(query)
+    items = [
+        {
+            "id": str(row.id),
+            "name": row.name,
+            "slug": row.slug,
+            "logo_url": row.logo_url,
+            "max_discount": int(row.max_discount) if row.max_discount else 0,
+            "product_count": int(row.product_count or 0),
+        }
+        for row in result.all()
+    ]
+
+    return JSONResponse(
+        content=items,
+        headers={"Cache-Control": "public, max-age=300, stale-while-revalidate=60"},
+    )
+
+
 @router.get("/search-index")
 async def get_search_index(
     session: AsyncSession = Depends(get_session)

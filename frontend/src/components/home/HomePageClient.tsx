@@ -10,7 +10,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { apiService, APIProduct as APIProductSummary } from '@/lib/api-service';
-import { productsApi } from '@/lib/api';
+import { categoriesApi, productsApi, CategoryRead } from '@/lib/api';
 import { dummyProducts, getFeaturedProducts as getDummyFeatured, categories, Product as StoreProduct } from '@/lib/dummy-data';
 import { useCartStore } from '@/store/cart-store';
 import { useWishlistStore } from '@/store/wishlist-store';
@@ -37,6 +37,7 @@ export default function HomePageClient({
     const [featuredProducts, setFeaturedProducts] = useState<APIProductSummary[]>(initialFeaturedProducts || []);
     const [loading, setLoading] = useState(!initialFeaturedProducts);
     const [featuredBrands, setFeaturedBrands] = useState<any[]>([]);
+    const [homeCategories, setHomeCategories] = useState<CategoryRead[]>([]);
 
     const { addItem: addToCart } = useCartStore();
     const { addItem: addToWishlist, removeItem: removeFromWishlist, isInWishlist } = useWishlistStore();
@@ -78,6 +79,9 @@ export default function HomePageClient({
     useEffect(() => {
         productsApi.getFeaturedBrands()
             .then(data => setFeaturedBrands(data))
+            .catch(() => {});
+        categoriesApi.list()
+            .then(data => setHomeCategories(data.filter((category) => category.is_active).slice(0, 8)))
             .catch(() => {});
     }, []);
 
@@ -180,12 +184,37 @@ export default function HomePageClient({
         },
     ];
 
-    const categoryImages: Record<string, string> = {
-        'lipsticks': 'https://images.unsplash.com/photo-1586495777744-4413f21062fa?w=400',
-        'foundations': 'https://images.unsplash.com/photo-1631214540553-ff044a3ff1d4?w=400',
-        'eye-makeup': 'https://images.unsplash.com/photo-1512496015851-a90fb38ba796?w=400',
-        'skincare': 'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=400',
-    };
+    const topDealProducts = [...featuredProducts]
+        .filter((product) => getDiscountPercentage(Number(product.mrp), Number(product.selling_price)) > 0)
+        .sort((a, b) => getDiscountPercentage(Number(b.mrp), Number(b.selling_price)) - getDiscountPercentage(Number(a.mrp), Number(a.selling_price)))
+        .slice(0, 4);
+
+    const mapFeaturedToProduct = (product: APIProductSummary): APIProduct => ({
+        id: product.id,
+        name: product.name,
+        slug: product.slug,
+        sku: product.sku,
+        short_description: product.short_description || '',
+        mrp: Number(product.mrp),
+        selling_price: Number(product.selling_price),
+        b2b_price: product.b2b_price ? Number(product.b2b_price) : undefined,
+        stock_quantity: product.stock_quantity,
+        min_order_quantity: 1,
+        unit: 'pcs',
+        is_active: true,
+        is_featured: product.is_featured,
+        image_url: product.primary_image || undefined,
+        images: product.primary_image ? [{
+            id: 'p1',
+            product_id: product.id,
+            image_url: product.primary_image,
+            is_primary: true,
+            sort_order: 0
+        }] : [],
+        attributes: {},
+        created_at: '',
+        updated_at: ''
+    } as APIProduct);
 
     return (
         <div className="min-h-screen flex flex-col">
@@ -196,6 +225,64 @@ export default function HomePageClient({
                 <div className="container py-4">
                     <BannerSlider initialBanners={initialBanners} />
                 </div>
+
+                {homeCategories.length > 0 && (
+                    <section className="py-8 bg-white">
+                        <div className="container">
+                            <div className="flex items-end justify-between gap-4 mb-5">
+                                <div>
+                                    <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary">Shop smarter</p>
+                                    <h2 className="text-2xl md:text-3xl font-extrabold text-slate-950 mt-1">Browse Beauty Categories</h2>
+                                </div>
+                                <Link href="/products" className="hidden sm:inline-flex items-center gap-2 text-sm font-bold text-primary hover:underline">
+                                    Explore all <ArrowRight className="h-4 w-4" />
+                                </Link>
+                            </div>
+                            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
+                                {homeCategories.map((category) => (
+                                    <Link
+                                        key={category.id}
+                                        href={`/products?category=${category.id}`}
+                                        className="group rounded-2xl border border-slate-100 bg-gradient-to-b from-rose-50 to-white p-3 text-center shadow-sm hover:-translate-y-1 hover:shadow-lg transition-all"
+                                    >
+                                        <div className="relative mx-auto mb-3 h-16 w-16 overflow-hidden rounded-full bg-white ring-1 ring-rose-100">
+                                            {category.image_url ? (
+                                                <img src={category.image_url} alt={category.name} className="h-full w-full object-cover" loading="lazy" />
+                                            ) : (
+                                                <div className="h-full w-full bg-gradient-to-br from-[#e91e63]/20 to-amber-100" />
+                                            )}
+                                        </div>
+                                        <p className="line-clamp-2 text-xs font-extrabold text-slate-900 group-hover:text-primary">{category.name}</p>
+                                    </Link>
+                                ))}
+                            </div>
+                        </div>
+                    </section>
+                )}
+
+                {topDealProducts.length > 0 && (
+                    <section className="py-10 bg-[#fff7fb] border-y border-rose-100">
+                        <div className="container">
+                            <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6">
+                                <div>
+                                    <p className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-xs font-bold uppercase tracking-wide text-[#d81b60] shadow-sm">
+                                        <Sparkles className="h-3.5 w-3.5" /> Live product discounts
+                                    </p>
+                                    <h2 className="mt-3 text-2xl md:text-4xl font-extrabold text-slate-950">Today&apos;s Beauty Steals</h2>
+                                    <p className="mt-2 text-slate-600">Automatically picked from featured products with the strongest current discounts.</p>
+                                </div>
+                                <Link href="/products?min_discount=25" className="inline-flex items-center gap-2 text-sm font-bold text-primary hover:underline">
+                                    Shop more deals <ArrowRight className="h-4 w-4" />
+                                </Link>
+                            </div>
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6">
+                                {topDealProducts.map((product) => (
+                                    <ProductCard key={product.id} product={mapFeaturedToProduct(product)} />
+                                ))}
+                            </div>
+                        </div>
+                    </section>
+                )}
 
                 {/* Shop by Brand — dynamic from DB */}
                 {featuredBrands.length > 0 && (
@@ -333,31 +420,8 @@ export default function HomePageClient({
                 ) : (
                     <TrendingSlider 
                         products={featuredProducts.map(product => ({
-                            id: product.id,
-                            name: product.name,
-                            slug: product.slug,
-                            sku: product.sku,
-                            short_description: product.short_description || '',
-                            mrp: Number(product.mrp),
-                            selling_price: Number(product.selling_price),
-                            b2b_price: product.b2b_price ? Number(product.b2b_price) : undefined,
-                            stock_quantity: product.stock_quantity,
-                            min_order_quantity: 1,
-                            unit: 'pcs',
-                            is_active: true,
-                            is_featured: product.is_featured,
-                            image_url: product.primary_image || undefined,
-                            images: product.primary_image ? [{ 
-                                id: 'p1', 
-                                product_id: product.id, 
-                                image_url: product.primary_image, 
-                                is_primary: true,
-                                sort_order: 0
-                            }] : [],
-                            attributes: {},
-                            created_at: '',
-                            updated_at: ''
-                        } as APIProduct))}
+                            ...mapFeaturedToProduct(product)
+                        }))}
                     />
                 )}
 

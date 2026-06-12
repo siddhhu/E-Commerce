@@ -67,11 +67,11 @@ export function BannerSlider({ initialBanners = null }: { initialBanners?: Banne
                         <img
                             src={banner.image_url}
                             alt={banner.title}
-                            className="w-full h-full object-contain md:object-cover"
+                            className="block h-full w-full object-contain object-center md:object-cover"
                         />
-                        <div className="absolute inset-x-0 bottom-0 md:inset-0 bg-gradient-to-t md:bg-gradient-to-r from-black/65 via-black/20 to-transparent flex items-end md:items-center pointer-events-none">
-                            <div className="w-full px-5 pb-6 md:container md:px-16 md:pb-0">
-                                <div className="max-w-xl space-y-3 md:space-y-6 text-white transform transition-all duration-700 translate-y-0 opacity-100 pointer-events-auto">
+                        <div className="absolute inset-x-0 bottom-0 md:inset-0 bg-gradient-to-t md:bg-gradient-to-r from-black/65 via-black/20 to-transparent flex items-end justify-center md:items-center md:justify-start pointer-events-none">
+                            <div className="w-full px-5 pb-6 text-center md:container md:px-16 md:pb-0 md:text-left">
+                                <div className="mx-auto md:mx-0 max-w-xl space-y-3 md:space-y-6 text-white transform transition-all duration-700 translate-y-0 opacity-100 pointer-events-auto">
                                     <h2 className="text-xl sm:text-2xl md:text-5xl lg:text-6xl font-bold leading-tight drop-shadow-sm">
                                         {banner.title}
                                     </h2>

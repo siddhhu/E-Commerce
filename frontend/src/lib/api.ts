@@ -313,6 +313,9 @@ export const productsApi = {
     getFeaturedBrands: () =>
         api.get<any[]>('/products/brands/featured'),
 
+    getBrands: () =>
+        api.get<any[]>('/products/brands'),
+
     getBySlug: (slug: string) =>
         api.get<Product>(`/products/${slug}`),
 

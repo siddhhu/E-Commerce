@@ -24,6 +24,10 @@ function ProductsContent() {
     const categoryId = searchParams.get('category') || searchParams.get('category_id') || '';
     const brandId = searchParams.get('brand_id') || '';
     const searchQuery = searchParams.get('search') || searchParams.get('q') || '';
+    const discountParam = searchParams.get('min_discount') || '';
+    const minPriceParam = searchParams.get('min_price') || '';
+    const maxPriceParam = searchParams.get('max_price') || '';
+    const inStockParam = searchParams.get('in_stock') === 'true';
 
     const router = useRouter();
     const [products, setProducts] = useState<ProductSummary[]>([]);
@@ -37,9 +41,9 @@ function ProductsContent() {
     const [brands, setBrands] = useState<any[]>([]);
     const [selectedCategory, setSelectedCategory] = useState(categoryId);
     const [selectedBrand, setSelectedBrand] = useState(brandId);
-    const [selectedDiscount, setSelectedDiscount] = useState('');
-    const [priceBand, setPriceBand] = useState('');
-    const [inStockOnly, setInStockOnly] = useState(false);
+    const [selectedDiscount, setSelectedDiscount] = useState(discountParam);
+    const [priceBand, setPriceBand] = useState(minPriceParam || maxPriceParam ? `${minPriceParam || 0}-${maxPriceParam || 999999}` : '');
+    const [inStockOnly, setInStockOnly] = useState(inStockParam);
 
     const { addItem: addToCart } = useCartStore();
     const { addItem: addToWishlist, removeItem: removeFromWishlist, isInWishlist } = useWishlistStore();
@@ -48,12 +52,15 @@ function ProductsContent() {
     useEffect(() => {
         setSelectedCategory(categoryId);
         setSelectedBrand(brandId);
-    }, [categoryId, brandId]);
+        setSelectedDiscount(discountParam);
+        setPriceBand(minPriceParam || maxPriceParam ? `${minPriceParam || 0}-${maxPriceParam || 999999}` : '');
+        setInStockOnly(inStockParam);
+    }, [categoryId, brandId, discountParam, minPriceParam, maxPriceParam, inStockParam]);
 
     useEffect(() => {
         Promise.all([
             categoriesApi.list().then(setCategories).catch(() => setCategories([])),
-            productsApi.getFeaturedBrands().then(setBrands).catch(() => setBrands([])),
+            productsApi.getBrands().then(setBrands).catch(() => setBrands([])),
         ]);
     }, []);
 
@@ -109,6 +116,19 @@ function ProductsContent() {
         const params = new URLSearchParams(searchParams.toString());
         if (value) params.set(key, value);
         else params.delete(key);
+        router.replace(`/products?${params.toString()}`, { scroll: false });
+    };
+
+    const updatePriceQuery = (value: string) => {
+        const params = new URLSearchParams(searchParams.toString());
+        if (!value) {
+            params.delete('min_price');
+            params.delete('max_price');
+        } else {
+            const [min, max] = value.split('-');
+            params.set('min_price', min);
+            params.set('max_price', max);
+        }
         router.replace(`/products?${params.toString()}`, { scroll: false });
     };
 
@@ -292,7 +312,11 @@ function ProductsContent() {
                                 {['10', '25', '40', '60'].map((value) => (
                                     <button
                                         key={value}
-                                        onClick={() => setSelectedDiscount(selectedDiscount === value ? '' : value)}
+                                        onClick={() => {
+                                            const nextValue = selectedDiscount === value ? '' : value;
+                                            setSelectedDiscount(nextValue);
+                                            updateQuery('min_discount', nextValue);
+                                        }}
                                         className={`rounded-full border px-3 py-2 text-xs font-bold transition-colors ${selectedDiscount === value ? 'border-primary bg-primary text-white' : 'border-slate-200 hover:border-primary/50'}`}
                                     >
                                         {value}%+ off
@@ -305,7 +329,10 @@ function ProductsContent() {
                             <label className="text-xs font-bold uppercase tracking-wide text-slate-500">Price</label>
                             <select
                                 value={priceBand}
-                                onChange={(e) => setPriceBand(e.target.value)}
+                                onChange={(e) => {
+                                    setPriceBand(e.target.value);
+                                    updatePriceQuery(e.target.value);
+                                }}
                                 className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/30"
                             >
                                 <option value="">All prices</option>
@@ -318,7 +345,15 @@ function ProductsContent() {
 
                         <label className="flex items-center justify-between rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold">
                             In stock only
-                            <input type="checkbox" checked={inStockOnly} onChange={(e) => setInStockOnly(e.target.checked)} className="h-4 w-4 accent-primary" />
+                            <input
+                                type="checkbox"
+                                checked={inStockOnly}
+                                onChange={(e) => {
+                                    setInStockOnly(e.target.checked);
+                                    updateQuery('in_stock', e.target.checked ? 'true' : '');
+                                }}
+                                className="h-4 w-4 accent-primary"
+                            />
                         </label>
                     </div>
                 </aside>

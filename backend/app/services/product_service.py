@@ -128,7 +128,14 @@ class ProductService:
         if is_active is not None:
             query = query.where(Product.is_active == is_active)
         if category_id:
-            query = query.where(Product.category_id == category_id)
+            from sqlalchemy import cast, String
+            cat_str = str(category_id)
+            query = query.where(
+                or_(
+                    Product.category_id == category_id,
+                    cast(Product.category_ids, String).contains(cat_str)
+                )
+            )
         if brand_id:
             query = query.where(Product.brand_id == brand_id)
         if is_featured is not None:
