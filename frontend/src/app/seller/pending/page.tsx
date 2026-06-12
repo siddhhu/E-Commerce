@@ -80,6 +80,7 @@ export default function SellerPendingPage() {
                                 {[
                                     { label: 'Account Created', done: true },
                                     { label: 'Business Document Uploaded', done: !!user?.seller_invoice_url },
+                                    { label: 'Bank Proof Uploaded', done: !!user?.seller_bank_proof_url },
                                     { label: 'Admin Review', done: false, active: true },
                                     { label: 'Seller Credentials Issued', done: false },
                                 ].map((step, i) => (

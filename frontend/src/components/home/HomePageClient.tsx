@@ -495,21 +495,34 @@ export default function HomePageClient({
 
 
                 {/* Newsletter Community */}
-                <section className="bg-[#3b2333] text-white py-16">
-                    <div className="container max-w-3xl text-center space-y-6">
-                        <h2 className="text-3xl font-bold">Join the Pranjay Community</h2>
-                        <p className="text-pink-100">Get 10% Off Your First Retail Order & Exclusive Wholesale Alerts</p>
+                <section className="relative overflow-hidden bg-gradient-to-br from-[#2a1425] via-[#3b1730] to-[#5a1f45] text-white py-12 sm:py-16">
+                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_20%,rgba(236,72,153,0.26),transparent_28%),radial-gradient(circle_at_84%_70%,rgba(204,161,82,0.28),transparent_24%)]" />
+                    <div className="container relative max-w-4xl text-center space-y-6 px-4">
+                        <div className="mx-auto inline-flex rounded-full border border-white/15 bg-white/10 px-4 py-1.5 text-xs font-bold uppercase tracking-[0.2em] text-pink-100">
+                            Beauty insider club
+                        </div>
+                        <div className="space-y-3">
+                            <h2 className="text-3xl font-extrabold tracking-tight sm:text-4xl">Join the Pranjay Community</h2>
+                            <p className="mx-auto max-w-2xl text-sm leading-6 text-pink-100 sm:text-base">
+                                Get retail offers, wholesale alerts, salon picks, and early access to trending cosmetic deals.
+                            </p>
+                        </div>
                         <form 
-                            className="flex max-w-md mx-auto gap-2" 
+                            className="mx-auto flex max-w-xl flex-col gap-3 rounded-2xl border border-white/10 bg-white/10 p-2 shadow-2xl shadow-pink-950/20 backdrop-blur sm:flex-row"
                             onSubmit={(e) => { 
                                 e.preventDefault(); 
                                 toast({ title: "Subscribed Successfully!", description: "You've joined the Pranjay community." });
                                 (e.target as HTMLFormElement).reset();
                             }}
                         >
-                            <Input placeholder="Enter your email address..." className="bg-white/10 border-white/20 text-white placeholder:text-white/50 h-12 rounded-lg" required type="email" />
-                            <Button type="submit" className="bg-[#cca152] hover:bg-[#b88c3d] text-white h-12 px-8 rounded-lg border-0">Subscribe</Button>
+                            <Input placeholder="Enter your email address..." className="h-12 flex-1 rounded-xl border-white/10 bg-white text-slate-900 placeholder:text-slate-400" required type="email" />
+                            <Button type="submit" className="h-12 rounded-xl border-0 bg-[#cca152] px-8 font-bold text-white hover:bg-[#b88c3d] sm:w-auto">Subscribe</Button>
                         </form>
+                        <div className="grid gap-3 text-xs text-pink-100 sm:grid-cols-3">
+                            <span>Genuine brands</span>
+                            <span>Fast dispatch updates</span>
+                            <span>Wholesale deal alerts</span>
+                        </div>
                     </div>
                 </section>
             </main>

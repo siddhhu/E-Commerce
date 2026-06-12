@@ -221,6 +221,18 @@ export default function AdminUsersPage() {
                                                             </a>
                                                         </div>
                                                     )}
+                                                    {seller.seller_bank_proof_url && (
+                                                        <div>
+                                                            <a
+                                                                href={seller.seller_bank_proof_url}
+                                                                target="_blank"
+                                                                rel="noreferrer"
+                                                                className="text-primary underline text-xs font-medium"
+                                                            >
+                                                                View Bank Proof
+                                                            </a>
+                                                        </div>
+                                                    )}
                                                 </div>
                                                 <div className="mt-4 grid gap-3 lg:grid-cols-2">
                                                     <div className="rounded-lg border border-amber-200 bg-white/80 p-3 text-xs">
@@ -251,6 +263,18 @@ export default function AdminUsersPage() {
                                                         </p>
                                                         {seller.bank_name && (
                                                             <p className="mt-1 text-slate-700">Bank: {seller.bank_name}</p>
+                                                        )}
+                                                        {seller.seller_bank_proof_url ? (
+                                                            <a
+                                                                href={seller.seller_bank_proof_url}
+                                                                target="_blank"
+                                                                rel="noreferrer"
+                                                                className="mt-2 inline-flex text-primary underline"
+                                                            >
+                                                                Open uploaded bank proof
+                                                            </a>
+                                                        ) : (
+                                                            <p className="mt-2 text-red-600">Bank proof not uploaded</p>
                                                         )}
                                                     </div>
                                                 </div>
@@ -453,6 +477,14 @@ export default function AdminUsersPage() {
                                                     <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Invoice</p>
                                                     <a href={selected.seller_invoice_url} target="_blank" rel="noreferrer" className="text-primary underline text-xs">
                                                         View document
+                                                    </a>
+                                                </div>
+                                            )}
+                                            {selected.seller_bank_proof_url && (
+                                                <div>
+                                                    <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Bank Proof</p>
+                                                    <a href={selected.seller_bank_proof_url} target="_blank" rel="noreferrer" className="text-primary underline text-xs">
+                                                        View bank proof
                                                     </a>
                                                 </div>
                                             )}

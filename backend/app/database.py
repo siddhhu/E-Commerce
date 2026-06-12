@@ -182,6 +182,7 @@ async def run_startup_migrations() -> None:
                     "ALTER TABLE users ADD COLUMN bank_account_number VARCHAR(40);",
                     "ALTER TABLE users ADD COLUMN bank_ifsc VARCHAR(11);",
                     "ALTER TABLE users ADD COLUMN bank_name VARCHAR(255);",
+                    "ALTER TABLE users ADD COLUMN seller_bank_proof_url VARCHAR(1024);",
                 ]:
                     try:
                         await conn.execute(sa.text(sql))
@@ -192,6 +193,7 @@ async def run_startup_migrations() -> None:
                 await conn.execute(sa.text("ALTER TABLE users ADD COLUMN IF NOT EXISTS bank_account_number VARCHAR(40);"))
                 await conn.execute(sa.text("ALTER TABLE users ADD COLUMN IF NOT EXISTS bank_ifsc VARCHAR(11);"))
                 await conn.execute(sa.text("ALTER TABLE users ADD COLUMN IF NOT EXISTS bank_name VARCHAR(255);"))
+                await conn.execute(sa.text("ALTER TABLE users ADD COLUMN IF NOT EXISTS seller_bank_proof_url VARCHAR(1024);"))
 
         # 5. Performance indexes — idempotent (CREATE INDEX IF NOT EXISTS)
         if "postgresql" in db_url:

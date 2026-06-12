@@ -278,6 +278,7 @@ export const usersApi = {
     getCheckoutPrep: () => api.get<{ addresses: Address[]; cart: any }>('/checkout-prep'),
     submitSellerApplication: async (
         file: File,
+        bankProofFile: File,
         bankDetails: {
             bank_account_holder_name: string;
             bank_account_number: string;
@@ -289,8 +290,12 @@ export const usersApi = {
         const formData = new FormData();
         formData.append('file', file);
         const { invoice_url } = await postMultipart<{ invoice_url: string }>('/invoices/upload', formData);
-        // 2. Submit the application with the uploaded URL
-        return api.post<User>('/users/me/seller-application', { invoice_url, ...bankDetails });
+        // 2. Upload bank proof document
+        const bankProofData = new FormData();
+        bankProofData.append('file', bankProofFile);
+        const { invoice_url: bank_proof_url } = await postMultipart<{ invoice_url: string }>('/invoices/upload', bankProofData);
+        // 3. Submit the application with both uploaded URLs
+        return api.post<User>('/users/me/seller-application', { invoice_url, bank_proof_url, ...bankDetails });
     },
 };
 
@@ -613,6 +618,7 @@ export interface User {
     // Seller onboarding fields
     seller_status?: 'none' | 'pending' | 'approved' | 'rejected';
     seller_invoice_url?: string | null;
+    seller_bank_proof_url?: string | null;
     seller_username?: string | null;
     seller_plain_password?: string | null;
     bank_account_holder_name?: string | null;

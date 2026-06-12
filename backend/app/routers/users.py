@@ -233,6 +233,7 @@ from fastapi import BackgroundTasks
 class SellerApplicationRequest(_BaseModel):
     """Submit a seller registration application."""
     invoice_url: str    # URL of the uploaded document (already in Supabase Storage)
+    bank_proof_url: str
     bank_account_holder_name: str
     bank_account_number: str
     bank_ifsc: str
@@ -266,10 +267,13 @@ async def submit_seller_application(
         raise BadRequestException("Invalid IFSC code format")
     if not data.bank_account_holder_name.strip():
         raise BadRequestException("Bank account holder name is required")
+    if not data.bank_proof_url.strip():
+        raise BadRequestException("Bank proof document is required")
 
     user = await user_service.submit_seller_application(
         current_user.id,
         data.invoice_url,
+        data.bank_proof_url.strip(),
         data.bank_account_holder_name,
         bank_account_number,
         bank_ifsc,
@@ -297,4 +301,3 @@ async def submit_seller_application(
     )
 
     return user
-

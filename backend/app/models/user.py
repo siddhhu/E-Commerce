@@ -67,6 +67,7 @@ class UserBase(SQLModel):
         sa_column=sa.Column(sa.String(20), default="none", nullable=False, server_default="none")
     )
     seller_invoice_url: Optional[str] = Field(default=None)      # Document uploaded at registration
+    seller_bank_proof_url: Optional[str] = Field(default=None)   # Cancelled cheque/passbook/bank statement proof
     seller_username: Optional[str] = Field(default=None, max_length=255)  # Generated @pranjay.com email
     # Plain password stored temporarily for super-admin to read & share.
     seller_plain_password: Optional[str] = Field(default=None)

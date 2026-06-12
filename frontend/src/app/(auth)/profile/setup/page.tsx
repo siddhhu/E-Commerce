@@ -26,12 +26,14 @@ export default function ProfileSetupPage() {
     // Step: 'profile' → fill details, 'invoice' → upload document (sellers only)
     const [step, setStep] = useState<'profile' | 'invoice'>('profile');
     const [invoiceFile, setInvoiceFile] = useState<File | null>(null);
+    const [bankProofFile, setBankProofFile] = useState<File | null>(null);
     const [bankAccountHolderName, setBankAccountHolderName] = useState('');
     const [bankAccountNumber, setBankAccountNumber] = useState('');
     const [bankIfsc, setBankIfsc] = useState('');
     const [bankName, setBankName] = useState('');
     const [isUploadingInvoice, setIsUploadingInvoice] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const bankProofInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
         if (!isAuthLoading) {
@@ -122,6 +124,14 @@ export default function ProfileSetupPage() {
             });
             return;
         }
+        if (!bankProofFile) {
+            toast({
+                title: 'Bank proof required',
+                description: 'Please upload a cancelled cheque, passbook photo, or bank statement proof.',
+                variant: 'destructive',
+            });
+            return;
+        }
         const accountNumber = bankAccountNumber.replace(/\D/g, '');
         const ifsc = bankIfsc.trim().toUpperCase();
         if (!bankAccountHolderName.trim()) {
@@ -150,7 +160,7 @@ export default function ProfileSetupPage() {
         }
         setIsUploadingInvoice(true);
         try {
-            const updatedUser = await usersApi.submitSellerApplication(invoiceFile, {
+            const updatedUser = await usersApi.submitSellerApplication(invoiceFile, bankProofFile, {
                 bank_account_holder_name: bankAccountHolderName.trim(),
                 bank_account_number: accountNumber,
                 bank_ifsc: ifsc,
@@ -307,6 +317,42 @@ export default function ProfileSetupPage() {
                                     )}
                                 </div>
 
+                                <div
+                                    className={`border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-all ${
+                                        bankProofFile ? 'border-blue-400 bg-blue-50' : 'border-muted hover:border-primary/50'
+                                    }`}
+                                    onClick={() => bankProofInputRef.current?.click()}
+                                >
+                                    <input
+                                        ref={bankProofInputRef}
+                                        type="file"
+                                        accept="application/pdf,image/jpeg,image/png"
+                                        className="hidden"
+                                        onChange={(e) => setBankProofFile(e.target.files?.[0] || null)}
+                                    />
+                                    {bankProofFile ? (
+                                        <div className="flex flex-col items-center gap-2">
+                                            <FileText className="h-8 w-8 text-blue-600" />
+                                            <p className="font-medium text-blue-700">{bankProofFile.name}</p>
+                                            <p className="text-xs text-blue-600">{(bankProofFile.size / 1024).toFixed(0)} KB</p>
+                                            <button
+                                                type="button"
+                                                className="text-xs text-muted-foreground underline"
+                                                onClick={(e) => { e.stopPropagation(); setBankProofFile(null); }}
+                                            >
+                                                Change bank proof
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <div className="flex flex-col items-center gap-2">
+                                            <Landmark className="h-8 w-8 text-muted-foreground" />
+                                            <p className="text-sm font-medium">Upload bank account proof</p>
+                                            <p className="text-xs text-muted-foreground">Cancelled cheque / passbook / bank statement</p>
+                                            <p className="text-xs text-muted-foreground">PDF, JPG, or PNG • Max 10MB</p>
+                                        </div>
+                                    )}
+                                </div>
+
                                 <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-4 space-y-3">
                                     <div className="flex items-start gap-2">
                                         <div className="mt-0.5 rounded-full bg-primary/10 p-2 text-primary">
@@ -373,7 +419,7 @@ export default function ProfileSetupPage() {
                                 <Button
                                     className="w-full"
                                     onClick={handleSubmitSellerApplication}
-                                    disabled={!invoiceFile || isUploadingInvoice}
+                                    disabled={!invoiceFile || !bankProofFile || isUploadingInvoice}
                                 >
                                     {isUploadingInvoice && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                     Submit Seller Application

@@ -135,6 +135,7 @@ class UserService:
         self,
         user_id: UUID,
         invoice_url: str,
+        bank_proof_url: str,
         bank_account_holder_name: str,
         bank_account_number: str,
         bank_ifsc: str,
@@ -151,6 +152,7 @@ class UserService:
             raise BadRequestException("Your seller account is already approved.")
 
         user.seller_invoice_url = invoice_url
+        user.seller_bank_proof_url = bank_proof_url
         user.bank_account_holder_name = bank_account_holder_name.strip()
         user.bank_account_number = bank_account_number.strip()
         user.bank_ifsc = bank_ifsc.strip().upper()
@@ -227,6 +229,8 @@ class UserService:
             missing_fields.append("bank account number")
         if not user.bank_ifsc:
             missing_fields.append("IFSC")
+        if not user.seller_bank_proof_url:
+            missing_fields.append("bank proof document")
         if missing_fields:
             raise BadRequestException(
                 "Cannot approve seller until these details are provided: "
