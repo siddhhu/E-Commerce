@@ -17,7 +17,7 @@ from app.models.user import User, UserRole
 def _normalized_role(role: object) -> str:
     """Normalize enum/string role values from DB, API, and legacy rows."""
     raw = getattr(role, "value", str(role))
-    value = raw.split(".")[-1].replace("-", "_").replace(" ", "_").upper()
+    value = raw.strip().split(".")[-1].replace("-", "_").replace(" ", "_").upper()
     return value
 
 
@@ -97,8 +97,18 @@ async def get_current_super_admin(
 ) -> User:
     """Get current super admin user."""
     role_val = _normalized_role(current_user.role)
-    if role_val != UserRole.SUPER_ADMIN.value:
+    if role_val not in [UserRole.SUPER_ADMIN.value, "SUPERADMIN"]:
         raise ForbiddenException("Super admin access required")
+    return current_user
+
+
+async def get_current_staff_admin(
+    current_user: User = Depends(get_current_active_user)
+) -> User:
+    """Get an internal admin user. Approved sellers are intentionally excluded."""
+    role_val = _normalized_role(current_user.role)
+    if role_val not in [UserRole.ADMIN.value, UserRole.SUPER_ADMIN.value, "SUPERADMIN"]:
+        raise ForbiddenException("Admin access required")
     return current_user
 
 

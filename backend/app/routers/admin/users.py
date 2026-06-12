@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, Query, BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic import BaseModel
 
-from app.core.dependencies import get_current_admin, get_current_super_admin
+from app.core.dependencies import get_current_admin, get_current_staff_admin, get_current_super_admin
 from app.database import get_session
 from app.models.user import User, UserRead, UserRole, SellerCredentialsRead
 from app.services.user_service import UserService
@@ -120,16 +120,16 @@ async def verify_user(
     return await user_service.verify_user(user_id, is_verified)
 
 
-# ── Seller Application Management (Super Admin only) ─────────────────────────
+# ── Seller Application Management (Internal admin staff only) ────────────────
 
 @router.get("/sellers/pending", response_model=list[UserRead])
 async def list_pending_sellers(
-    current_user: User = Depends(get_current_super_admin),
+    current_user: User = Depends(get_current_staff_admin),
     session: AsyncSession = Depends(get_session)
 ):
     """
     List all sellers whose applications are pending approval.
-    Super admin only.
+    Internal admin staff only.
     """
     user_service = UserService(session)
     return await user_service.list_pending_sellers()
@@ -139,11 +139,11 @@ async def list_pending_sellers(
 async def approve_seller(
     user_id: UUID,
     background_tasks: BackgroundTasks,
-    current_user: User = Depends(get_current_super_admin),
+    current_user: User = Depends(get_current_staff_admin),
     session: AsyncSession = Depends(get_session)
 ):
     """
-    Approve a seller application (super admin only).
+    Approve a seller application (internal admin staff only).
     Generates a @pranjay.com username and a random password.
     Returns the plain credentials — admin must share these with the seller manually.
     If the seller provided a contact_email, credentials are also emailed to them.
@@ -178,11 +178,11 @@ async def approve_seller(
 @router.post("/{user_id}/reject-seller", response_model=UserRead)
 async def reject_seller(
     user_id: UUID,
-    current_user: User = Depends(get_current_super_admin),
+    current_user: User = Depends(get_current_staff_admin),
     session: AsyncSession = Depends(get_session)
 ):
     """
-    Reject a seller application (super admin only).
+    Reject a seller application (internal admin staff only).
     """
     user_service = UserService(session)
     return await user_service.reject_seller(user_id)
