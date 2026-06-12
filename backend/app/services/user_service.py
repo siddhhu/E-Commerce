@@ -204,11 +204,11 @@ class UserService:
         """
         user = await self.get_user_by_id(user_id)
 
-        if user.seller_status == "approved":
-            # Already approved — return existing credentials
+        if user.seller_status == "approved" and user.seller_username and user.seller_plain_password:
+            # Already approved with credentials — return existing credentials
             return user, user.seller_plain_password or ""
 
-        username = self._generate_seller_username(user)
+        username = user.seller_username or self._generate_seller_username(user)
         plain_password = self._generate_plain_password()
 
         user.seller_username = username

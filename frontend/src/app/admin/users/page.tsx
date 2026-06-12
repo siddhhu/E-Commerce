@@ -70,13 +70,29 @@ export default function AdminUsersPage() {
         }
     };
 
+    const applySellerCredentials = (user: User, creds: SellerCredentials): User => ({
+        ...user,
+        is_verified: true,
+        seller_status: creds.seller_status as User['seller_status'],
+        seller_username: creds.seller_username,
+        seller_plain_password: creds.seller_plain_password,
+        business_name: creds.business_name ?? user.business_name,
+        full_name: creds.full_name ?? user.full_name,
+    });
+
     const handleApproveSeller = async (userId: string) => {
         setActionLoading(userId);
         try {
             const creds = await adminApi.approveSeller(userId);
+            const existingSeller = users.find(u => u.id === userId) || pendingSellers.find(u => u.id === userId);
             setApprovedCredentials(prev => ({ ...prev, [userId]: creds }));
             // Remove from pending list
             setPendingSellers(prev => prev.filter(u => u.id !== userId));
+            setUsers(prev => prev.map(u => u.id === userId ? applySellerCredentials(u, creds) : u));
+            setSelected(prev => {
+                if (prev?.id === userId) return applySellerCredentials(prev, creds);
+                return existingSeller ? applySellerCredentials(existingSeller, creds) : prev;
+            });
         } catch (err: any) {
             alert(err.message || 'Failed to approve seller');
         } finally {
@@ -111,6 +127,8 @@ export default function AdminUsersPage() {
         const matchType = typeFilter === '' || u.user_type === typeFilter;
         return matchSearch && matchType;
     });
+
+    const sellerHasCredentials = (user: User) => !!user.seller_username && !!user.seller_plain_password;
 
     return (
         <div className="space-y-6">
@@ -411,9 +429,15 @@ export default function AdminUsersPage() {
                                 </div>
                                 {selected.user_type === 'seller' && (
                                     <div className="mt-4 pt-4 border-t flex gap-3">
-                                        {!selected.is_verified ? (
-                                            <Button size="sm" className="bg-green-600 hover:bg-green-700" onClick={() => handleVerify(selected.id, true)}>
-                                                <ShieldCheck className="h-4 w-4 mr-1" /> Approve Account
+                                        {selected.seller_status !== 'approved' || !sellerHasCredentials(selected) ? (
+                                            <Button
+                                                size="sm"
+                                                className="bg-green-600 hover:bg-green-700"
+                                                disabled={actionLoading === selected.id}
+                                                onClick={() => handleApproveSeller(selected.id)}
+                                            >
+                                                <ShieldCheck className="h-4 w-4 mr-1" />
+                                                {actionLoading === selected.id ? 'Approving...' : selected.seller_status === 'approved' ? 'Generate Credentials' : 'Approve Seller'}
                                             </Button>
                                         ) : (
                                             <Button size="sm" variant="outline" className="text-amber-600 border-amber-300" onClick={() => handleVerify(selected.id, false)}>
@@ -533,12 +557,18 @@ export default function AdminUsersPage() {
                                                         </div>
                                                     </td>
                                                     <td className="px-5 py-3 text-right" onClick={(e) => e.stopPropagation()}>
-                                                        {user.user_type === 'seller' && !user.is_verified && (
-                                                            <Button size="sm" className="bg-green-600 hover:bg-green-700 h-7 text-xs" onClick={() => handleVerify(user.id, true)}>
-                                                                <ShieldCheck className="h-3 w-3 mr-1" /> Approve
+                                                        {user.user_type === 'seller' && (user.seller_status !== 'approved' || !sellerHasCredentials(user)) && (
+                                                            <Button
+                                                                size="sm"
+                                                                className="bg-green-600 hover:bg-green-700 h-7 text-xs"
+                                                                disabled={actionLoading === user.id}
+                                                                onClick={() => handleApproveSeller(user.id)}
+                                                            >
+                                                                <ShieldCheck className="h-3 w-3 mr-1" />
+                                                                {actionLoading === user.id ? 'Approving...' : user.seller_status === 'approved' ? 'Generate Credentials' : 'Approve Seller'}
                                                             </Button>
                                                         )}
-                                                        {user.user_type === 'seller' && user.is_verified && (
+                                                        {user.user_type === 'seller' && user.seller_status === 'approved' && sellerHasCredentials(user) && (
                                                             <Button variant="outline" size="sm" className="h-7 text-xs text-amber-600 border-amber-200 hover:bg-amber-50" onClick={() => handleVerify(user.id, false)}>
                                                                 <XCircle className="h-3 w-3 mr-1" /> Unverify
                                                             </Button>
