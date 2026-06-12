@@ -110,7 +110,7 @@ export function Footer() {
                     <div className="text-sm text-slate-500">
                         <p className="font-medium">© {new Date().getFullYear()} Pranjay. All rights reserved.</p>
                         <p className="mt-1 text-xs font-semibold text-primary/70">
-                            Made with love by <a href="https://www.linkedin.com/in/siddharth-kumar-907a85169/" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary transition-colors">siddharth</a>
+                            Made with ❤️ by <a href="https://www.linkedin.com/in/siddharth-kumar-907a85169/" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary transition-colors">siddharth</a>
                         </p>
                     </div>
                     <div className="flex flex-wrap justify-center gap-4 text-sm font-semibold text-slate-500 sm:gap-6">
