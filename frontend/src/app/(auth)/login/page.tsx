@@ -53,7 +53,7 @@ function LoginForm() {
     }, [searchParams, toast]);
 
     useEffect(() => {
-        if (!process.env.NEXT_PUBLIC_FIREBASE_API_KEY) {
+        if (!auth) {
             console.error('CRITICAL: Firebase API Key is missing from environment variables!');
         }
 
@@ -70,7 +70,11 @@ function LoginForm() {
         };
     }, []);
 
-    const initRecaptcha = () => {
+    const initRecaptcha = async () => {
+        if (!auth) {
+            throw new Error('Firebase is not configured. Please check Firebase web config.');
+        }
+
         if (!window.recaptchaVerifier) {
             try {
                 window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-anchor', {
@@ -86,14 +90,20 @@ function LoginForm() {
                 });
             } catch (e) {
                 console.error('Recaptcha Init Error:', e);
+                throw e;
             }
         }
+        await window.recaptchaVerifier.render();
+        return window.recaptchaVerifier;
     };
 
     const formatPhoneNumber = (number: string) => {
-        if (number.startsWith('+')) return number;
-        if (number.length === 10) return `+91${number}`;
-        return `+${number}`;
+        const digits = number.replace(/\D/g, '');
+        if (digits.length === 10) return `+91${digits}`;
+        if (digits.length === 11 && digits.startsWith('0')) return `+91${digits.slice(1)}`;
+        if (digits.length === 12 && digits.startsWith('91')) return `+${digits}`;
+        if (number.trim().startsWith('+') && digits.length >= 10) return `+${digits}`;
+        return `+${digits}`;
     };
 
     const handleSendOtp = async (e: React.FormEvent) => {
@@ -103,8 +113,10 @@ function LoginForm() {
         setIsLoading(true);
         try {
             const formattedPhone = formatPhoneNumber(phone);
-            initRecaptcha();
-            const appVerifier = window.recaptchaVerifier;
+            if (!/^\+91[6-9]\d{9}$/.test(formattedPhone)) {
+                throw new Error('Please enter a valid 10 digit Indian mobile number.');
+            }
+            const appVerifier = await initRecaptcha();
 
             const confirmation = await signInWithPhoneNumber(auth, formattedPhone, appVerifier);
             setConfirmationResult(confirmation);
@@ -264,7 +276,7 @@ function LoginForm() {
                         </div>
                         
                         {/* Invisible reCAPTCHA anchor — must exist in DOM */}
-                        <div id="recaptcha-anchor" className="hidden"></div>
+                        <div id="recaptcha-anchor" className="absolute left-0 top-0 h-px w-px overflow-hidden opacity-0" />
                         
                         <Button type="submit" className="w-full" disabled={isLoading}>
                             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
