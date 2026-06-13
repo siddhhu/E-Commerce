@@ -4,12 +4,13 @@ import { useEffect, useState } from 'react';
 import { adminApi, DashboardStats, RecentOrder, authApi } from '@/lib/api';
 import { 
     Users, Package, ShoppingCart, DollarSign, 
-    TrendingUp, Clock, AlertTriangle, KeyRound, Eye, EyeOff, CheckCircle2
+    TrendingUp, Clock, AlertTriangle, KeyRound, Eye, EyeOff, CheckCircle2, Mail, Phone
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
+import { useAuthStore } from '@/store/auth-store';
 
 export default function AdminDashboardPage() {
     const [stats, setStats] = useState<DashboardStats | null>(null);
@@ -19,6 +20,9 @@ export default function AdminDashboardPage() {
     
     // Default to empty (All Time for recent orders, Today for stats)
     const [selectedDate, setSelectedDate] = useState<string>('');
+    const { user } = useAuthStore();
+    const role = (user?.role || '').toString().toLowerCase();
+    const isSellerOnly = role !== 'admin' && role !== 'super_admin' && user?.seller_status === 'approved' && user?.user_type === 'seller';
 
     useEffect(() => {
         const fetchDashboardData = async () => {
@@ -85,6 +89,30 @@ export default function AdminDashboardPage() {
                     />
                 </div>
             </div>
+
+            {isSellerOnly && (
+                <Card className="border-primary/20 bg-gradient-to-r from-primary/5 to-pink-50">
+                    <CardContent className="p-5">
+                        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                            <div>
+                                <p className="text-xs font-bold uppercase tracking-[0.18em] text-primary">Super admin detail</p>
+                                <h2 className="mt-1 text-xl font-extrabold text-slate-900">Pranjay Admin Support</h2>
+                                <p className="mt-1 text-sm text-slate-600">Contact super admin for approvals, GST/account updates, payouts, and urgent order issues.</p>
+                            </div>
+                            <div className="grid gap-2 text-sm font-semibold text-slate-700 sm:grid-cols-2">
+                                <a href="mailto:support@admin.com" className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 shadow-sm ring-1 ring-pink-100 hover:text-primary">
+                                    <Mail className="h-4 w-4 text-primary" />
+                                    support@admin.com
+                                </a>
+                                <a href="tel:+917870053331" className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 shadow-sm ring-1 ring-pink-100 hover:text-primary">
+                                    <Phone className="h-4 w-4 text-primary" />
+                                    +91 78700 53331
+                                </a>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
 
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
                 <StatCard 

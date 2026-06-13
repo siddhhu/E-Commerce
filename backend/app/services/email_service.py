@@ -344,7 +344,7 @@ class EmailService:
         if not self._enabled:
             self._log_skip("send_seller_application_to_admin", admin_email)
             print(f"  ↳ New seller application from: {seller_name} ({seller_phone}) — {business_name}")
-            print(f"  ↳ Invoice: {invoice_url}")
+            print(f"  ↳ GST Registration Certificate: {invoice_url}")
             print(f"  ↳ User ID: {user_id}")
             return False
         try:
@@ -360,7 +360,7 @@ class EmailService:
                             <p><strong>Phone:</strong> {seller_phone}</p>
                             <p><strong>Business:</strong> {business_name or '—'}</p>
                             <p><strong>GST:</strong> {gst_number or '—'}</p>
-                            <p><strong>Invoice:</strong> <a href="{invoice_url}">View Document</a></p>
+                            <p><strong>GST Registration Certificate:</strong> <a href="{invoice_url}">View Document</a></p>
                             <p><strong>User ID:</strong> {user_id}</p>
                         </div>
                         <p>Please review and approve/reject this application in the <strong>Admin Panel → Seller Applications</strong> tab.</p>

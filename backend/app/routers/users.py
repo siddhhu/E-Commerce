@@ -89,6 +89,19 @@ async def update_current_user_profile(
     """Update current user's profile. GST number is mandatory for sellers."""
     # Server-side GST validation for sellers
     if data.user_type == "seller" or (data.user_type is None and current_user.user_type == "seller"):
+        if data.contact_email is not None:
+            contact_email = data.contact_email.strip()
+            if not contact_email:
+                raise HTTPException(
+                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    detail="Seller email is required."
+                )
+            data.contact_email = contact_email
+        elif not current_user.contact_email:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Seller email is required."
+            )
         if data.gst_number is not None:
             gst = data.gst_number.strip().upper()
             if gst and not _GST_RE.match(gst):

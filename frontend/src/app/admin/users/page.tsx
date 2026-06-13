@@ -217,7 +217,7 @@ export default function AdminUsersPage() {
                                                                 rel="noreferrer"
                                                                 className="text-primary underline text-xs font-medium"
                                                             >
-                                                                📄 View Registration Document
+                                                                📄 View GST Registration Certificate
                                                             </a>
                                                         </div>
                                                     )}
@@ -474,7 +474,7 @@ export default function AdminUsersPage() {
                                             )}
                                             {selected.seller_invoice_url && (
                                                 <div>
-                                                    <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Invoice</p>
+                                                    <p className="text-xs font-bold uppercase tracking-wider text-slate-400">GST Registration Certificate</p>
                                                     <a href={selected.seller_invoice_url} target="_blank" rel="noreferrer" className="text-primary underline text-xs">
                                                         View document
                                                     </a>

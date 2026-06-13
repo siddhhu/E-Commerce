@@ -637,6 +637,10 @@ export default function ProductDetailPage() {
                                     <Shield className="h-4 w-4 text-primary" />
                                     <span>100% Genuine</span>
                                 </div>
+                                <div className="flex items-center gap-2 text-sm font-medium text-slate-700">
+                                    <Shield className="h-4 w-4 text-primary" />
+                                    <span>No return and refund policy</span>
+                                </div>
                             </div>
 
                             {/* Description */}

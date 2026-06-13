@@ -21,6 +21,7 @@ export default function ProfileSetupPage() {
     const [businessName, setBusinessName] = useState('');
     const [contactEmail, setContactEmail] = useState('');
     const [gstNumber, setGstNumber] = useState('');
+    const [termsAccepted, setTermsAccepted] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
 
     // Step: 'profile' → fill details, 'invoice' → upload document (sellers only)
@@ -69,8 +70,16 @@ export default function ProfileSetupPage() {
         }
 
         // Basic email validation if provided
+        if (businessType === 'seller' && !contactEmail.trim()) {
+            toast({ title: 'Email required', description: 'Seller email is mandatory for approval and login credentials.', variant: 'destructive' });
+            return;
+        }
         if (contactEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactEmail)) {
             toast({ title: 'Invalid email', description: 'Please enter a valid email address', variant: 'destructive' });
+            return;
+        }
+        if (!termsAccepted) {
+            toast({ title: 'Terms required', description: 'Please agree to the Terms and Conditions before creating your account.', variant: 'destructive' });
             return;
         }
 
@@ -522,7 +531,9 @@ export default function ProfileSetupPage() {
                             <Label htmlFor="contact_email" className="flex items-center gap-1">
                                 <Mail className="h-3.5 w-3.5" />
                                 Email{' '}
-                                <span className="text-muted-foreground font-normal text-xs ml-1">(optional — for notifications)</span>
+                                <span className="text-muted-foreground font-normal text-xs ml-1">
+                                    {businessType === 'seller' ? '(required for sellers)' : '(optional — for notifications)'}
+                                </span>
                             </Label>
                             <Input
                                 id="contact_email"
@@ -530,6 +541,7 @@ export default function ProfileSetupPage() {
                                 placeholder="your@email.com"
                                 value={contactEmail}
                                 onChange={(e) => setContactEmail(e.target.value)}
+                                required={businessType === 'seller'}
                             />
                             {businessType === 'seller' && (
                                 <p className="text-xs text-muted-foreground">
@@ -594,7 +606,23 @@ export default function ProfileSetupPage() {
                             </>
                         )}
 
-                        <Button type="submit" className="w-full" disabled={isLoading}>
+                        <label className="flex items-start gap-2 rounded-lg border border-slate-200 bg-slate-50/80 p-3 text-xs text-slate-600">
+                            <input
+                                type="checkbox"
+                                checked={termsAccepted}
+                                onChange={(e) => setTermsAccepted(e.target.checked)}
+                                className="mt-0.5 h-4 w-4 rounded border-slate-300 text-primary"
+                            />
+                            <span>
+                                I agree to the{' '}
+                                <a href="/terms" target="_blank" className="font-semibold text-primary underline">
+                                    Terms and Conditions
+                                </a>{' '}
+                                and confirm the information provided is correct.
+                            </span>
+                        </label>
+
+                        <Button type="submit" className="w-full" disabled={isLoading || !termsAccepted}>
                             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                             {businessType === 'seller' ? 'Next: Upload Document →' : 'Save & Continue'}
                         </Button>

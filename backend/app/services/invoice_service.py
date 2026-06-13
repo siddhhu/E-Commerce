@@ -16,18 +16,68 @@ from app.config import settings
 from app.services.storage_service import storage_service
 
 TWOPLACES = Decimal("0.01")
+STATE_GST_CODES = {
+    "JAMMU AND KASHMIR": "01",
+    "HIMACHAL PRADESH": "02",
+    "PUNJAB": "03",
+    "CHANDIGARH": "04",
+    "UTTARAKHAND": "05",
+    "HARYANA": "06",
+    "DELHI": "07",
+    "RAJASTHAN": "08",
+    "UTTAR PRADESH": "09",
+    "BIHAR": "10",
+    "SIKKIM": "11",
+    "ARUNACHAL PRADESH": "12",
+    "NAGALAND": "13",
+    "MANIPUR": "14",
+    "MIZORAM": "15",
+    "TRIPURA": "16",
+    "MEGHALAYA": "17",
+    "ASSAM": "18",
+    "WEST BENGAL": "19",
+    "JHARKHAND": "20",
+    "ODISHA": "21",
+    "CHHATTISGARH": "22",
+    "MADHYA PRADESH": "23",
+    "GUJARAT": "24",
+    "DADRA AND NAGAR HAVELI AND DAMAN AND DIU": "26",
+    "MAHARASHTRA": "27",
+    "ANDHRA PRADESH": "37",
+    "KARNATAKA": "29",
+    "GOA": "30",
+    "LAKSHADWEEP": "31",
+    "KERALA": "32",
+    "TAMIL NADU": "33",
+    "PUDUCHERRY": "34",
+    "ANDAMAN AND NICOBAR ISLANDS": "35",
+    "TELANGANA": "36",
+    "LADAKH": "38",
+}
 
 
 def money(value: Decimal) -> str:
     return f"Rs. {value.quantize(TWOPLACES):.2f}"
 
 
+def gst_state_code(gst_number: str | None, state: str | None = None) -> str | None:
+    if gst_number and len(gst_number) >= 2 and gst_number[:2].isdigit():
+        return gst_number[:2]
+    if state:
+        return STATE_GST_CODES.get(state.strip().upper())
+    return None
+
+
 class InvoicePDF(FPDF):
     def header(self):
-        # Logo could be added here
-        self.set_font('helvetica', 'B', 20)
-        self.cell(0, 10, 'TAX INVOICE', align='C', ln=True)
-        self.ln(5)
+        self.set_font('helvetica', 'B', 18)
+        self.cell(0, 8, settings.invoice_company_name, align='C', ln=True)
+        self.set_font('helvetica', '', 9)
+        if settings.invoice_company_gst:
+            self.cell(0, 5, f'GSTIN: {settings.invoice_company_gst}', align='C', ln=True)
+        if settings.invoice_company_address:
+            self.cell(0, 5, settings.invoice_company_address, align='C', ln=True)
+        self.ln(4)
 
     def footer(self):
         self.set_y(-15)
@@ -146,8 +196,8 @@ class InvoiceService:
                 pdf.set_line_width(0.3)
                 pdf.set_font('helvetica', 'B', 9)
 
-                col_widths = [8, 58, 14, 16, 31, 29, 34]
-                headers = ['#', 'Item Description', 'Qty', 'GST%', 'Taxable', 'GST Amt', 'Total']
+                col_widths = [8, 52, 12, 30, 22, 22, 22, 22]
+                headers = ['#', 'Item', 'Qty', 'Taxable Value', 'CGST', 'SGST', 'IGST', 'Invoice Amt']
                 for i in range(len(headers)):
                     pdf.cell(col_widths[i], 7, headers[i], border=1, align='C', fill=True)
                 pdf.ln()
@@ -160,9 +210,17 @@ class InvoiceService:
                 seller_gross_total = Decimal("0")
                 seller_discount = Decimal("0")
                 seller_taxable = Decimal("0")
-                seller_tax = Decimal("0")
+                seller_cgst = Decimal("0")
+                seller_sgst = Decimal("0")
+                seller_igst = Decimal("0")
                 order_subtotal = Decimal(str(order.subtotal or 0))
                 order_discount = Decimal(str(order.discount_amount or 0))
+                buyer_state_code = gst_state_code(
+                    buyer.gst_number if buyer else None,
+                    shipping_data.get('state'),
+                )
+                seller_state_code = gst_state_code(seller_gst, None) or gst_state_code(settings.invoice_company_gst, None)
+                is_interstate = bool(seller_state_code and buyer_state_code and seller_state_code != buyer_state_code)
                 
                 for idx, item in enumerate(items, 1):
                     pdf.cell(col_widths[0], 6, str(idx), border='LR', align='C', fill=fill)
@@ -184,24 +242,35 @@ class InvoiceService:
                     paid_line_total = max(Decimal("0"), gross_line_total - line_discount)
                     taxable_value = paid_line_total / (Decimal("1") + gst_rate / Decimal("100"))
                     gst_amount = paid_line_total - taxable_value
+                    if is_interstate:
+                        cgst_amount = Decimal("0")
+                        sgst_amount = Decimal("0")
+                        igst_amount = gst_amount
+                    else:
+                        cgst_amount = gst_amount / Decimal("2")
+                        sgst_amount = gst_amount / Decimal("2")
+                        igst_amount = Decimal("0")
 
-                    pdf.cell(col_widths[3], 6, f"{gst_rate.normalize()}%", border='LR', align='C', fill=fill)
-                    pdf.cell(col_widths[4], 6, money(taxable_value), border='LR', align='R', fill=fill)
-                    pdf.cell(col_widths[5], 6, money(gst_amount), border='LR', align='R', fill=fill)
-                    pdf.cell(col_widths[6], 6, money(paid_line_total), border='LR', align='R', fill=fill)
+                    pdf.cell(col_widths[3], 6, money(taxable_value), border='LR', align='R', fill=fill)
+                    pdf.cell(col_widths[4], 6, money(cgst_amount), border='LR', align='R', fill=fill)
+                    pdf.cell(col_widths[5], 6, money(sgst_amount), border='LR', align='R', fill=fill)
+                    pdf.cell(col_widths[6], 6, money(igst_amount), border='LR', align='R', fill=fill)
+                    pdf.cell(col_widths[7], 6, money(paid_line_total), border='LR', align='R', fill=fill)
                     pdf.ln()
                     fill = not fill
                     seller_gross_total += gross_line_total
                     seller_discount += line_discount
                     seller_taxable += taxable_value
-                    seller_tax += gst_amount
+                    seller_cgst += cgst_amount
+                    seller_sgst += sgst_amount
+                    seller_igst += igst_amount
 
                 pdf.cell(sum(col_widths), 0, '', border='T', ln=True)
                 pdf.ln(5)
 
                 # --- Totals ---
                 pdf.set_font('helvetica', 'B', 10)
-                payable_total = seller_taxable + seller_tax
+                invoice_amount = seller_taxable + seller_cgst + seller_sgst + seller_igst
 
                 pdf.cell(140, 6, 'Item Total (GST Inclusive):', align='R')
                 pdf.cell(50, 6, money(seller_gross_total), align='R', ln=True)
@@ -213,12 +282,18 @@ class InvoiceService:
                 pdf.cell(140, 6, 'Taxable Value:', align='R')
                 pdf.cell(50, 6, money(seller_taxable), align='R', ln=True)
 
-                pdf.cell(140, 6, 'GST Included:', align='R')
-                pdf.cell(50, 6, money(seller_tax), align='R', ln=True)
+                pdf.cell(140, 6, 'CGST:', align='R')
+                pdf.cell(50, 6, money(seller_cgst), align='R', ln=True)
+
+                pdf.cell(140, 6, 'SGST:', align='R')
+                pdf.cell(50, 6, money(seller_sgst), align='R', ln=True)
+
+                pdf.cell(140, 6, 'IGST:', align='R')
+                pdf.cell(50, 6, money(seller_igst), align='R', ln=True)
 
                 pdf.set_font('helvetica', 'B', 12)
-                pdf.cell(140, 8, 'Grand Total:', align='R')
-                pdf.cell(50, 8, money(payable_total), align='R', ln=True)
+                pdf.cell(140, 8, 'Invoice Amount:', align='R')
+                pdf.cell(50, 8, money(invoice_amount), align='R', ln=True)
 
                 pdf.ln(10)
                 pdf.set_font('helvetica', 'I', 9)
