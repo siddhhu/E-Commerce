@@ -41,7 +41,7 @@ class Settings(BaseSettings):
     supabase_bucket: str = "products"
 
     # Invoice seller details for marketplace/admin-owned products
-    invoice_company_name: str = "Mahaganpati PVT LTD"
+    invoice_company_name: str = "Mahaganpati"
     invoice_company_gst: Optional[str] = "09AAECM0123C1Z5"
     invoice_company_address: str = "Darbhanga, Bihar, India"
     

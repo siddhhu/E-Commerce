@@ -10,7 +10,7 @@ from pydantic import BaseModel
 
 from app.core.dependencies import get_current_admin
 from app.database import get_session
-from app.models.order import OrderListRead, OrderRead, OrderStatus, PaymentStatus
+from app.models.order import OrderListRead, OrderRead, OrderStatus, PaymentStatus, build_order_read
 from app.models.user import User
 from app.services.order_service import OrderService
 
@@ -145,15 +145,7 @@ async def get_order_admin(
     order_service = OrderService(session)
     order = await order_service.get_order_by_id(order_id)
     
-    order_read = OrderRead.model_validate(order)
-    if order.user:
-        order_read.customer_name = order.user.full_name
-        order_read.customer_email = order.user.email
-        order_read.customer_phone = order.user.phone
-    if order.shipping_address:
-        order_read.shipping_address_data = order.shipping_address.model_dump()
-        
-    return order_read
+    return build_order_read(order)
 
 
 @router.patch("/{order_id}/status", response_model=OrderRead)
@@ -165,7 +157,8 @@ async def update_order_status(
 ):
     """Update order status."""
     order_service = OrderService(session)
-    return await order_service.update_order_status(order_id, data.status)
+    order = await order_service.update_order_status(order_id, data.status)
+    return build_order_read(order)
 
 
 @router.patch("/{order_id}/payment-status", response_model=OrderRead)
@@ -177,7 +170,8 @@ async def update_payment_status(
 ):
     """Update payment status."""
     order_service = OrderService(session)
-    return await order_service.update_payment_status(order_id, data.payment_status)
+    order = await order_service.update_payment_status(order_id, data.payment_status)
+    return build_order_read(order)
 
 
 @router.post("/{order_id}/cancel", response_model=OrderRead)
@@ -188,4 +182,5 @@ async def cancel_order_admin(
 ):
     """Cancel an order (admin)."""
     order_service = OrderService(session)
-    return await order_service.cancel_order(order_id)
+    order = await order_service.cancel_order(order_id)
+    return build_order_read(order)

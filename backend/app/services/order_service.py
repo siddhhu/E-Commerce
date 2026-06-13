@@ -125,25 +125,19 @@ class OrderService:
         razorpay_signature: Optional[str] = None,
     ) -> Order:
         """Create order from user's cart items."""
-        import asyncio
-
-        # ── Parallel fetch: address + cart items at the same time ──────────
-        address_query = self.session.execute(
+        address_result = await self.session.execute(
             select(Address).where(
                 Address.id == shipping_address_id,
                 Address.user_id == user_id
             )
         )
-        cart_query = self.session.execute(
-            select(CartItem).where(CartItem.user_id == user_id)
-        )
-
-        address_result, cart_result = await asyncio.gather(address_query, cart_query)
-
         address = address_result.scalar_one_or_none()
         if not address:
             raise NotFoundException("Shipping address")
 
+        cart_result = await self.session.execute(
+            select(CartItem).where(CartItem.user_id == user_id)
+        )
         cart_items = cart_result.scalars().all()
         if not cart_items:
             raise BadRequestException("Cart is empty")
@@ -245,6 +239,7 @@ class OrderService:
                     order.razorpay_order_id = razorpay_order_id
                     order.razorpay_signature = razorpay_signature
                     order.payment_status = PaymentStatus.PAID
+                    order.status = OrderStatus.CONFIRMED
                     print(f"Online order with pre-verified payment: {razorpay_payment_id}")
                 else:
                     # Legacy path (old /checkout endpoint): create Razorpay order here
@@ -303,7 +298,13 @@ class OrderService:
             
             # Re-fetch order with items eagerly loaded to avoid async lazy load error during serialization
             result = await self.session.execute(
-                select(Order).where(Order.id == order.id).options(selectinload(Order.items))
+                select(Order)
+                .where(Order.id == order.id)
+                .options(
+                    selectinload(Order.items),
+                    selectinload(Order.user),
+                    selectinload(Order.shipping_address)
+                )
             )
             order = result.scalar_one()
             

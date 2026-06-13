@@ -166,3 +166,17 @@ class OrderListRead(SQLModel):
     product_summary: Optional[str] = None
     placed_at: Optional[datetime]
     created_at: datetime
+
+
+def build_order_read(order: Order) -> OrderRead:
+    """Build the API response with stable customer and address details."""
+    order_read = OrderRead.model_validate(order)
+    if order.user:
+        order_read.customer_name = order.user.full_name
+        order_read.customer_email = order.user.email
+        order_read.customer_phone = order.user.phone
+    if order.shipping_address_data:
+        order_read.shipping_address_data = order.shipping_address_data
+    elif order.shipping_address:
+        order_read.shipping_address_data = order.shipping_address.model_dump()
+    return order_read

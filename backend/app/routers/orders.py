@@ -12,7 +12,7 @@ from pydantic import BaseModel
 
 from app.core.dependencies import get_current_active_user
 from app.database import get_session
-from app.models.order import Order, OrderListRead, OrderRead, OrderStatus
+from app.models.order import Order, OrderListRead, OrderRead, OrderStatus, build_order_read
 from app.models.user import User
 from app.services.order_service import OrderService
 from app.services.payment_service import PaymentService
@@ -90,7 +90,7 @@ async def get_order_details(
     if order.user_id != current_user.id:
         raise NotFoundException("Order")
     
-    return order
+    return build_order_read(order)
 
 
 @router.post("/{order_id}/cancel", response_model=OrderRead)
@@ -101,7 +101,8 @@ async def cancel_order(
 ):
     """Cancel an order."""
     order_service = OrderService(session)
-    return await order_service.cancel_order(order_id, current_user.id)
+    order = await order_service.cancel_order(order_id, current_user.id)
+    return build_order_read(order)
 
 
 class PaymentVerificationRequest(BaseModel):
@@ -146,4 +147,5 @@ async def verify_payment(
     await session.commit()
     
     from app.models.order import PaymentStatus
-    return await order_service.update_payment_status(order_id, PaymentStatus.PAID)
+    order = await order_service.update_payment_status(order_id, PaymentStatus.PAID)
+    return build_order_read(order)

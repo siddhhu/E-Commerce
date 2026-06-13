@@ -22,7 +22,7 @@ from sqlmodel import select
 
 from app.core.dependencies import get_current_active_user
 from app.database import get_session
-from app.models.order import OrderRead
+from app.models.order import OrderRead, build_order_read
 from app.models.user import User
 from app.services.order_service import OrderService
 from app.services.payment_service import PaymentService
@@ -295,7 +295,7 @@ async def complete_checkout(
         razorpay_signature=data.razorpay_signature,
     )
 
-    return order
+    return build_order_read(order)
 
 
 # ── Legacy endpoint ───────────────────────────────────────────────────────────
@@ -331,7 +331,7 @@ async def checkout(
         )
 
     order_service = OrderService(session)
-    return await order_service.create_order_from_cart(
+    order = await order_service.create_order_from_cart(
         user_id=current_user.id,
         shipping_address_id=data.shipping_address_id,
         payment_method=data.payment_method,
@@ -339,3 +339,4 @@ async def checkout(
         promo_code=data.promo_code,
         background_tasks=background_tasks,
     )
+    return build_order_read(order)
