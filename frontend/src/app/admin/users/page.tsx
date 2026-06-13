@@ -402,10 +402,6 @@ export default function AdminUsersPage() {
                                         </Badge>
                                     </div>
                                     <div>
-                                        <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Role</p>
-                                        <p className="font-medium mt-0.5 capitalize">{selected.role?.replace(/_/g, ' ').toLowerCase()}</p>
-                                    </div>
-                                    <div>
                                         <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Business Name</p>
                                         <p className="font-medium mt-0.5">{selected.business_name || '—'}</p>
                                     </div>
