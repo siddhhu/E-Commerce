@@ -81,6 +81,8 @@ export default function OrderDetailPage() {
     ];
 
     const currentStepIndex = statusSteps.findIndex(step => step.key === order.status);
+    const paymentMethod = (order.payment_method || '').toLowerCase();
+    const isCodOrder = paymentMethod === 'cod';
 
     return (
         <div className="min-h-screen flex flex-col">
@@ -237,14 +239,14 @@ export default function OrderDetailPage() {
                                             <p className="font-medium text-slate-800">
                                                 {order.payment_status === 'paid'
                                                     ? 'Paid'
-                                                    : order.payment_method === 'COD'
+                                                    : isCodOrder
                                                         ? 'Cash on Delivery'
                                                         : 'Payment Incomplete'}
                                             </p>
                                             <p className="text-sm text-muted-foreground mt-1 max-w-[250px] leading-snug">
                                                 {order.payment_status === 'paid'
-                                                    ? `Successfully paid via ${order.payment_method === 'COD' ? 'Cash' : 'Online'}.`
-                                                    : order.payment_method === 'COD'
+                                                    ? `Successfully paid via ${isCodOrder ? 'Cash' : 'Online'}.`
+                                                    : isCodOrder
                                                         ? 'You need to pay cash to delivery executive.'
                                                         : 'Your online payment was not completed.'}
                                             </p>
@@ -253,7 +255,7 @@ export default function OrderDetailPage() {
                                             <span className="shrink-0 px-3 py-1 rounded-full text-sm font-bold bg-green-100 text-green-700">
                                                 PAID
                                             </span>
-                                        ) : order.payment_method !== 'COD' ? (
+                                        ) : !isCodOrder ? (
                                             <span className="shrink-0 px-3 py-1 rounded-full text-sm font-bold bg-amber-100 text-amber-700">
                                                 PENDING
                                             </span>
