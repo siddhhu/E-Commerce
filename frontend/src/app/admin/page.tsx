@@ -95,9 +95,9 @@ export default function AdminDashboardPage() {
                     <CardContent className="p-5">
                         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                             <div>
-                                <p className="text-xs font-bold uppercase tracking-[0.18em] text-primary">Super admin detail</p>
-                                <h2 className="mt-1 text-xl font-extrabold text-slate-900">Pranjay Admin Support</h2>
-                                <p className="mt-1 text-sm text-slate-600">Contact super admin for approvals, GST/account updates, payouts, and urgent order issues.</p>
+                                <p className="text-xs font-bold uppercase tracking-[0.18em] text-primary">Business detail</p>
+                                <h2 className="mt-1 text-xl font-extrabold text-slate-900">Mahaganpati PVT LTD</h2>
+                                <p className="mt-1 text-sm font-semibold text-slate-600">GSTIN: 09AAECM0123C1Z5</p>
                             </div>
                             <div className="grid gap-2 text-sm font-semibold text-slate-700 sm:grid-cols-2">
                                 <a href="mailto:support@admin.com" className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 shadow-sm ring-1 ring-pink-100 hover:text-primary">
