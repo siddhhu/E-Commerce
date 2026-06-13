@@ -1,6 +1,8 @@
 """
 Categories Router - Public category endpoints
 """
+from uuid import UUID
+
 from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -8,9 +10,49 @@ from sqlmodel import select
 
 from app.database import get_session
 from app.models.category import Category, CategoryRead, CategoryWithChildren
+from app.models.product import Product
 from app.core.exceptions import NotFoundException
 
 router = APIRouter()
+
+
+async def _category_product_image_map(session: AsyncSession, categories: list[Category]) -> dict:
+    """Use first active product image as a category image when no category image is set."""
+    category_ids = {cat.id for cat in categories}
+    image_map: dict = {}
+    if not category_ids:
+        return image_map
+
+    result = await session.execute(
+        select(Product)
+        .where(Product.is_active == True)
+        .where(Product.image_url.is_not(None))
+        .order_by(Product.is_featured.desc(), Product.created_at.desc())
+    )
+    products = result.scalars().all()
+
+    for product in products:
+        candidates = []
+        if product.category_id:
+            candidates.append(product.category_id)
+        for raw_id in product.category_ids or []:
+            try:
+                candidates.append(UUID(str(raw_id)))
+            except (TypeError, ValueError):
+                continue
+
+        for category_id in candidates:
+            if category_id in category_ids and category_id not in image_map and product.image_url:
+                image_map[category_id] = product.image_url
+
+    return image_map
+
+
+def _read_category(category: Category, fallback_images: dict | None = None) -> CategoryRead:
+    data = CategoryRead.model_validate(category)
+    if not data.image_url and fallback_images:
+        data.image_url = fallback_images.get(category.id)
+    return data
 
 
 def _build_tree(categories: list[Category]) -> list[CategoryWithChildren]:
@@ -55,10 +97,9 @@ async def list_categories(
         .order_by(Category.sort_order, Category.name)
     )
     categories = result.scalars().all()
-    data = [CategoryRead.model_validate(c) for c in categories]
+    fallback_images = await _category_product_image_map(session, categories)
+    data = [_read_category(c, fallback_images) for c in categories]
 
-    from fastapi.responses import Response
-    import json
     content = [c.model_dump(mode="json") for c in data]
     return JSONResponse(
         content=content,
@@ -80,6 +121,10 @@ async def get_category_tree(
         .order_by(Category.sort_order, Category.name)
     )
     all_categories = result.scalars().all()
+    fallback_images = await _category_product_image_map(session, all_categories)
+    for category in all_categories:
+        if not category.image_url:
+            category.image_url = fallback_images.get(category.id)
     tree = _build_tree(all_categories)
 
     content = [t.model_dump(mode="json") for t in tree]
@@ -108,17 +153,17 @@ async def get_category_by_slug(
         raise NotFoundException("Category")
 
     children = [c for c in all_cats if c.parent_id == category.id]
+    fallback_images = await _category_product_image_map(session, [category, *children])
 
     return CategoryWithChildren(
         id=category.id,
         name=category.name,
         slug=category.slug,
         description=category.description,
-        image_url=category.image_url,
+        image_url=category.image_url or fallback_images.get(category.id),
         sort_order=category.sort_order,
         is_active=category.is_active,
         parent_id=category.parent_id,
         created_at=category.created_at,
-        children=[CategoryRead.model_validate(c) for c in children],
+        children=[_read_category(c, fallback_images) for c in children],
     )
-

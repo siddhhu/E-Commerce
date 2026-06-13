@@ -25,6 +25,7 @@ export default function AdminCategoriesPage() {
         name: '',
         slug: '',
         description: '',
+        image_url: '',
         is_active: true
     });
 
@@ -57,6 +58,7 @@ export default function AdminCategoriesPage() {
                 name: category.name,
                 slug: category.slug,
                 description: category.description || '',
+                image_url: category.image_url || '',
                 is_active: category.is_active
             });
         } else {
@@ -65,6 +67,7 @@ export default function AdminCategoriesPage() {
                 name: '',
                 slug: '',
                 description: '',
+                image_url: '',
                 is_active: true
             });
         }
@@ -89,6 +92,7 @@ export default function AdminCategoriesPage() {
                     name: formData.name,
                     slug: slugToSave,
                     description: formData.description,
+                    image_url: formData.image_url || undefined,
                     is_active: formData.is_active
                 });
                 toast({ title: "Category updated successfully" });
@@ -97,6 +101,7 @@ export default function AdminCategoriesPage() {
                     name: formData.name,
                     slug: slugToSave,
                     description: formData.description,
+                    image_url: formData.image_url || undefined,
                     is_active: formData.is_active
                 });
                 toast({ title: "Category created successfully" });
@@ -112,6 +117,13 @@ export default function AdminCategoriesPage() {
         } finally {
             setIsSaving(false);
         }
+    };
+
+    const getImageUrl = (url?: string | null) => {
+        if (!url) return null;
+        if (url.startsWith('http')) return url;
+        const baseUrl = process.env.NEXT_PUBLIC_API_URL?.replace('/api/v1', '') || 'http://localhost:8000';
+        return `${baseUrl}${url}`;
     };
 
     const handleDelete = async (id: string) => {
@@ -170,6 +182,17 @@ export default function AdminCategoriesPage() {
                                     />
                                 </div>
                             </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="image_url">Category Image URL</Label>
+                                <Input
+                                    id="image_url" name="image_url"
+                                    value={formData.image_url} onChange={handleChange}
+                                    placeholder="https://... or uploaded image URL"
+                                />
+                                <p className="text-xs text-slate-500">
+                                    Optional. If left empty, the storefront uses the first active product image in this category.
+                                </p>
+                            </div>
                             <div className="flex items-center space-x-2 pt-2">
                                 <input 
                                     type="checkbox" id="is_active" name="is_active"
@@ -201,6 +224,7 @@ export default function AdminCategoriesPage() {
                             <thead className="text-xs text-slate-500 uppercase bg-slate-50 border-b">
                                 <tr>
                                     <th className="px-6 py-4">Name</th>
+                                    <th className="px-6 py-4">Image</th>
                                     <th className="px-6 py-4">Slug</th>
                                     <th className="px-6 py-4">Status</th>
                                     {isAdmin && <th className="px-6 py-4">Added By</th>}
@@ -211,6 +235,17 @@ export default function AdminCategoriesPage() {
                                 {categories.map((cat) => (
                                     <tr key={cat.id} className="bg-white border-b hover:bg-slate-50">
                                         <td className="px-6 py-4 font-medium text-slate-900">{cat.name}</td>
+                                        <td className="px-6 py-4">
+                                            <div className="h-12 w-12 overflow-hidden rounded-xl bg-rose-50 ring-1 ring-rose-100">
+                                                {getImageUrl(cat.image_url) ? (
+                                                    <img src={getImageUrl(cat.image_url)!} alt={cat.name} className="h-full w-full object-cover" />
+                                                ) : (
+                                                    <div className="flex h-full w-full items-center justify-center text-xs font-bold text-primary/60">
+                                                        Auto
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </td>
                                         <td className="px-6 py-4 text-slate-500">{cat.slug}</td>
                                         <td className="px-6 py-4">
                                             <span className={`px-2 py-1 text-xs font-medium rounded-full ${

@@ -15,6 +15,13 @@ from app.models.user import User
 from app.config import settings
 from app.services.storage_service import storage_service
 
+TWOPLACES = Decimal("0.01")
+
+
+def money(value: Decimal) -> str:
+    return f"Rs. {value.quantize(TWOPLACES):.2f}"
+
+
 class InvoicePDF(FPDF):
     def header(self):
         # Logo could be added here
@@ -139,8 +146,8 @@ class InvoiceService:
                 pdf.set_line_width(0.3)
                 pdf.set_font('helvetica', 'B', 9)
 
-                col_widths = [10, 80, 20, 30, 25, 25]
-                headers = ['#', 'Item Description', 'Qty', 'Unit Price', 'Total', 'Tax Inc.']
+                col_widths = [8, 58, 14, 16, 31, 29, 34]
+                headers = ['#', 'Item Description', 'Qty', 'GST%', 'Taxable', 'GST Amt', 'Total']
                 for i in range(len(headers)):
                     pdf.cell(col_widths[i], 7, headers[i], border=1, align='C', fill=True)
                 pdf.ln()
@@ -150,46 +157,68 @@ class InvoiceService:
                 pdf.set_font('helvetica', '', 9)
 
                 fill = False
-                seller_subtotal = Decimal("0")
-                seller_tax = Decimal("0") # Approximate, assuming 18% generic if we don't have exact
+                seller_gross_total = Decimal("0")
+                seller_discount = Decimal("0")
+                seller_taxable = Decimal("0")
+                seller_tax = Decimal("0")
+                order_subtotal = Decimal(str(order.subtotal or 0))
+                order_discount = Decimal(str(order.discount_amount or 0))
                 
                 for idx, item in enumerate(items, 1):
                     pdf.cell(col_widths[0], 6, str(idx), border='LR', align='C', fill=fill)
                     
                     name = item.product_name
-                    if len(name) > 40:
-                        name = name[:37] + '...'
+                    if len(name) > 32:
+                        name = name[:29] + '...'
                         
                     pdf.cell(col_widths[1], 6, name, border='LR', align='L', fill=fill)
                     pdf.cell(col_widths[2], 6, str(item.quantity), border='LR', align='C', fill=fill)
-                    pdf.cell(col_widths[3], 6, f"Rs. {item.unit_price:.2f}", border='LR', align='R', fill=fill)
-                    pdf.cell(col_widths[4], 6, f"Rs. {item.total_price:.2f}", border='LR', align='R', fill=fill)
-                    pdf.cell(col_widths[5], 6, "Yes", border='LR', align='C', fill=fill)
-                    pdf.ln()
-                    fill = not fill
-                    seller_subtotal += item.total_price
-                    
-                    # Approximating tax for the seller's portion based on the order's global tax ratio
-                    # Since total_price is tax inclusive, base = total / 1.18, tax = total - base
                     prod = products.get(item.product_id)
                     gst_rate = Decimal(str(getattr(prod, 'gst_percentage', 18))) if prod else Decimal("18")
-                    base_price = item.total_price / (Decimal("1") + gst_rate / Decimal("100"))
-                    seller_tax += (item.total_price - base_price)
+                    gross_line_total = Decimal(str(item.total_price))
+                    line_discount = (
+                        (order_discount * gross_line_total / order_subtotal)
+                        if order_subtotal > 0 and order_discount > 0
+                        else Decimal("0")
+                    )
+                    paid_line_total = max(Decimal("0"), gross_line_total - line_discount)
+                    taxable_value = paid_line_total / (Decimal("1") + gst_rate / Decimal("100"))
+                    gst_amount = paid_line_total - taxable_value
+
+                    pdf.cell(col_widths[3], 6, f"{gst_rate.normalize()}%", border='LR', align='C', fill=fill)
+                    pdf.cell(col_widths[4], 6, money(taxable_value), border='LR', align='R', fill=fill)
+                    pdf.cell(col_widths[5], 6, money(gst_amount), border='LR', align='R', fill=fill)
+                    pdf.cell(col_widths[6], 6, money(paid_line_total), border='LR', align='R', fill=fill)
+                    pdf.ln()
+                    fill = not fill
+                    seller_gross_total += gross_line_total
+                    seller_discount += line_discount
+                    seller_taxable += taxable_value
+                    seller_tax += gst_amount
 
                 pdf.cell(sum(col_widths), 0, '', border='T', ln=True)
                 pdf.ln(5)
 
                 # --- Totals ---
                 pdf.set_font('helvetica', 'B', 10)
-                pdf.cell(140, 6, 'Subtotal:', align='R')
-                pdf.cell(50, 6, f"Rs. {seller_subtotal:.2f}", align='R', ln=True)
+                payable_total = seller_taxable + seller_tax
 
-                pdf.cell(140, 6, 'Tax (Included):', align='R')
-                pdf.cell(50, 6, f"Rs. {seller_tax:.2f}", align='R', ln=True)
+                pdf.cell(140, 6, 'Item Total (GST Inclusive):', align='R')
+                pdf.cell(50, 6, money(seller_gross_total), align='R', ln=True)
+
+                if seller_discount > 0:
+                    pdf.cell(140, 6, f'Discount ({order.promo_code or "Promo"}):', align='R')
+                    pdf.cell(50, 6, f"-{money(seller_discount)}", align='R', ln=True)
+
+                pdf.cell(140, 6, 'Taxable Value:', align='R')
+                pdf.cell(50, 6, money(seller_taxable), align='R', ln=True)
+
+                pdf.cell(140, 6, 'GST Included:', align='R')
+                pdf.cell(50, 6, money(seller_tax), align='R', ln=True)
 
                 pdf.set_font('helvetica', 'B', 12)
                 pdf.cell(140, 8, 'Grand Total:', align='R')
-                pdf.cell(50, 8, f"Rs. {seller_subtotal:.2f}", align='R', ln=True)
+                pdf.cell(50, 8, money(payable_total), align='R', ln=True)
 
                 pdf.ln(10)
                 pdf.set_font('helvetica', 'I', 9)

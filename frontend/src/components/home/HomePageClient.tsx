@@ -189,6 +189,13 @@ export default function HomePageClient({
         .sort((a, b) => getDiscountPercentage(Number(b.mrp), Number(b.selling_price)) - getDiscountPercentage(Number(a.mrp), Number(a.selling_price)))
         .slice(0, 4);
 
+    const getImageUrl = (url?: string | null) => {
+        if (!url) return null;
+        if (url.startsWith('http')) return url;
+        const baseUrl = process.env.NEXT_PUBLIC_API_URL?.replace('/api/v1', '') || 'http://localhost:8000';
+        return `${baseUrl}${url}`;
+    };
+
     const mapFeaturedToProduct = (product: APIProductSummary): APIProduct => ({
         id: product.id,
         name: product.name,
@@ -238,21 +245,26 @@ export default function HomePageClient({
                                     Explore all <ArrowRight className="h-4 w-4" />
                                 </Link>
                             </div>
-                            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
+                            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-8">
                                 {homeCategories.map((category) => (
                                     <Link
                                         key={category.id}
                                         href={`/products?category=${category.id}`}
-                                        className="group rounded-2xl border border-slate-100 bg-gradient-to-b from-rose-50 to-white p-3 text-center shadow-sm hover:-translate-y-1 hover:shadow-lg transition-all"
+                                        className="group overflow-hidden rounded-2xl border border-rose-100 bg-white text-center shadow-sm transition-all hover:-translate-y-1 hover:shadow-lg"
                                     >
-                                        <div className="relative mx-auto mb-3 h-16 w-16 overflow-hidden rounded-full bg-white ring-1 ring-rose-100">
-                                            {category.image_url ? (
-                                                <img src={category.image_url} alt={category.name} className="h-full w-full object-cover" loading="lazy" />
+                                        <div className="relative h-24 w-full overflow-hidden bg-gradient-to-br from-rose-50 to-amber-50 sm:h-28">
+                                            {getImageUrl(category.image_url) ? (
+                                                <img src={getImageUrl(category.image_url)!} alt={category.name} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" loading="lazy" />
                                             ) : (
-                                                <div className="h-full w-full bg-gradient-to-br from-[#e91e63]/20 to-amber-100" />
+                                                <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#e91e63]/15 to-amber-100 text-2xl font-black text-primary/50">
+                                                    {category.name.slice(0, 1).toUpperCase()}
+                                                </div>
                                             )}
                                         </div>
-                                        <p className="line-clamp-2 text-xs font-extrabold text-slate-900 group-hover:text-primary">{category.name}</p>
+                                        <div className="p-3">
+                                            <p className="line-clamp-2 text-xs font-extrabold text-slate-900 group-hover:text-primary">{category.name}</p>
+                                            <p className="mt-1 text-[11px] font-semibold text-slate-400">Shop now</p>
+                                        </div>
                                     </Link>
                                 ))}
                             </div>
