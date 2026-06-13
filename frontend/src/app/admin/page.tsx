@@ -93,21 +93,20 @@ export default function AdminDashboardPage() {
             {isSellerOnly && (
                 <Card className="border-primary/20 bg-gradient-to-r from-primary/5 to-pink-50">
                     <CardContent className="p-5">
-                        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                            <div>
-                                <p className="text-xs font-bold uppercase tracking-[0.18em] text-primary">Business detail</p>
+                        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
+                            <div className="min-w-0">
                                 <h2 className="mt-1 text-xl font-extrabold text-slate-900">Mahaganpati</h2>
                                 <p className="mt-1 text-sm font-semibold text-slate-600">GSTIN: 09AAECM0123C1Z5</p>
-                                <p className="mt-1 text-sm text-slate-600">Your seller account is registered under Mahaganpati. Feel free to reach out for approvals, GST/account updates, payouts, or urgent order issues.</p>
+                                <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">Your seller account is registered under Mahaganpati. Feel free to reach out for approvals, GST/account updates, payouts, or urgent order issues.</p>
                             </div>
-                            <div className="grid gap-2 text-sm font-semibold text-slate-700 sm:grid-cols-2">
-                                <a href="mailto:support@pranjay.com" className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 shadow-sm ring-1 ring-pink-100 hover:text-primary">
-                                    <Mail className="h-4 w-4 text-primary" />
-                                    support@pranjay.com
+                            <div className="grid min-w-0 gap-2 text-sm font-semibold text-slate-700 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
+                                <a href="mailto:support@pranjay.com" className="inline-flex min-w-0 items-center gap-2 rounded-full bg-white px-4 py-2 shadow-sm ring-1 ring-pink-100 hover:text-primary">
+                                    <Mail className="h-4 w-4 shrink-0 text-primary" />
+                                    <span className="min-w-0 break-all">support@pranjay.com</span>
                                 </a>
-                                <a href="tel:+917870053331" className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 shadow-sm ring-1 ring-pink-100 hover:text-primary">
-                                    <Phone className="h-4 w-4 text-primary" />
-                                    +91 78700 53331
+                                <a href="tel:+917870053331" className="inline-flex min-w-0 items-center gap-2 rounded-full bg-white px-4 py-2 shadow-sm ring-1 ring-pink-100 hover:text-primary">
+                                    <Phone className="h-4 w-4 shrink-0 text-primary" />
+                                    <span className="min-w-0 whitespace-nowrap">+91 78700 53331</span>
                                 </a>
                             </div>
                         </div>
