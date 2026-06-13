@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { authApi, usersApi } from '@/lib/api';
+import { TERMS_VIEWED_STORAGE_KEY } from '@/lib/legal';
 import { useAuthStore } from '@/store/auth-store';
 
 export default function ProfileSetupPage() {
@@ -22,6 +23,7 @@ export default function ProfileSetupPage() {
     const [contactEmail, setContactEmail] = useState('');
     const [gstNumber, setGstNumber] = useState('');
     const [termsAccepted, setTermsAccepted] = useState(false);
+    const [termsViewed, setTermsViewed] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
 
     // Step: 'profile' → fill details, 'invoice' → upload document (sellers only)
@@ -62,6 +64,21 @@ export default function ProfileSetupPage() {
         }
     }, [isAuthenticated, isAuthLoading, user, router]);
 
+    useEffect(() => {
+        const refreshTermsViewed = () => {
+            setTermsViewed(window.localStorage.getItem(TERMS_VIEWED_STORAGE_KEY) === 'true');
+        };
+
+        refreshTermsViewed();
+        window.addEventListener('focus', refreshTermsViewed);
+        window.addEventListener('storage', refreshTermsViewed);
+
+        return () => {
+            window.removeEventListener('focus', refreshTermsViewed);
+            window.removeEventListener('storage', refreshTermsViewed);
+        };
+    }, []);
+
     const handleSaveProfile = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!name.trim()) {
@@ -78,8 +95,12 @@ export default function ProfileSetupPage() {
             toast({ title: 'Invalid email', description: 'Please enter a valid email address', variant: 'destructive' });
             return;
         }
+        if (!termsViewed) {
+            toast({ title: 'View terms first', description: 'Please open and read the Terms and Conditions before creating your account.', variant: 'destructive' });
+            return;
+        }
         if (!termsAccepted) {
-            toast({ title: 'Terms required', description: 'Please agree to the Terms and Conditions before creating your account.', variant: 'destructive' });
+            toast({ title: 'Terms required', description: 'Please agree to the Terms and Conditions after viewing them.', variant: 'destructive' });
             return;
         }
 
@@ -610,19 +631,30 @@ export default function ProfileSetupPage() {
                             <input
                                 type="checkbox"
                                 checked={termsAccepted}
+                                disabled={!termsViewed}
                                 onChange={(e) => setTermsAccepted(e.target.checked)}
-                                className="mt-0.5 h-4 w-4 rounded border-slate-300 text-primary"
+                                className="mt-0.5 h-4 w-4 rounded border-slate-300 text-primary disabled:cursor-not-allowed disabled:opacity-50"
                             />
                             <span>
                                 I agree to the{' '}
-                                <a href="/terms" target="_blank" className="font-semibold text-primary underline">
+                                <a
+                                    href="/terms"
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="font-semibold text-primary underline"
+                                >
                                     Terms and Conditions
                                 </a>{' '}
                                 and confirm the information provided is correct.
+                                {!termsViewed && (
+                                    <span className="mt-1 block text-amber-700">
+                                        Please open the Terms and Conditions link first to enable this checkbox.
+                                    </span>
+                                )}
                             </span>
                         </label>
 
-                        <Button type="submit" className="w-full" disabled={isLoading || !termsAccepted}>
+                        <Button type="submit" className="w-full" disabled={isLoading || !termsViewed || !termsAccepted}>
                             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                             {businessType === 'seller' ? 'Next: Upload Document →' : 'Save & Continue'}
                         </Button>

@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ShieldCheck, ArrowLeft } from 'lucide-react';
+import { TermsViewedMarker } from './TermsViewedMarker';
 
 export const metadata: Metadata = {
     title: 'Terms & Conditions — Pranjay',
@@ -89,6 +90,7 @@ const sections = [
 export default function TermsPage() {
     return (
         <div className="min-h-screen bg-background">
+            <TermsViewedMarker />
             {/* Header */}
             <div className="bg-gradient-to-br from-primary/10 via-primary/5 to-background border-b border-border">
                 <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
