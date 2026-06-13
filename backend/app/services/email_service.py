@@ -318,7 +318,7 @@ class EmailService:
                         <div style="background: #fff8e1; border-left: 4px solid #f59e0b; padding: 16px; margin: 20px 0;">
                             <p style="margin: 0;"><strong>Next step:</strong> Our admin team will review your document. Once approved, you will receive your login credentials directly. If you haven't heard back in 48 hours, please contact <a href="mailto:{self.admin_email}">{self.admin_email}</a>.</p>
                         </div>
-                        <p>Once approved, you will receive a <strong>@pranjay.com username</strong> and password to log in and start listing your products.</p>
+                        <p>Once approved, you will use your registered seller email and a generated password to log in and start listing your products.</p>
                         <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
                         <p style="color: #666; font-size: 12px;">&copy; 2024 Pranjay. All rights reserved.</p>
                     </div>
@@ -400,7 +400,7 @@ class EmailService:
                         <p>Great news! Your seller application on <strong>Pranjay</strong> has been approved. Here are your login credentials:</p>
                         <div style="background: #f0fdf4; border: 2px solid #86efac; padding: 24px; margin: 20px 0; border-radius: 8px;">
                             <p style="margin: 0 0 12px;"><strong>Login Page:</strong> <a href="https://pranjay.com/admin/login">pranjay.com/admin/login</a></p>
-                            <p style="margin: 0 0 12px;"><strong>Username:</strong> <code style="background: #fff; padding: 4px 8px; border-radius: 4px; font-size: 14px;">{seller_username}</code></p>
+                            <p style="margin: 0 0 12px;"><strong>Login Email:</strong> <code style="background: #fff; padding: 4px 8px; border-radius: 4px; font-size: 14px;">{seller_username}</code></p>
                             <p style="margin: 0;"><strong>Password:</strong> <code style="background: #fff; padding: 4px 8px; border-radius: 4px; font-size: 14px;">{plain_password}</code></p>
                         </div>
                         <div style="background: #fff7ed; border-left: 4px solid #f97316; padding: 12px; margin: 20px 0;">

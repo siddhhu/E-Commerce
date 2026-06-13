@@ -96,7 +96,7 @@ async def update_current_user_profile(
                     status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                     detail="Seller email is required."
                 )
-            data.contact_email = contact_email
+            data.contact_email = contact_email.lower()
         elif not current_user.contact_email:
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,

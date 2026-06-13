@@ -7,6 +7,7 @@ from datetime import datetime
 from typing import Optional
 from uuid import UUID
 
+from sqlalchemy import or_
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 
@@ -174,20 +175,24 @@ class UserService:
         )
         return result.scalars().all()
 
-    def _generate_seller_username(self, user: User) -> str:
-        """
-        Generate a unique @pranjay.com email for the seller.
-        Uses business_name if available, otherwise falls back to full_name or
-        a random short slug.
-        """
-        raw = (user.business_name or user.full_name or "seller").lower()
-        # Keep only alphanumeric and hyphens, strip leading/trailing hyphens
-        slug = "".join(c if c.isalnum() else "-" for c in raw).strip("-")
-        # Truncate to 20 chars max
-        slug = slug[:20].strip("-") or "seller"
-        # Append 4 random digits to avoid collisions
-        suffix = "".join(secrets.choice(string.digits) for _ in range(4))
-        return f"{slug}{suffix}@pranjay.com"
+    async def _get_seller_login_email(self, user: User) -> str:
+        """Use the seller's registration email as their login username."""
+        if not user.contact_email or not user.contact_email.strip():
+            raise BadRequestException("Cannot approve seller until seller email is provided.")
+
+        login_email = user.contact_email.strip().lower()
+        result = await self.session.execute(
+            select(User).where(
+                User.id != user.id,
+                or_(User.email == login_email, User.seller_username == login_email)
+            )
+        )
+        if result.scalar_one_or_none():
+            raise BadRequestException(
+                "Cannot approve seller because this email is already used by another account."
+            )
+
+        return login_email
 
     def _generate_plain_password(self, length: int = 12) -> str:
         """Generate a secure random plain-text password."""
@@ -206,15 +211,23 @@ class UserService:
     async def approve_seller(self, user_id: UUID) -> tuple[User, str]:
         """
         Super-admin approves a seller.
-        - Generates a @pranjay.com username + secure random password
+        - Uses the seller's registration email as the login username
+        - Generates a secure random password
         - Stores the hashed password as hashed_password (for login)
         - Stores the plain password in seller_plain_password (for admin to read once)
         - Sets seller_status → approved
         Returns (user, plain_password) — caller is responsible for showing it to admin.
         """
         user = await self.get_user_by_id(user_id)
+        username = await self._get_seller_login_email(user)
 
         if user.seller_status == "approved" and user.seller_username and user.seller_plain_password:
+            if user.seller_username != username:
+                user.seller_username = username
+                user.updated_at = datetime.utcnow()
+                self.session.add(user)
+                await self.session.commit()
+                await self.session.refresh(user)
             # Already approved with credentials — return existing credentials
             return user, user.seller_plain_password or ""
 
@@ -237,7 +250,6 @@ class UserService:
                 + ", ".join(missing_fields)
             )
 
-        username = user.seller_username or self._generate_seller_username(user)
         plain_password = self._generate_plain_password()
 
         user.seller_username = username

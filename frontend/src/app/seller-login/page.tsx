@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 /**
  * /seller-login is deprecated.
  * Sellers now log in via the unified /admin/login page
- * using their generated @pranjay.com seller credentials.
+ * using their registered email and generated password.
  */
 export default function SellerLoginRedirect() {
     const router = useRouter();

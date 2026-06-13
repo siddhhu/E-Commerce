@@ -318,13 +318,13 @@ export default function AdminUsersPage() {
                                                     ✅ {creds.business_name || creds.full_name || 'Seller'} — Approved!
                                                 </p>
                                                 <p className="text-xs text-green-600 mt-0.5">
-                                                    Share these credentials with the seller manually. They need them to log in at /seller-login
+                                                    Share these credentials with the seller manually. They need them to log in at /admin/login
                                                 </p>
                                             </div>
                                         </div>
                                         <div className="bg-white border border-green-200 rounded-lg p-4 space-y-3">
                                             <div>
-                                                <p className="text-xs font-bold uppercase text-slate-400 mb-1">Seller Username (email)</p>
+                                                <p className="text-xs font-bold uppercase text-slate-400 mb-1">Seller Login Email</p>
                                                 <div className="flex items-center gap-2">
                                                     <code className="text-sm font-mono bg-slate-100 px-2 py-1 rounded flex-1">
                                                         {creds.seller_username}
@@ -365,7 +365,7 @@ export default function AdminUsersPage() {
                                             </div>
                                             <p className="text-xs text-slate-500 bg-amber-50 border border-amber-100 rounded p-2">
                                                 ⚠️ Share these credentials with the seller via phone or WhatsApp. They can log in at{' '}
-                                                <strong>/seller-login</strong>.
+                                                <strong>/admin/login</strong>.
                                             </p>
                                         </div>
                                     </CardContent>
@@ -435,7 +435,7 @@ export default function AdminUsersPage() {
                                             {selected.seller_username && (
                                                 <div className="space-y-3">
                                                     <div>
-                                                        <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Seller Username</p>
+                                                        <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Seller Login Email</p>
                                                         <div className="flex items-center gap-2 mt-0.5">
                                                             <code className="text-xs font-mono bg-slate-100 px-2 py-1 rounded">
                                                                 {selected.seller_username}

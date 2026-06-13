@@ -648,11 +648,17 @@ export default function ProfileSetupPage() {
                                 and confirm the information provided is correct.
                                 {!termsViewed && (
                                     <span className="mt-1 block text-amber-700">
-                                        Please open the Terms and Conditions link first to enable this checkbox.
+                                        You must open and view the Terms and Conditions first. After viewing, return here to tick this checkbox and continue.
                                     </span>
                                 )}
                             </span>
                         </label>
+
+                        {!termsViewed && (
+                            <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800">
+                                Account creation is locked until you view the Terms and Conditions.
+                            </p>
+                        )}
 
                         <Button type="submit" className="w-full" disabled={isLoading || !termsViewed || !termsAccepted}>
                             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

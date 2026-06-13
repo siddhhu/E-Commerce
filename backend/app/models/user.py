@@ -34,7 +34,7 @@ class SellerStatus(str, enum.Enum):
     """Seller application status."""
     none = "none"          # Not a seller / hasn't applied
     pending = "pending"    # Applied, awaiting admin approval
-    approved = "approved"  # Approved — has @pranjay.com credentials
+    approved = "approved"  # Approved — has seller email/password credentials
     rejected = "rejected"  # Rejected by admin
 
 
@@ -68,7 +68,7 @@ class UserBase(SQLModel):
     )
     seller_invoice_url: Optional[str] = Field(default=None)      # Document uploaded at registration
     seller_bank_proof_url: Optional[str] = Field(default=None)   # Cancelled cheque/passbook/bank statement proof
-    seller_username: Optional[str] = Field(default=None, max_length=255)  # Generated @pranjay.com email
+    seller_username: Optional[str] = Field(default=None, max_length=255)  # Seller login email
     # Plain password stored temporarily for super-admin to read & share.
     seller_plain_password: Optional[str] = Field(default=None)
     bank_account_holder_name: Optional[str] = Field(default=None, max_length=255)

@@ -47,8 +47,8 @@ class AdminLoginRequest(BaseModel):
 
 
 class SellerLoginRequest(BaseModel):
-    """Seller login — uses the generated @pranjay.com credentials."""
-    username: str   # e.g. mybrand1234@pranjay.com
+    """Seller login — uses the registered seller email and generated password."""
+    username: str
     password: str
 
 
@@ -179,32 +179,33 @@ async def seller_login(
     session: AsyncSession = Depends(get_session)
 ):
     """
-    Login for approved sellers using their generated @pranjay.com credentials.
+    Login for approved sellers using their registered email and generated password.
     Only works when seller_status == approved.
     """
     from app.core.security import verify_password
 
+    login_email = data.username.strip().lower()
     result = await session.execute(
-        select(User).where(User.seller_username == data.username)
+        select(User).where(User.seller_username == login_email)
     )
     user = result.scalar_one_or_none()
 
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid username or password."
+            detail="Invalid email or password."
         )
 
     if user.seller_status != "approved":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Your seller account is not yet approved. Please contact support@admin.com.",
+            detail="Your seller account is not yet approved. Please contact support@pranjay.com.",
         )
 
     if not user.hashed_password or not verify_password(data.password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid username or password."
+            detail="Invalid email or password."
         )
 
     auth_service = AuthService(session)

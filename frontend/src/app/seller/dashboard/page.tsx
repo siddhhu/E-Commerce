@@ -40,10 +40,10 @@ export default function SellerDashboardPage() {
         fetchData();
     }, []);
 
-    const copyUsername = () => {
+    const copyLoginEmail = () => {
         if (user?.seller_username) {
             navigator.clipboard.writeText(user.seller_username);
-            toast({ title: 'Copied!', description: 'Seller username copied to clipboard.' });
+            toast({ title: 'Copied!', description: 'Seller login email copied to clipboard.' });
         }
     };
 
@@ -85,8 +85,9 @@ export default function SellerDashboardPage() {
                         <p className="font-semibold text-green-800">✅ Approved Seller Account</p>
                         {user?.seller_username && (
                             <div className="flex items-center gap-2 mt-1">
+                                <span className="text-xs font-semibold text-green-700">Login email:</span>
                                 <span className="text-green-700 font-mono text-xs">{user.seller_username}</span>
-                                <button onClick={copyUsername} title="Copy username">
+                                <button onClick={copyLoginEmail} title="Copy login email">
                                     <Copy className="h-3.5 w-3.5 text-green-500 hover:text-green-700 cursor-pointer" />
                                 </button>
                             </div>

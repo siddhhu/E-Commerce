@@ -76,17 +76,17 @@ function AdminLoginForm() {
                 <CardHeader className="space-y-1 pb-8 pt-8">
                     <CardTitle className="text-3xl font-bold tracking-tight text-center">Admin &amp; Seller Login</CardTitle>
                     <CardDescription className="text-center text-slate-400">
-                        Admins: use your email · Sellers: use your @pranjay.com username
+                        Admins: use your email · Sellers: use your registered email
                     </CardDescription>
                 </CardHeader>
                 <form onSubmit={handleLogin}>
                     <CardContent className="space-y-4">
                         <div className="space-y-2">
-                            <Label htmlFor="email" className="text-slate-300">Email / Seller Username</Label>
+                            <Label htmlFor="email" className="text-slate-300">Email</Label>
                             <Input
                                 id="email"
                                 type="text"
-                                placeholder="admin@example.com or seller1234@pranjay.com"
+                                placeholder="admin@example.com or seller@example.com"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
                                 disabled={isLoading}

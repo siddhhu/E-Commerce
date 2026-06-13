@@ -61,18 +61,19 @@ class AuthService:
         """
         Authenticate admin OR approved seller by email/username and password.
         - Admins: look up by email field
-        - Sellers: look up by seller_username (e.g. mybrand1234@pranjay.com)
+        - Sellers: look up by seller_username, which is their registered email
         Both use the same /admin/login endpoint — no separate seller-login needed.
         """
         from sqlmodel import select as sql_select
+        login_email = email.strip().lower()
 
         # 1. Try by email (admins)
-        user = await self.get_user_by_email(email)
+        user = await self.get_user_by_email(login_email)
 
-        # 2. If not found, try by seller_username (approved sellers)
+        # 2. If not found, try seller login email (approved sellers)
         if not user:
             result = await self.session.execute(
-                sql_select(User).where(User.seller_username == email)
+                sql_select(User).where(User.seller_username == login_email)
             )
             user = result.scalar_one_or_none()
 

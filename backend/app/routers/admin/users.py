@@ -144,26 +144,22 @@ async def approve_seller(
 ):
     """
     Approve a seller application (internal admin staff only).
-    Generates a @pranjay.com username and a random password.
+    Uses the seller's registered email and generates a random password.
     Returns the plain credentials — admin must share these with the seller manually.
-    If the seller provided a contact_email, credentials are also emailed to them.
+    Credentials are also emailed to the seller's registered email.
     """
     from app.services.email_service import email_service
 
     user_service = UserService(session)
     user, plain_password = await user_service.approve_seller(user_id)
 
-    # Send credentials email if seller has a contact email
-    notify_email = user.contact_email or user.email
-    # Only send if contact_email is set (email field may be phone-generated)
-    if user.contact_email:
-        background_tasks.add_task(
-            email_service.send_seller_approved_credentials,
-            user.contact_email,
-            user.full_name or user.business_name or "Seller",
-            user.seller_username,
-            plain_password
-        )
+    background_tasks.add_task(
+        email_service.send_seller_approved_credentials,
+        user.contact_email,
+        user.full_name or user.business_name or "Seller",
+        user.seller_username,
+        plain_password
+    )
 
     return SellerCredentialsRead(
         id=user.id,
