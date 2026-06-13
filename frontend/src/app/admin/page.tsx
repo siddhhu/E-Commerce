@@ -96,13 +96,14 @@ export default function AdminDashboardPage() {
                         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                             <div>
                                 <p className="text-xs font-bold uppercase tracking-[0.18em] text-primary">Business detail</p>
-                                <h2 className="mt-1 text-xl font-extrabold text-slate-900">Mahaganpati PVT LTD</h2>
+                                <h2 className="mt-1 text-xl font-extrabold text-slate-900">Mahaganpati</h2>
                                 <p className="mt-1 text-sm font-semibold text-slate-600">GSTIN: 09AAECM0123C1Z5</p>
+                                <p className="mt-1 text-sm text-slate-600">Your seller account is registered under Mahaganpati. Feel free to reach out for approvals, GST/account updates, payouts, or urgent order issues.</p>
                             </div>
                             <div className="grid gap-2 text-sm font-semibold text-slate-700 sm:grid-cols-2">
-                                <a href="mailto:support@admin.com" className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 shadow-sm ring-1 ring-pink-100 hover:text-primary">
+                                <a href="mailto:support@pranjay.com" className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 shadow-sm ring-1 ring-pink-100 hover:text-primary">
                                     <Mail className="h-4 w-4 text-primary" />
-                                    support@admin.com
+                                    support@pranjay.com
                                 </a>
                                 <a href="tel:+917870053331" className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 shadow-sm ring-1 ring-pink-100 hover:text-primary">
                                     <Phone className="h-4 w-4 text-primary" />
