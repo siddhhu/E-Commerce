@@ -118,7 +118,10 @@ export const useCartStore = create<CartState>()(
             getDiscount: () => {
                 const subtotal = get().getSubtotal();
                 const discount = get().promo_discount || 0;
-                return Math.min(subtotal, Math.max(0, discount));
+                if (subtotal <= 0 || discount >= subtotal) {
+                    return 0;
+                }
+                return Math.max(0, discount);
             },
 
             getTax: () => {

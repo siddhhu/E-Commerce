@@ -44,5 +44,5 @@ async def validate_promo_code(
     service = PromoCodeService(session)
     subtotal = Decimal(str(data.subtotal))
     promo = await service.validate_for_subtotal(data.code, subtotal)
-    discount = service.compute_discount(promo, subtotal)
+    discount = service.compute_valid_discount(promo, subtotal)
     return PromoValidateResponse(code=promo.code, discount_amount=float(discount))

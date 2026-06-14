@@ -218,6 +218,15 @@ export default function CheckoutPage() {
             return;
         }
 
+        if (promo_code && getDiscount() <= 0) {
+            toast({
+                title: 'Promo needs a higher cart value',
+                description: 'Add more quantity or products to use this promo code.',
+                variant: 'destructive',
+            });
+            return;
+        }
+
         if (paymentMethod === 'online' && (!(window as any).Razorpay || !isRazorpayReady)) {
             toast({
                 title: 'Payment Loading',

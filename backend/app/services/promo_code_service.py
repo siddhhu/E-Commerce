@@ -10,6 +10,8 @@ from sqlmodel import select
 from app.core.exceptions import BadRequestException, NotFoundException
 from app.models.promo_code import PromoCode, PromoCodeCreate, PromoCodeUpdate, PromoDiscountType
 
+MIN_PAYABLE_AFTER_PROMO = Decimal("1.00")
+
 
 class PromoCodeService:
     """Service for promo code operations."""
@@ -67,6 +69,22 @@ class PromoCodeService:
             discount = Decimal("0")
         if discount > subtotal:
             discount = subtotal
+        return discount
+
+    def compute_valid_discount(self, promo: PromoCode, subtotal: Decimal) -> Decimal:
+        """Compute discount and reject coupons that make product value zero."""
+        discount = self.compute_discount(promo, subtotal)
+        payable_amount = subtotal - discount
+
+        if discount <= 0:
+            raise BadRequestException("Invalid promo code")
+
+        if payable_amount < MIN_PAYABLE_AFTER_PROMO:
+            raise BadRequestException(
+                "Add more quantity or products to use this promo code. "
+                "Promo discount cannot make the order value zero."
+            )
+
         return discount
 
     async def create(self, data: PromoCodeCreate) -> PromoCode:

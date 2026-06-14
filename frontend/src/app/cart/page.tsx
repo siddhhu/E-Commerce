@@ -183,7 +183,13 @@ export default function CartPage() {
                                             <div className="flex items-center justify-between">
                                                 <div>
                                                     <div className="font-mono text-sm">{promo_code}</div>
-                                                    <div className="text-xs text-green-600">Applied</div>
+                                                    {getDiscount() > 0 ? (
+                                                        <div className="text-xs text-green-600">Applied</div>
+                                                    ) : (
+                                                        <div className="max-w-[220px] text-xs text-amber-700">
+                                                            Add more quantity or products to use this promo.
+                                                        </div>
+                                                    )}
                                                 </div>
                                                 <Button variant="outline" size="sm" onClick={clearPromo}>
                                                     Remove
@@ -207,7 +213,7 @@ export default function CartPage() {
                                                                 const res = await promoCodesApi.validate(promoInput.trim(), getSubtotal());
                                                                 setPromo({ code: res.code, discount_amount: res.discount_amount });
                                                             } catch (e: any) {
-                                                                setPromoError(e.message || 'Invalid promo code');
+                                                                setPromoError(e.message || 'Add more quantity or products to use this promo code.');
                                                             } finally {
                                                                 setIsApplyingPromo(false);
                                                             }

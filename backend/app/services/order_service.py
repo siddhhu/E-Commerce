@@ -182,7 +182,7 @@ class OrderService:
         if promo_code:
             promo_service = PromoCodeService(self.session)
             promo = await promo_service.validate_for_subtotal(promo_code, subtotal)
-            discount_amount = promo_service.compute_discount(promo, subtotal)
+            discount_amount = promo_service.compute_valid_discount(promo, subtotal)
             normalized_promo_code = promo.code
 
         # Calculate order totals (GST-inclusive pricing model)

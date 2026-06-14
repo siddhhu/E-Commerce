@@ -115,11 +115,8 @@ async def prepare_checkout(
     if data.promo_code:
         from app.services.promo_code_service import PromoCodeService
         promo_service = PromoCodeService(session)
-        try:
-            promo = await promo_service.validate_for_subtotal(data.promo_code, subtotal)
-            discount = promo_service.compute_discount(promo, subtotal)
-        except Exception:
-            pass  # Invalid promo ignored at prepare stage
+        promo = await promo_service.validate_for_subtotal(data.promo_code, subtotal)
+        discount = promo_service.compute_valid_discount(promo, subtotal)
 
     total_amount = max(Decimal("0"), subtotal - discount)
     amount_paise = int(total_amount * 100)
