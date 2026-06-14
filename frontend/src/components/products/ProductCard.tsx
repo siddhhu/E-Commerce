@@ -33,6 +33,18 @@ export function ProductCard({
     const isOutOfStock = product.stock_quantity <= 0;
     const labels = getProductLabels(product).slice(0, 3);
 
+    const handleWishlistClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+        e.preventDefault();
+        e.stopPropagation();
+        onAddToWishlist?.(product.id);
+    };
+
+    const handleCartClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+        e.preventDefault();
+        e.stopPropagation();
+        onAddToCart?.(product.id);
+    };
+
     return (
         <Card className="group overflow-hidden hover:shadow-lg transition-all duration-300">
             <div className="relative aspect-square overflow-hidden bg-muted">
@@ -62,7 +74,7 @@ export function ProductCard({
                         variant="secondary"
                         size="icon"
                         className="h-8 w-8 rounded-full shadow-md"
-                        onClick={() => onAddToWishlist?.(product.id)}
+                        onClick={handleWishlistClick}
                     >
                         <Heart className="h-4 w-4" />
                     </Button>
@@ -104,7 +116,7 @@ export function ProductCard({
                 <Button
                     className="w-full mt-4"
                     disabled={isOutOfStock}
-                    onClick={() => onAddToCart?.(product.id)}
+                    onClick={handleCartClick}
                 >
                     <ShoppingCart className="h-4 w-4 mr-2" />
                     {isOutOfStock ? 'Out of Stock' : 'Add to Cart'}

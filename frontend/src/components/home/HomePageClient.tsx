@@ -289,7 +289,12 @@ export default function HomePageClient({
                             </div>
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6">
                                 {topDealProducts.map((product) => (
-                                    <ProductCard key={product.id} product={mapFeaturedToProduct(product)} />
+                                    <ProductCard
+                                        key={product.id}
+                                        product={mapFeaturedToProduct(product)}
+                                        onAddToCart={() => handleAddToCart(product)}
+                                        onAddToWishlist={() => handleToggleWishlist(product)}
+                                    />
                                 ))}
                             </div>
                         </div>
