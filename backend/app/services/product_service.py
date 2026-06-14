@@ -193,12 +193,12 @@ class ProductService:
 
     async def create_product(self, data: ProductCreate) -> Product:
         """Create a new product."""
-        # Check for duplicate SKU
+        # Check for duplicate HSN code (stored in the existing sku field)
         existing = await self.session.execute(
             select(Product).where(Product.sku == data.sku)
         )
         if existing.scalar_one_or_none():
-            raise ConflictException(f"Product with SKU {data.sku} already exists")
+            raise ConflictException(f"Product with HSN Code {data.sku} already exists")
         
         # Validate pricing
         if data.selling_price > data.mrp:

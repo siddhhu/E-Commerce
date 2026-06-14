@@ -42,8 +42,8 @@ class Settings(BaseSettings):
 
     # Invoice seller details for marketplace/admin-owned products
     invoice_company_name: str = "Mahaganpati"
-    invoice_company_gst: Optional[str] = "09AAECM0123C1Z5"
-    invoice_company_address: str = "Darbhanga, Bihar, India"
+    invoice_company_gst: Optional[str] = "10ACEFM4547Q1C9"
+    invoice_company_address: str = ""
     
     # Razorpay Settings
     razorpay_key_id: str = "rzp_live_SZO4iQslfD86WW"

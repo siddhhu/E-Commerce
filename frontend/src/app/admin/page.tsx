@@ -96,7 +96,7 @@ export default function AdminDashboardPage() {
                         <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
                             <div className="min-w-0">
                                 <h2 className="mt-1 text-xl font-extrabold text-slate-900">Mahaganpati</h2>
-                                <p className="mt-1 text-sm font-semibold text-slate-600">GSTIN: 09AAECM0123C1Z5</p>
+                                <p className="mt-1 text-sm font-semibold text-slate-600">GSTIN: 10ACEFM4547Q1C9</p>
                                 <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">Your seller account is registered under Mahaganpati. Feel free to reach out for approvals, GST/account updates, payouts, or urgent order issues.</p>
                             </div>
                             <div className="grid min-w-0 gap-2 text-sm font-semibold text-slate-700 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">

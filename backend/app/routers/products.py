@@ -12,6 +12,7 @@ from pydantic import BaseModel
 from app.database import get_session
 from app.models.product import Product, ProductListRead, ProductRead
 from app.models.user import User
+from app.config import settings
 from app.services.product_service import ProductService
 from sqlmodel import select
 
@@ -311,15 +312,15 @@ async def get_product_by_slug(
     product_service = ProductService(session)
     product = await product_service.get_product_by_slug(slug)
 
-    # Enrich with seller GST number if product has a seller
-    seller_gst_number: Optional[str] = None
+    # Enrich with seller GST number. Admin-owned products use Mahaganpati GST.
+    seller_gst_number: Optional[str] = settings.invoice_company_gst
     if product.seller_id:
         seller_result = await session.execute(
             select(User).where(User.id == product.seller_id)
         )
         seller = seller_result.scalar_one_or_none()
         if seller:
-            seller_gst_number = seller.gst_number
+            seller_gst_number = seller.gst_number or seller_gst_number
 
     product_data = ProductRead.model_validate(product)
     product_data.seller_gst_number = seller_gst_number

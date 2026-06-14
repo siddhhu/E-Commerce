@@ -310,7 +310,7 @@ export default function AdminEditProductPage() {
                                         >
                                             <option value="">No, this is a standalone product</option>
                                             {products.filter(p => p.id !== productId && !p.parent_id).map(prod => (
-                                                <option key={prod.id} value={prod.id}>{prod.name} ({prod.sku})</option>
+                                                <option key={prod.id} value={prod.id}>{prod.name} (HSN: {prod.sku})</option>
                                             ))}
                                         </select>
                                     </div>
@@ -369,10 +369,11 @@ export default function AdminEditProductPage() {
                                         />
                                     </div>
                                     <div className="space-y-2">
-                                        <Label htmlFor="sku">SKU *</Label>
+                                        <Label htmlFor="sku">HSN Code *</Label>
                                         <Input 
                                             id="sku" name="sku" required
                                             value={formData.sku} onChange={handleChange} 
+                                            placeholder="E.g., 33049910"
                                         />
                                     </div>
                                     <div className="space-y-2">

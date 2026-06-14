@@ -117,7 +117,7 @@ export default function AdminProductsPage() {
                     <div className="relative w-full sm:w-96">
                         <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-500" />
                         <Input
-                            placeholder="Search by name or SKU..."
+                            placeholder="Search by name or HSN code..."
                             className="pl-9 bg-white"
                             value={filters.search}
                             onChange={(e) => setFilters(f => ({ ...f, search: e.target.value, page: 1 }))}
@@ -137,7 +137,7 @@ export default function AdminProductsPage() {
                                     <thead className="text-xs text-slate-500 uppercase bg-slate-50 border-b">
                                         <tr>
                                             <th className="px-6 py-4">Product</th>
-                                            <th className="px-6 py-4">SKU</th>
+                                            <th className="px-6 py-4">HSN Code</th>
                                             <th className="px-6 py-4">Price</th>
                                             <th className="px-6 py-4">Inventory</th>
                                             {isAdmin && <th className="px-6 py-4">Added By</th>}
@@ -234,7 +234,7 @@ export default function AdminProductsPage() {
                                         </div>
                                         <div className="flex-1 min-w-0">
                                             <p className="font-semibold text-slate-900 truncate">{product.name}</p>
-                                            <p className="text-xs text-slate-500 font-mono mt-0.5">{product.sku}</p>
+                                            <p className="text-xs text-slate-500 font-mono mt-0.5">HSN: {product.sku}</p>
                                             <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                                                 <span className="text-sm font-bold text-slate-900">{formatCurrency(product.selling_price)}</span>
                                                 <span className={`px-1.5 py-0.5 text-xs font-semibold rounded-full ${

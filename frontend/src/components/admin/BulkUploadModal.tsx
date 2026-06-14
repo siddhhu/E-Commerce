@@ -92,7 +92,7 @@ export function BulkUploadModal({ isOpen, onClose, onSuccess }: { isOpen: boolea
                             
                             <div className="bg-blue-50 text-blue-800 p-4 rounded-md text-sm">
                                 <p className="font-semibold mb-1">Required Columns:</p>
-                                <p>name, sku, mrp, selling_price, stock_quantity, category_slug, brand_slug</p>
+                                <p>name, sku (HSN code), mrp, selling_price, stock_quantity, category_slug, brand_slug</p>
                             </div>
 
                             <div className="flex justify-end gap-3 pt-4 border-t">

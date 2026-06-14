@@ -84,7 +84,7 @@ export default function AdminOrderDetailPage({ params }: { params: { id: string 
                                     <div key={index} className="flex justify-between items-start border-b pb-4 last:border-0 last:pb-0">
                                         <div>
                                             <p className="font-medium text-slate-900">{item.product_name}</p>
-                                            <p className="text-sm text-slate-500">SKU: {item.product_sku}</p>
+                                            <p className="text-sm text-slate-500">HSN Code: {item.product_sku}</p>
                                             <p className="text-sm text-slate-600 mt-1">
                                                 Qty: {item.quantity} × {formatCurrency(item.unit_price)}
                                             </p>

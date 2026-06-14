@@ -79,7 +79,7 @@ function AdminAddProductPageContent() {
                     const product = await adminApi.getProduct(duplicateId);
                     setFormData({
                         name: product.name ? `${product.name} (Copy)` : '',
-                        sku: '', // Force user to enter a new SKU
+                        sku: '', // Force user to enter a new HSN code
                         mrp: product.mrp?.toString() || '',
                         selling_price: product.selling_price?.toString() || '',
                         stock_quantity: product.stock_quantity?.toString() || '',
@@ -339,7 +339,7 @@ function AdminAddProductPageContent() {
                                         >
                                             <option value="">No, this is a standalone product</option>
                                             {products.filter(p => !p.parent_id).map(prod => (
-                                                <option key={prod.id} value={prod.id}>{prod.name} ({prod.sku})</option>
+                                                <option key={prod.id} value={prod.id}>{prod.name} (HSN: {prod.sku})</option>
                                             ))}
                                         </select>
                                     </div>
@@ -400,11 +400,11 @@ function AdminAddProductPageContent() {
                                         />
                                     </div>
                                     <div className="space-y-2">
-                                        <Label htmlFor="sku">SKU (Stock Keeping Unit) *</Label>
+                                        <Label htmlFor="sku">HSN Code *</Label>
                                         <Input 
                                             id="sku" name="sku" required
                                             value={formData.sku} onChange={handleChange} 
-                                            placeholder="E.g., LIP-MAT-001"
+                                            placeholder="E.g., 33049910"
                                         />
                                     </div>
                                     <div className="space-y-2">

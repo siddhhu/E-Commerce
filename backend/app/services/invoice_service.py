@@ -157,7 +157,8 @@ class InvoiceService:
                 pdf.set_font('helvetica', 'B', 12)
                 pdf.cell(0, 6, seller_name, ln=True)
                 pdf.set_font('helvetica', '', 10)
-                pdf.cell(0, 6, seller_address, ln=True)
+                if seller_address:
+                    pdf.cell(0, 6, seller_address, ln=True)
                 if seller_gst:
                     pdf.cell(0, 6, f'GSTIN: {seller_gst}', ln=True)
                 pdf.ln(5)
@@ -196,8 +197,8 @@ class InvoiceService:
                 pdf.set_line_width(0.3)
                 pdf.set_font('helvetica', 'B', 9)
 
-                col_widths = [8, 52, 12, 30, 22, 22, 22, 22]
-                headers = ['#', 'Item', 'Qty', 'Taxable Value', 'CGST', 'SGST', 'IGST', 'Invoice Amt']
+                col_widths = [8, 34, 22, 10, 28, 20, 20, 20, 28]
+                headers = ['#', 'Item', 'HSN Code', 'Qty', 'Taxable Value', 'CGST', 'SGST', 'IGST', 'Invoice Amt']
                 for i in range(len(headers)):
                     pdf.cell(col_widths[i], 7, headers[i], border=1, align='C', fill=True)
                 pdf.ln()
@@ -226,11 +227,16 @@ class InvoiceService:
                     pdf.cell(col_widths[0], 6, str(idx), border='LR', align='C', fill=fill)
                     
                     name = item.product_name
-                    if len(name) > 32:
-                        name = name[:29] + '...'
+                    if len(name) > 22:
+                        name = name[:19] + '...'
                         
+                    hsn_code = item.product_sku or '-'
+                    if len(hsn_code) > 12:
+                        hsn_code = hsn_code[:12]
+
                     pdf.cell(col_widths[1], 6, name, border='LR', align='L', fill=fill)
-                    pdf.cell(col_widths[2], 6, str(item.quantity), border='LR', align='C', fill=fill)
+                    pdf.cell(col_widths[2], 6, hsn_code, border='LR', align='C', fill=fill)
+                    pdf.cell(col_widths[3], 6, str(item.quantity), border='LR', align='C', fill=fill)
                     prod = products.get(item.product_id)
                     gst_rate = Decimal(str(getattr(prod, 'gst_percentage', 18))) if prod else Decimal("18")
                     gross_line_total = Decimal(str(item.total_price))
@@ -251,11 +257,11 @@ class InvoiceService:
                         sgst_amount = gst_amount / Decimal("2")
                         igst_amount = Decimal("0")
 
-                    pdf.cell(col_widths[3], 6, money(taxable_value), border='LR', align='R', fill=fill)
-                    pdf.cell(col_widths[4], 6, money(cgst_amount), border='LR', align='R', fill=fill)
-                    pdf.cell(col_widths[5], 6, money(sgst_amount), border='LR', align='R', fill=fill)
-                    pdf.cell(col_widths[6], 6, money(igst_amount), border='LR', align='R', fill=fill)
-                    pdf.cell(col_widths[7], 6, money(paid_line_total), border='LR', align='R', fill=fill)
+                    pdf.cell(col_widths[4], 6, money(taxable_value), border='LR', align='R', fill=fill)
+                    pdf.cell(col_widths[5], 6, money(cgst_amount), border='LR', align='R', fill=fill)
+                    pdf.cell(col_widths[6], 6, money(sgst_amount), border='LR', align='R', fill=fill)
+                    pdf.cell(col_widths[7], 6, money(igst_amount), border='LR', align='R', fill=fill)
+                    pdf.cell(col_widths[8], 6, money(paid_line_total), border='LR', align='R', fill=fill)
                     pdf.ln()
                     fill = not fill
                     seller_gross_total += gross_line_total
