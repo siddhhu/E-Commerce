@@ -3,9 +3,11 @@
 from decimal import Decimal
 
 from fastapi import APIRouter, Depends
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.cache import response_cache
 from app.core.dependencies import get_current_active_user
 from app.database import get_session
 from app.models.promo_code import PromoCodeRead
@@ -30,9 +32,23 @@ async def list_active_promo_codes(
     limit: int = 6,
     session: AsyncSession = Depends(get_session),
 ):
+    safe_limit = max(1, min(limit, 10))
+    cache_key = ("promo_codes_active", safe_limit)
+    cached = response_cache.get(cache_key)
+    if cached is not None:
+        return JSONResponse(
+            content=cached,
+            headers={"Cache-Control": "public, max-age=60, stale-while-revalidate=30"},
+        )
+
     service = PromoCodeService(session)
-    promos = await service.list_active_public(limit=max(1, min(limit, 10)))
-    return [PromoCodeRead.model_validate(promo) for promo in promos]
+    promos = await service.list_active_public(limit=safe_limit)
+    content = [PromoCodeRead.model_validate(promo).model_dump(mode="json") for promo in promos]
+    response_cache.set(cache_key, content, ttl_seconds=60)
+    return JSONResponse(
+        content=content,
+        headers={"Cache-Control": "public, max-age=60, stale-while-revalidate=30"},
+    )
 
 
 @router.post("/validate", response_model=PromoValidateResponse)

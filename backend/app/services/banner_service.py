@@ -7,6 +7,7 @@ from uuid import UUID
 from sqlalchemy import desc, select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.cache import response_cache
 from app.models.banner import Banner, BannerCreate, BannerUpdate
 
 
@@ -55,6 +56,7 @@ class BannerService:
         self.session.add(banner)
         await self.session.commit()
         await self.session.refresh(banner)
+        response_cache.clear_prefix("banners_active")
         return banner
     
     async def update_banner(self, banner: Banner, banner_in: BannerUpdate) -> Banner:
@@ -66,9 +68,11 @@ class BannerService:
         self.session.add(banner)
         await self.session.commit()
         await self.session.refresh(banner)
+        response_cache.clear_prefix("banners_active")
         return banner
     
     async def delete_banner(self, banner: Banner) -> None:
         """Delete a banner."""
         await self.session.delete(banner)
         await self.session.commit()
+        response_cache.clear_prefix("banners_active")

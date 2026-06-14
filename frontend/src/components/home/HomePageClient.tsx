@@ -27,17 +27,23 @@ import { Input } from '@/components/ui/input';
 
 export default function HomePageClient({ 
     initialFeaturedProducts = null,
-    initialBanners = null
+    initialBanners = null,
+    initialFeaturedBrands = null,
+    initialCategories = null
 }: { 
     initialFeaturedProducts?: APIProductSummary[] | null,
-    initialBanners?: any[] | null
+    initialBanners?: any[] | null,
+    initialFeaturedBrands?: any[] | null,
+    initialCategories?: CategoryRead[] | null
 }) {
     const router = useRouter();
     const { isAuthenticated, user } = useAuthStore();
     const [featuredProducts, setFeaturedProducts] = useState<APIProductSummary[]>(initialFeaturedProducts || []);
     const [loading, setLoading] = useState(!initialFeaturedProducts);
-    const [featuredBrands, setFeaturedBrands] = useState<any[]>([]);
-    const [homeCategories, setHomeCategories] = useState<CategoryRead[]>([]);
+    const [featuredBrands, setFeaturedBrands] = useState<any[]>(initialFeaturedBrands || []);
+    const [homeCategories, setHomeCategories] = useState<CategoryRead[]>(
+        (initialCategories || []).filter((category) => category.is_active).slice(0, 8)
+    );
 
     const { addItem: addToCart } = useCartStore();
     const { addItem: addToWishlist, removeItem: removeFromWishlist, isInWishlist } = useWishlistStore();
@@ -75,15 +81,19 @@ export default function HomePageClient({
         fetchFeaturedProducts();
     }, [initialFeaturedProducts]);
 
-    // Fetch brands with discount data
+    // Fetch only data that was not pre-rendered by the homepage server component.
     useEffect(() => {
-        productsApi.getFeaturedBrands()
-            .then(data => setFeaturedBrands(data))
-            .catch(() => {});
-        categoriesApi.list()
-            .then(data => setHomeCategories(data.filter((category) => category.is_active).slice(0, 8)))
-            .catch(() => {});
-    }, []);
+        if (initialFeaturedBrands === null) {
+            productsApi.getFeaturedBrands()
+                .then(data => setFeaturedBrands(data))
+                .catch(() => {});
+        }
+        if (initialCategories === null) {
+            categoriesApi.list()
+                .then(data => setHomeCategories(data.filter((category) => category.is_active).slice(0, 8)))
+                .catch(() => {});
+        }
+    }, [initialFeaturedBrands, initialCategories]);
 
     const handleAddToCart = (product: APIProductSummary) => {
         const storeProduct: StoreProduct = {

@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.cache import response_cache
 from app.core.dependencies import get_current_admin
 from app.database import get_session
 from app.models.promo_code import PromoCodeCreate, PromoCodeRead, PromoCodeUpdate
@@ -100,3 +101,4 @@ async def delete_promo_code_admin(
 
     await session.delete(promo)
     await session.commit()
+    response_cache.clear_prefix("promo_codes_active")

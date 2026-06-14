@@ -7,6 +7,7 @@ from sqlalchemy import or_
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 
+from app.core.cache import response_cache
 from app.core.exceptions import BadRequestException, NotFoundException
 from app.models.promo_code import PromoCode, PromoCodeCreate, PromoCodeUpdate, PromoDiscountType
 
@@ -106,6 +107,7 @@ class PromoCodeService:
         self.session.add(promo)
         await self.session.commit()
         await self.session.refresh(promo)
+        response_cache.clear_prefix("promo_codes_active")
         return promo
 
     async def update(self, promo: PromoCode, data: PromoCodeUpdate) -> PromoCode:
@@ -116,6 +118,7 @@ class PromoCodeService:
         self.session.add(promo)
         await self.session.commit()
         await self.session.refresh(promo)
+        response_cache.clear_prefix("promo_codes_active")
         return promo
 
     async def validate_for_subtotal(self, code: str, subtotal: Decimal) -> PromoCode:
@@ -149,3 +152,4 @@ class PromoCodeService:
         promo.updated_at = datetime.utcnow()
         self.session.add(promo)
         await self.session.commit()
+        response_cache.clear_prefix("promo_codes_active")

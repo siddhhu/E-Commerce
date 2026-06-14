@@ -8,6 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlmodel.ext.asyncio.session import AsyncSession
 from sqlmodel import select
 
+from app.core.cache import response_cache
 from app.database import get_session
 from app.models.brand import Brand, BrandCreate, BrandUpdate, BrandRead
 from app.core.dependencies import get_current_admin
@@ -16,6 +17,11 @@ router = APIRouter(
     tags=["admin-brands"],
     dependencies=[Depends(get_current_admin)]
 )
+
+
+def _clear_brand_public_cache() -> None:
+    response_cache.clear_prefix("products_brands")
+    response_cache.clear_prefix("products_brands_featured")
 
 @router.get("", response_model=List[BrandRead])
 async def list_brands(
@@ -48,6 +54,7 @@ async def create_brand(
     session.add(brand)
     await session.commit()
     await session.refresh(brand)
+    _clear_brand_public_cache()
     return brand
 
 @router.patch("/{brand_id}", response_model=BrandRead)
@@ -81,6 +88,7 @@ async def update_brand(
     session.add(brand)
     await session.commit()
     await session.refresh(brand)
+    _clear_brand_public_cache()
     return brand
 
 @router.delete("/{brand_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -98,3 +106,4 @@ async def delete_brand(
         
     await session.delete(brand)
     await session.commit()
+    _clear_brand_public_cache()

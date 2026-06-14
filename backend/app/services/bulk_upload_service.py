@@ -9,6 +9,7 @@ import pandas as pd
 from sqlalchemy.ext.asyncio import AsyncSession
 from slugify import slugify
 
+from app.core.cache import response_cache
 from app.models.product import Product, ProductCreate, ProductImage
 from app.services.product_service import ProductService
 from app.services.storage_service import storage_service
@@ -147,6 +148,17 @@ class BulkUploadService:
                 })
         
         await self.session.commit()
+        if created or updated:
+            for prefix in (
+                "products_featured",
+                "products_brands_featured",
+                "products_brands",
+                "products_search_index",
+                "categories_list",
+                "categories_tree",
+                "categories_slug",
+            ):
+                response_cache.clear_prefix(prefix)
         
         return {
             "success": True,

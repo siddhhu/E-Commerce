@@ -207,6 +207,16 @@ async def run_startup_migrations() -> None:
                     "CREATE INDEX IF NOT EXISTS idx_products_category_id ON products (category_id);",
                     "CREATE INDEX IF NOT EXISTS idx_products_seller_id ON products (seller_id);",
                     "CREATE INDEX IF NOT EXISTS idx_products_active_featured ON products (is_active, is_featured);",
+                    "CREATE INDEX IF NOT EXISTS idx_products_active_created_at ON products (is_active, created_at DESC);",
+                    "CREATE INDEX IF NOT EXISTS idx_products_active_featured_created_at ON products (is_active, is_featured, created_at DESC);",
+                    "CREATE INDEX IF NOT EXISTS idx_products_active_brand_created_at ON products (is_active, brand_id, created_at DESC);",
+                    "CREATE INDEX IF NOT EXISTS idx_products_active_category_created_at ON products (is_active, category_id, created_at DESC);",
+                    "CREATE INDEX IF NOT EXISTS idx_products_active_price ON products (is_active, selling_price);",
+                    # Public homepage/filter lookups
+                    "CREATE INDEX IF NOT EXISTS idx_categories_active_sort ON categories (is_active, sort_order, name);",
+                    "CREATE INDEX IF NOT EXISTS idx_brands_active_name ON brands (is_active, name);",
+                    "CREATE INDEX IF NOT EXISTS idx_banners_active_sort ON banners (is_active, sort_order, created_at DESC);",
+                    "CREATE INDEX IF NOT EXISTS idx_promo_codes_active_expires ON promo_codes (is_active, expires_at);",
                     # Cart items — fetched on every page load when logged in
                     "CREATE INDEX IF NOT EXISTS idx_cart_items_user_id ON cart_items (user_id);",
                     # Wishlist
@@ -215,12 +225,14 @@ async def run_startup_migrations() -> None:
                     "CREATE INDEX IF NOT EXISTS idx_orders_user_id ON orders (user_id);",
                     "CREATE INDEX IF NOT EXISTS idx_orders_status ON orders (status);",
                     "CREATE INDEX IF NOT EXISTS idx_orders_created_at ON orders (created_at DESC);",
+                    "CREATE INDEX IF NOT EXISTS idx_orders_user_created_at ON orders (user_id, created_at DESC);",
                     "CREATE INDEX IF NOT EXISTS idx_orders_payment_status ON orders (payment_status);",
                     # Addresses — fetched on checkout page
                     "CREATE INDEX IF NOT EXISTS idx_addresses_user_id ON addresses (user_id);",
                     # Order items — seller revenue queries
                     "CREATE INDEX IF NOT EXISTS idx_order_items_order_id ON order_items (order_id);",
                     "CREATE INDEX IF NOT EXISTS idx_order_items_product_id ON order_items (product_id);",
+                    "CREATE INDEX IF NOT EXISTS idx_order_items_order_product ON order_items (order_id, product_id);",
                 ]
                 for idx_sql in indexes:
                     try:

@@ -4,13 +4,15 @@ Product Service - Product operations
 from typing import Optional, Sequence
 from uuid import UUID
 
+from sqlalchemy import String, cast, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from sqlmodel import select, or_
 from slugify import slugify
 
+from app.core.cache import response_cache
 from app.core.exceptions import ConflictException, NotFoundException
-from app.models.product import Product, ProductCreate, ProductImage, ProductUpdate
+from app.models.product import Product, ProductCreate, ProductImage, ProductListRead, ProductUpdate
 
 
 class ProductService:
@@ -18,59 +20,43 @@ class ProductService:
     
     def __init__(self, session: AsyncSession):
         self.session = session
-    
-    async def get_product_by_id(self, product_id: UUID) -> Product:
-        """Get product by ID or raise exception."""
-        result = await self.session.execute(
-            select(Product).options(selectinload(Product.images)).where(Product.id == product_id)
-        )
-        product = result.scalar_one_or_none()
-        
-        if not product:
-            raise NotFoundException("Product")
-        
-        return product
-    
-    async def get_product_by_slug(self, slug: str) -> Product:
-        """Get product by slug or raise exception."""
-        result = await self.session.execute(
-            select(Product).options(selectinload(Product.images)).where(Product.slug == slug)
-        )
-        product = result.scalar_one_or_none()
-        
-        if not product:
-            raise NotFoundException("Product")
-        
-        return product
-    
-    async def list_products(
+
+    @staticmethod
+    def _clear_public_product_cache() -> None:
+        for prefix in (
+            "products_featured",
+            "products_brands_featured",
+            "products_brands",
+            "products_search_index",
+            "categories_list",
+            "categories_tree",
+            "categories_slug",
+        ):
+            response_cache.clear_prefix(prefix)
+
+    def _apply_product_filters(
         self,
-        skip: int = 0,
-        limit: int = 20,
+        query,
+        *,
         category_id: Optional[UUID] = None,
         brand_id: Optional[UUID] = None,
-        is_active: bool = True,
+        is_active: Optional[bool] = True,
         is_featured: Optional[bool] = None,
         search: Optional[str] = None,
         min_price: Optional[float] = None,
         max_price: Optional[float] = None,
         min_discount: Optional[float] = None,
         in_stock: Optional[bool] = None,
-        seller_id: Optional[UUID] = None
-    ) -> list[Product]:
-        """List products with filters. Pass seller_id to restrict to that seller's products."""
-        from sqlalchemy import cast, String
-        query = select(Product).options(selectinload(Product.images))
-
+        seller_id: Optional[UUID] = None,
+    ):
         if is_active is not None:
             query = query.where(Product.is_active == is_active)
         if category_id:
-            # Match against both legacy category_id FK and new category_ids JSON array
             cat_str = str(category_id)
             query = query.where(
                 or_(
                     Product.category_id == category_id,
-                    cast(Product.category_ids, String).contains(cat_str)
+                    cast(Product.category_ids, String).contains(cat_str),
                 )
             )
         if brand_id:
@@ -78,7 +64,6 @@ class ProductService:
         if is_featured is not None:
             query = query.where(Product.is_featured == is_featured)
         if search:
-            # Multi-token AND search across name, description, sku, short_description
             tokens = [t.strip() for t in search.split() if t.strip()]
             for token in tokens:
                 pattern = f"%{token}%"
@@ -101,7 +86,177 @@ class ProductService:
             query = query.where(Product.stock_quantity > 0 if in_stock else Product.stock_quantity <= 0)
         if seller_id is not None:
             query = query.where(Product.seller_id == seller_id)
+        return query
 
+    @staticmethod
+    def _normalize_category_ids(value) -> list[str]:
+        if isinstance(value, list):
+            return [str(item) for item in value]
+        return []
+
+    async def list_product_summaries(
+        self,
+        skip: int = 0,
+        limit: int = 20,
+        category_id: Optional[UUID] = None,
+        brand_id: Optional[UUID] = None,
+        is_active: bool = True,
+        is_featured: Optional[bool] = None,
+        search: Optional[str] = None,
+        min_price: Optional[float] = None,
+        max_price: Optional[float] = None,
+        min_discount: Optional[float] = None,
+        in_stock: Optional[bool] = None,
+        seller_id: Optional[UUID] = None,
+        include_total: bool = False,
+    ) -> tuple[list[ProductListRead], int | None]:
+        """List products with only card/listing fields and optional total count."""
+        primary_image = (
+            select(ProductImage.image_url)
+            .where(ProductImage.product_id == Product.id)
+            .order_by(ProductImage.is_primary.desc(), ProductImage.sort_order.asc(), ProductImage.created_at.asc())
+            .limit(1)
+            .correlate(Product)
+            .scalar_subquery()
+        )
+
+        columns = [
+            Product.id,
+            Product.name,
+            Product.slug,
+            Product.sku,
+            Product.short_description,
+            Product.mrp,
+            Product.selling_price,
+            Product.b2b_price,
+            Product.stock_quantity,
+            Product.gst_percentage,
+            Product.is_featured,
+            Product.category_id,
+            Product.category_ids,
+            Product.image_url,
+            func.coalesce(Product.image_url, primary_image).label("primary_image"),
+            Product.seller_id,
+            Product.seller_name,
+            Product.parent_id,
+        ]
+        if include_total:
+            columns.append(func.count(Product.id).over().label("total_count"))
+
+        query = select(*columns)
+        query = self._apply_product_filters(
+            query,
+            category_id=category_id,
+            brand_id=brand_id,
+            is_active=is_active,
+            is_featured=is_featured,
+            search=search,
+            min_price=min_price,
+            max_price=max_price,
+            min_discount=min_discount,
+            in_stock=in_stock,
+            seller_id=seller_id,
+        )
+        query = query.order_by(Product.created_at.desc()).offset(skip).limit(limit)
+
+        result = await self.session.execute(query)
+        rows = result.all()
+        items = [
+            ProductListRead(
+                id=row.id,
+                name=row.name,
+                slug=row.slug,
+                sku=row.sku,
+                short_description=row.short_description,
+                mrp=row.mrp,
+                selling_price=row.selling_price,
+                b2b_price=row.b2b_price,
+                stock_quantity=row.stock_quantity,
+                gst_percentage=row.gst_percentage or 18,
+                is_featured=row.is_featured,
+                category_id=row.category_id,
+                category_ids=self._normalize_category_ids(row.category_ids),
+                image_url=row.image_url,
+                primary_image=row.primary_image,
+                seller_id=row.seller_id,
+                seller_name=row.seller_name or "Pranjay",
+                parent_id=row.parent_id,
+            )
+            for row in rows
+        ]
+        if include_total and rows:
+            total = int(rows[0].total_count)
+        elif include_total and skip > 0:
+            total = await self.count_products(
+                category_id=category_id,
+                brand_id=brand_id,
+                is_active=is_active,
+                is_featured=is_featured,
+                search=search,
+                min_price=min_price,
+                max_price=max_price,
+                min_discount=min_discount,
+                in_stock=in_stock,
+                seller_id=seller_id,
+            )
+        else:
+            total = 0 if include_total else None
+        return items, total
+
+    async def get_product_by_id(self, product_id: UUID) -> Product:
+        """Get product by ID or raise exception."""
+        result = await self.session.execute(
+            select(Product).options(selectinload(Product.images)).where(Product.id == product_id)
+        )
+        product = result.scalar_one_or_none()
+
+        if not product:
+            raise NotFoundException("Product")
+
+        return product
+
+    async def get_product_by_slug(self, slug: str) -> Product:
+        """Get product by slug or raise exception."""
+        result = await self.session.execute(
+            select(Product).options(selectinload(Product.images)).where(Product.slug == slug)
+        )
+        product = result.scalar_one_or_none()
+
+        if not product:
+            raise NotFoundException("Product")
+
+        return product
+
+    async def list_products(
+        self,
+        skip: int = 0,
+        limit: int = 20,
+        category_id: Optional[UUID] = None,
+        brand_id: Optional[UUID] = None,
+        is_active: bool = True,
+        is_featured: Optional[bool] = None,
+        search: Optional[str] = None,
+        min_price: Optional[float] = None,
+        max_price: Optional[float] = None,
+        min_discount: Optional[float] = None,
+        in_stock: Optional[bool] = None,
+        seller_id: Optional[UUID] = None
+    ) -> list[Product]:
+        """List products with filters. Pass seller_id to restrict to that seller's products."""
+        query = select(Product).options(selectinload(Product.images))
+        query = self._apply_product_filters(
+            query,
+            category_id=category_id,
+            brand_id=brand_id,
+            is_active=is_active,
+            is_featured=is_featured,
+            search=search,
+            min_price=min_price,
+            max_price=max_price,
+            min_discount=min_discount,
+            in_stock=in_stock,
+            seller_id=seller_id,
+        )
         query = query.offset(skip).limit(limit).order_by(Product.created_at.desc())
 
         result = await self.session.execute(query)
@@ -121,48 +276,20 @@ class ProductService:
         seller_id: Optional[UUID] = None
     ) -> int:
         """Count products with filters."""
-        from sqlalchemy import func
-
         query = select(func.count(Product.id))
-
-        if is_active is not None:
-            query = query.where(Product.is_active == is_active)
-        if category_id:
-            from sqlalchemy import cast, String
-            cat_str = str(category_id)
-            query = query.where(
-                or_(
-                    Product.category_id == category_id,
-                    cast(Product.category_ids, String).contains(cat_str)
-                )
-            )
-        if brand_id:
-            query = query.where(Product.brand_id == brand_id)
-        if is_featured is not None:
-            query = query.where(Product.is_featured == is_featured)
-        if search:
-            tokens = [t.strip() for t in search.split() if t.strip()]
-            for token in tokens:
-                pattern = f"%{token}%"
-                query = query.where(
-                    or_(
-                        Product.name.ilike(pattern),
-                        Product.description.ilike(pattern),
-                        Product.sku.ilike(pattern),
-                        Product.short_description.ilike(pattern),
-                    )
-                )
-        if min_price is not None:
-            query = query.where(Product.selling_price >= min_price)
-        if max_price is not None:
-            query = query.where(Product.selling_price <= max_price)
-        if min_discount is not None:
-            query = query.where(Product.mrp > 0)
-            query = query.where(((Product.mrp - Product.selling_price) / Product.mrp * 100) >= min_discount)
-        if in_stock is not None:
-            query = query.where(Product.stock_quantity > 0 if in_stock else Product.stock_quantity <= 0)
-        if seller_id is not None:
-            query = query.where(Product.seller_id == seller_id)
+        query = self._apply_product_filters(
+            query,
+            category_id=category_id,
+            brand_id=brand_id,
+            is_active=is_active,
+            is_featured=is_featured,
+            search=search,
+            min_price=min_price,
+            max_price=max_price,
+            min_discount=min_discount,
+            in_stock=in_stock,
+            seller_id=seller_id,
+        )
 
         result = await self.session.execute(query)
         return result.scalar() or 0
@@ -229,6 +356,7 @@ class ProductService:
         self.session.add(product)
         await self.session.commit()
         await self.session.refresh(product)
+        self._clear_public_product_cache()
 
         # Load relationships for response model
         result = await self.session.execute(
@@ -256,6 +384,7 @@ class ProductService:
         self.session.add(product)
         await self.session.commit()
         await self.session.refresh(product)
+        self._clear_public_product_cache()
 
         # Load relationships for response model
         result = await self.session.execute(
@@ -270,6 +399,7 @@ class ProductService:
         
         self.session.add(product)
         await self.session.commit()
+        self._clear_public_product_cache()
     
     async def add_product_image(
         self,
@@ -318,6 +448,7 @@ class ProductService:
         self.session.add(image)
         await self.session.commit()
         await self.session.refresh(image)
+        self._clear_public_product_cache()
         
         return image
     
@@ -333,6 +464,7 @@ class ProductService:
         
         await self.session.delete(image)
         await self.session.commit()
+        self._clear_public_product_cache()
     
     async def update_stock(self, product_id: UUID, quantity_change: int) -> Product:
         """Update product stock quantity."""
@@ -345,5 +477,6 @@ class ProductService:
         self.session.add(product)
         await self.session.commit()
         await self.session.refresh(product)
+        self._clear_public_product_cache()
         
         return product

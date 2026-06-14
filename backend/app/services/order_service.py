@@ -23,6 +23,18 @@ from app.models.order import PaymentMethod
 from fastapi import BackgroundTasks
 from app.services.promo_code_service import PromoCodeService
 from app.models.user import UserType
+from app.core.cache import response_cache
+
+
+def _clear_public_product_cache() -> None:
+    for prefix in (
+        "products_featured",
+        "products_search_index",
+        "categories_list",
+        "categories_tree",
+        "categories_slug",
+    ):
+        response_cache.clear_prefix(prefix)
 
 
 class OrderService:
@@ -285,6 +297,7 @@ class OrderService:
             )
 
             await self.session.commit()
+            _clear_public_product_cache()
 
             # Mark promo as used after successful commit
             if normalized_promo_code:
@@ -381,6 +394,7 @@ class OrderService:
         self.session.add(order)
         await self.session.commit()
         await self.session.refresh(order)
+        _clear_public_product_cache()
 
         # Load relationships for response model
         result = await self.session.execute(

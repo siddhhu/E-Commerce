@@ -9,6 +9,7 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic import BaseModel
 
+from app.core.cache import response_cache
 from app.database import get_session
 from app.models.product import Product, ProductListRead, ProductRead
 from app.models.user import User
@@ -51,6 +52,7 @@ def _to_list_read(product: Product) -> ProductListRead:
         selling_price=product.selling_price,
         b2b_price=product.b2b_price,
         stock_quantity=product.stock_quantity,
+        gst_percentage=product.gst_percentage,
         is_featured=product.is_featured,
         category_id=product.category_id,
         category_ids=product.category_ids or [],
@@ -58,6 +60,7 @@ def _to_list_read(product: Product) -> ProductListRead:
         primary_image=_primary_image(product),
         seller_id=product.seller_id,
         seller_name=product.seller_name or "Pranjay",
+        parent_id=product.parent_id,
     )
 
 
@@ -83,9 +86,7 @@ async def list_products(
     product_service = ProductService(session)
     skip = (page - 1) * page_size
 
-    # NOTE: asyncio.gather on the same SQLAlchemy AsyncSession is ILLEGAL —
-    # the session is not concurrency-safe. Run list then count sequentially.
-    products = await product_service.list_products(
+    products, total = await product_service.list_product_summaries(
         skip=skip,
         limit=page_size,
         category_id=category_id,
@@ -97,23 +98,13 @@ async def list_products(
         in_stock=in_stock,
         is_featured=is_featured,
         is_active=True,
-    )
-    total = await product_service.count_products(
-        category_id=category_id,
-        brand_id=brand_id,
-        search=search,
-        min_price=min_price,
-        max_price=max_price,
-        min_discount=min_discount,
-        in_stock=in_stock,
-        is_featured=is_featured,
-        is_active=True,
+        include_total=True,
     )
 
     pages = (total + page_size - 1) // page_size
 
     return PaginatedProducts(
-        items=[_to_list_read(p) for p in products],
+        items=products,
         total=total,
         page=page,
         page_size=page_size,
@@ -127,16 +118,24 @@ async def get_featured_products(
     session: AsyncSession = Depends(get_session)
 ):
     """Get featured products. Cached for 2 minutes (public, rarely changes)."""
+    cache_key = ("products_featured", limit)
+    cached = response_cache.get(cache_key)
+    if cached is not None:
+        return JSONResponse(
+            content=cached,
+            headers={"Cache-Control": "public, max-age=120, stale-while-revalidate=30"},
+        )
+
     product_service = ProductService(session)
 
-    products = await product_service.list_products(
+    products, _ = await product_service.list_product_summaries(
         limit=limit,
         is_featured=True,
         is_active=True,
     )
 
-    items = [_to_list_read(p) for p in products]
-    content = [i.model_dump(mode="json") for i in items]
+    content = [i.model_dump(mode="json") for i in products]
+    response_cache.set(cache_key, content, ttl_seconds=120)
 
     return JSONResponse(
         content=content,
@@ -152,7 +151,15 @@ async def get_featured_brands(
     Get brands with their maximum discount percentage from actual product data.
     Cached for 5 minutes.
     """
-    from sqlalchemy import func, case, cast, Float
+    cache_key = ("products_brands_featured",)
+    cached = response_cache.get(cache_key)
+    if cached is not None:
+        return JSONResponse(
+            content=cached,
+            headers={"Cache-Control": "public, max-age=300, stale-while-revalidate=60"},
+        )
+
+    from sqlalchemy import func, case
     from app.models.brand import Brand
 
     query = (
@@ -196,6 +203,7 @@ async def get_featured_brands(
             "max_discount": discount,
         })
 
+    response_cache.set(cache_key, items, ttl_seconds=300)
     return JSONResponse(
         content=items,
         headers={"Cache-Control": "public, max-age=300, stale-while-revalidate=60"},
@@ -210,6 +218,14 @@ async def get_product_brands(
     Get all active brands that have active products.
     Used for public product filters.
     """
+    cache_key = ("products_brands",)
+    cached = response_cache.get(cache_key)
+    if cached is not None:
+        return JSONResponse(
+            content=cached,
+            headers={"Cache-Control": "public, max-age=300, stale-while-revalidate=60"},
+        )
+
     from sqlalchemy import func, case
     from app.models.brand import Brand
 
@@ -250,6 +266,7 @@ async def get_product_brands(
         for row in result.all()
     ]
 
+    response_cache.set(cache_key, items, ttl_seconds=300)
     return JSONResponse(
         content=items,
         headers={"Cache-Control": "public, max-age=300, stale-while-revalidate=60"},
@@ -264,6 +281,14 @@ async def get_search_index(
     Lightweight search index: returns minimal product data for client-side
     instant search. Cached for 5 minutes. Optimized with direct SQL.
     """
+    cache_key = ("products_search_index",)
+    cached = response_cache.get(cache_key)
+    if cached is not None:
+        return JSONResponse(
+            content=cached,
+            headers={"Cache-Control": "public, max-age=300, stale-while-revalidate=60"},
+        )
+
     query = (
         select(
             Product.id,
@@ -298,6 +323,7 @@ async def get_search_index(
             "seller_name": row.seller_name or "Pranjay",
         })
 
+    response_cache.set(cache_key, items, ttl_seconds=300)
     return JSONResponse(
         content=items,
         headers={"Cache-Control": "public, max-age=300, stale-while-revalidate=60"},

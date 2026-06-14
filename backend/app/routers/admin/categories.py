@@ -7,6 +7,7 @@ from sqlmodel import select
 from sqlalchemy.orm import selectinload
 from sqlalchemy import func
 
+from app.core.cache import response_cache
 from app.database import get_session
 from app.models.category import Category, CategoryCreate, CategoryUpdate, CategoryRead
 from app.models.user import User, UserRole
@@ -47,6 +48,9 @@ async def create_category(
     session.add(category)
     await session.commit()
     await session.refresh(category)
+    response_cache.clear_prefix("categories_list")
+    response_cache.clear_prefix("categories_tree")
+    response_cache.clear_prefix("categories_slug")
     return category
 
 @router.patch("/{category_id}", response_model=CategoryRead)
@@ -75,6 +79,9 @@ async def update_category(
     session.add(category)
     await session.commit()
     await session.refresh(category)
+    response_cache.clear_prefix("categories_list")
+    response_cache.clear_prefix("categories_tree")
+    response_cache.clear_prefix("categories_slug")
     return category
 
 @router.delete("/{category_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -92,3 +99,6 @@ async def delete_category(
         
     await session.delete(category)
     await session.commit()
+    response_cache.clear_prefix("categories_list")
+    response_cache.clear_prefix("categories_tree")
+    response_cache.clear_prefix("categories_slug")

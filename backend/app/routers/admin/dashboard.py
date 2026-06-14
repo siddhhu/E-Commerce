@@ -1,12 +1,11 @@
 """
 Admin Dashboard Router
 """
-import asyncio
 from datetime import datetime, timedelta
 from typing import Optional
 
 from fastapi import APIRouter, Depends
-from sqlalchemy import func
+from sqlalchemy import case, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 from pydantic import BaseModel
@@ -63,128 +62,108 @@ async def get_dashboard_stats(
     session: AsyncSession = Depends(get_session)
 ):
     """
-    Admin dashboard stats — all 8 COUNT queries fired in parallel via asyncio.gather.
-    Was: 8 sequential DB round-trips. Now: 1 parallel batch.
+    Admin dashboard stats with aggregate SQL.
+    Super admin: 3 DB round-trips. Seller: 2 DB round-trips.
     """
     is_seller = current_user.user_type == "seller" and current_user.role == UserRole.CUSTOMER
     date_start, date_end = _date_range(date)
+    date_condition = (Order.created_at >= date_start) & (Order.created_at < date_end)
 
-    # ── Build all queries ──────────────────────────────────────────────────────
-
-    # 1. Total users
     if is_seller:
-        q_users = (
-            select(func.count(func.distinct(Order.user_id)))
-            .join(OrderItem, Order.id == OrderItem.order_id)
-            .join(Product, OrderItem.product_id == Product.id)
-            .where(Product.seller_id == current_user.id)
+        product_stats_query = (
+            select(
+                func.count(Product.id).label("total_products"),
+                func.coalesce(
+                    func.sum(case((Product.stock_quantity < 10, 1), else_=0)),
+                    0,
+                ).label("low_stock_products"),
+            )
+            .where(Product.is_active == True, Product.seller_id == current_user.id)
         )
-    else:
-        q_users = select(func.count(User.id))
-
-    # 2. Total active products
-    q_products = select(func.count(Product.id)).where(Product.is_active == True)
-    if is_seller:
-        q_products = q_products.where(Product.seller_id == current_user.id)
-
-    # 3. Total orders
-    q_orders = select(func.count(func.distinct(Order.id)))
-    if is_seller:
-        q_orders = (
-            q_orders
-            .join(OrderItem, Order.id == OrderItem.order_id)
-            .join(Product, OrderItem.product_id == Product.id)
-            .where(Product.seller_id == current_user.id)
-        )
-
-    # 4. Pending orders
-    q_pending = select(func.count(func.distinct(Order.id))).where(Order.status == OrderStatus.PENDING)
-    if is_seller:
-        q_pending = (
-            q_pending
-            .join(OrderItem, Order.id == OrderItem.order_id)
-            .join(Product, OrderItem.product_id == Product.id)
-            .where(Product.seller_id == current_user.id)
-        )
-
-    # 5. Total revenue
-    if is_seller:
-        q_rev = (
-            select(func.sum(OrderItem.total_price))
+        order_stats_query = (
+            select(
+                func.count(func.distinct(Order.id)).label("total_orders"),
+                func.count(func.distinct(Order.user_id)).label("total_users"),
+                func.count(func.distinct(case((Order.status == OrderStatus.PENDING, Order.id)))).label("pending_orders"),
+                func.coalesce(
+                    func.sum(case((Order.payment_status == PaymentStatus.PAID, OrderItem.total_price), else_=0)),
+                    0,
+                ).label("total_revenue"),
+                func.count(func.distinct(case((date_condition, Order.id)))).label("orders_today"),
+                func.count(
+                    func.distinct(case((date_condition & (Order.payment_method == PaymentMethod.COD), Order.id)))
+                ).label("cod_orders"),
+                func.count(
+                    func.distinct(case((date_condition & (Order.payment_method == PaymentMethod.ONLINE), Order.id)))
+                ).label("online_orders"),
+            )
+            .select_from(OrderItem)
             .join(Order, Order.id == OrderItem.order_id)
             .join(Product, OrderItem.product_id == Product.id)
-            .where(Order.payment_status == PaymentStatus.PAID, Product.seller_id == current_user.id)
-        )
-    else:
-        q_rev = select(func.sum(Order.total_amount)).where(Order.payment_status == PaymentStatus.PAID)
-
-    # 6. Orders on selected date
-    q_today = select(func.count(func.distinct(Order.id))).where(
-        Order.created_at >= date_start, Order.created_at < date_end
-    )
-    if is_seller:
-        q_today = (
-            q_today
-            .join(OrderItem, Order.id == OrderItem.order_id)
-            .join(Product, OrderItem.product_id == Product.id)
             .where(Product.seller_id == current_user.id)
         )
 
-    # 7. COD orders on selected date
-    q_cod = select(func.count(func.distinct(Order.id))).where(
-        Order.created_at >= date_start, Order.created_at < date_end,
-        Order.payment_method == PaymentMethod.COD
-    )
-    if is_seller:
-        q_cod = (
-            q_cod
-            .join(OrderItem, Order.id == OrderItem.order_id)
-            .join(Product, OrderItem.product_id == Product.id)
-            .where(Product.seller_id == current_user.id)
+        product_stats = (await session.execute(product_stats_query)).one()
+        order_stats = (await session.execute(order_stats_query)).one()
+
+        return DashboardStats(
+            total_users=order_stats.total_users or 0,
+            total_products=product_stats.total_products or 0,
+            total_orders=order_stats.total_orders or 0,
+            pending_orders=order_stats.pending_orders or 0,
+            total_revenue=float(order_stats.total_revenue or 0),
+            orders_today=order_stats.orders_today or 0,
+            cod_orders=order_stats.cod_orders or 0,
+            online_orders=order_stats.online_orders or 0,
+            low_stock_products=product_stats.low_stock_products or 0,
         )
 
-    # 8. Online orders on selected date
-    q_online = select(func.count(func.distinct(Order.id))).where(
-        Order.created_at >= date_start, Order.created_at < date_end,
-        Order.payment_method == PaymentMethod.ONLINE
-    )
-    if is_seller:
-        q_online = (
-            q_online
-            .join(OrderItem, Order.id == OrderItem.order_id)
-            .join(Product, OrderItem.product_id == Product.id)
-            .where(Product.seller_id == current_user.id)
+    users_query = select(func.count(User.id))
+    product_stats_query = (
+        select(
+            func.count(Product.id).label("total_products"),
+            func.coalesce(
+                func.sum(case((Product.stock_quantity < 10, 1), else_=0)),
+                0,
+            ).label("low_stock_products"),
         )
-
-    # 9. Low stock products (< 10 units)
-    q_low = select(func.count(Product.id)).where(Product.is_active == True, Product.stock_quantity < 10)
-    if is_seller:
-        q_low = q_low.where(Product.seller_id == current_user.id)
-
-    # ── Execute ALL 9 queries sequentially (asyncpg doesn't allow true parallel on same conn) ──
-    # Still faster than before because we removed redundant round-trips and N+1s elsewhere.
-    r_users, r_products, r_orders, r_pending, r_rev, r_today, r_cod, r_online, r_low = (
-        await session.execute(q_users),
-        await session.execute(q_products),
-        await session.execute(q_orders),
-        await session.execute(q_pending),
-        await session.execute(q_rev),
-        await session.execute(q_today),
-        await session.execute(q_cod),
-        await session.execute(q_online),
-        await session.execute(q_low),
+        .where(Product.is_active == True)
     )
+    order_stats_query = select(
+        func.count(Order.id).label("total_orders"),
+        func.coalesce(
+            func.sum(case((Order.status == OrderStatus.PENDING, 1), else_=0)),
+            0,
+        ).label("pending_orders"),
+        func.coalesce(
+            func.sum(case((Order.payment_status == PaymentStatus.PAID, Order.total_amount), else_=0)),
+            0,
+        ).label("total_revenue"),
+        func.coalesce(func.sum(case((date_condition, 1), else_=0)), 0).label("orders_today"),
+        func.coalesce(
+            func.sum(case((date_condition & (Order.payment_method == PaymentMethod.COD), 1), else_=0)),
+            0,
+        ).label("cod_orders"),
+        func.coalesce(
+            func.sum(case((date_condition & (Order.payment_method == PaymentMethod.ONLINE), 1), else_=0)),
+            0,
+        ).label("online_orders"),
+    )
+
+    total_users = (await session.execute(users_query)).scalar() or 0
+    product_stats = (await session.execute(product_stats_query)).one()
+    order_stats = (await session.execute(order_stats_query)).one()
 
     return DashboardStats(
-        total_users=r_users.scalar() or 0,
-        total_products=r_products.scalar() or 0,
-        total_orders=r_orders.scalar() or 0,
-        pending_orders=r_pending.scalar() or 0,
-        total_revenue=float(r_rev.scalar() or 0),
-        orders_today=r_today.scalar() or 0,
-        cod_orders=r_cod.scalar() or 0,
-        online_orders=r_online.scalar() or 0,
-        low_stock_products=r_low.scalar() or 0,
+        total_users=total_users,
+        total_products=product_stats.total_products or 0,
+        total_orders=order_stats.total_orders or 0,
+        pending_orders=order_stats.pending_orders or 0,
+        total_revenue=float(order_stats.total_revenue or 0),
+        orders_today=order_stats.orders_today or 0,
+        cod_orders=order_stats.cod_orders or 0,
+        online_orders=order_stats.online_orders or 0,
+        low_stock_products=product_stats.low_stock_products or 0,
     )
 
 
