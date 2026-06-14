@@ -60,6 +60,13 @@ def money(value: Decimal) -> str:
     return f"Rs. {value.quantize(TWOPLACES):.2f}"
 
 
+def short_text(value: str | None, max_len: int) -> str:
+    text = (value or "").strip()
+    if len(text) <= max_len:
+        return text
+    return text[: max_len - 3].rstrip() + "..."
+
+
 def gst_state_code(gst_number: str | None, state: str | None = None) -> str | None:
     if gst_number and len(gst_number) >= 2 and gst_number[:2].isdigit():
         return gst_number[:2]
@@ -70,14 +77,22 @@ def gst_state_code(gst_number: str | None, state: str | None = None) -> str | No
 
 class InvoicePDF(FPDF):
     def header(self):
-        self.set_font('helvetica', 'B', 18)
-        self.cell(0, 8, settings.invoice_company_name, align='C', ln=True)
+        self.set_fill_color(17, 24, 39)
+        self.rect(10, 8, 190, 20, 'F')
+        self.set_text_color(255, 255, 255)
+        self.set_xy(14, 11)
+        self.set_font('helvetica', 'B', 15)
+        self.cell(90, 7, settings.invoice_company_name)
+        self.set_font('helvetica', 'B', 14)
+        self.cell(92, 7, 'TAX INVOICE', align='R', ln=True)
+
+        self.set_x(14)
         self.set_font('helvetica', '', 9)
         if settings.invoice_company_gst:
-            self.cell(0, 5, f'GSTIN: {settings.invoice_company_gst}', align='C', ln=True)
-        if settings.invoice_company_address:
-            self.cell(0, 5, settings.invoice_company_address, align='C', ln=True)
-        self.ln(4)
+            self.cell(90, 5, f'GSTIN: {settings.invoice_company_gst}')
+        self.cell(92, 5, 'Original for Recipient', align='R', ln=True)
+        self.set_text_color(0, 0, 0)
+        self.ln(8)
 
     def footer(self):
         self.set_y(-15)
@@ -153,49 +168,95 @@ class InvoiceService:
             for (seller_name, seller_gst, seller_address), items in seller_groups.items():
                 pdf.add_page()
 
-                # --- Company Header ---
-                pdf.set_font('helvetica', 'B', 12)
-                pdf.cell(0, 6, seller_name, ln=True)
-                pdf.set_font('helvetica', '', 10)
-                if seller_address:
-                    pdf.cell(0, 6, seller_address, ln=True)
-                if seller_gst:
-                    pdf.cell(0, 6, f'GSTIN: {seller_gst}', ln=True)
-                pdf.ln(5)
-
-                # --- Order Details ---
-                pdf.set_font('helvetica', 'B', 10)
-                pdf.cell(100, 6, f'Order Number: {order.order_number}')
-                pdf.cell(90, 6, f'Date: {order.created_at.strftime("%Y-%m-%d %H:%M")}', ln=True)
-                pdf.cell(0, 6, f'Payment Method: {order.payment_method.value.upper() if order.payment_method else "N/A"}', ln=True)
-                pdf.ln(5)
-
-                # --- Bill To ---
-                pdf.set_font('helvetica', 'B', 10)
-                pdf.cell(0, 6, 'Bill To / Ship To:', ln=True)
-                pdf.set_font('helvetica', '', 10)
-                
                 shipping_data = order.shipping_address_data or {}
                 buyer = order.user
                 cust_name = buyer.business_name or shipping_data.get('full_name', 'Customer')
-                pdf.cell(0, 6, cust_name, ln=True)
-                if buyer and buyer.gst_number:
-                    pdf.cell(0, 6, f'Buyer GSTIN: {buyer.gst_number}', ln=True)
-                pdf.cell(0, 6, shipping_data.get('address_line1', ''), ln=True)
-                if shipping_data.get('address_line2'):
-                    pdf.cell(0, 6, shipping_data.get('address_line2', ''), ln=True)
                 city = shipping_data.get('city', '')
                 state = shipping_data.get('state', '')
                 pincode = shipping_data.get('postal_code', '')
-                pdf.cell(0, 6, f'{city}, {state} {pincode}', ln=True)
-                pdf.cell(0, 6, f'Phone: {shipping_data.get("phone", "")}', ln=True)
-                pdf.ln(10)
+
+                # --- Seller and invoice summary cards ---
+                card_y = pdf.get_y()
+                pdf.set_draw_color(226, 232, 240)
+                pdf.set_fill_color(248, 250, 252)
+                pdf.rect(10, card_y, 92, 38, 'DF')
+                pdf.rect(108, card_y, 92, 38, 'DF')
+
+                pdf.set_xy(14, card_y + 4)
+                pdf.set_font('helvetica', 'B', 9)
+                pdf.set_text_color(71, 85, 105)
+                pdf.cell(84, 5, 'SOLD BY', ln=True)
+                pdf.set_x(14)
+                pdf.set_font('helvetica', 'B', 11)
+                pdf.set_text_color(15, 23, 42)
+                pdf.cell(84, 6, short_text(seller_name, 36), ln=True)
+                pdf.set_x(14)
+                pdf.set_font('helvetica', '', 9)
+                if seller_gst:
+                    pdf.cell(84, 5, f'GSTIN: {seller_gst}', ln=True)
+                    pdf.set_x(14)
+                if seller_address:
+                    pdf.cell(84, 5, short_text(seller_address, 45), ln=True)
+
+                pdf.set_xy(112, card_y + 4)
+                pdf.set_font('helvetica', 'B', 9)
+                pdf.set_text_color(71, 85, 105)
+                pdf.cell(84, 5, 'INVOICE DETAILS', ln=True)
+                pdf.set_text_color(15, 23, 42)
+                pdf.set_font('helvetica', '', 9)
+                invoice_rows = [
+                    ('Invoice No.', f'INV-{order.order_number}'),
+                    ('Order No.', order.order_number),
+                    ('Date', order.created_at.strftime('%d %b %Y, %I:%M %p')),
+                    ('Payment', order.payment_method.value.upper() if order.payment_method else 'N/A'),
+                ]
+                for label, value in invoice_rows:
+                    pdf.set_x(112)
+                    pdf.set_font('helvetica', 'B', 8)
+                    pdf.cell(24, 5, label)
+                    pdf.set_font('helvetica', '', 8)
+                    pdf.cell(60, 5, short_text(value, 34), ln=True)
+
+                pdf.set_y(card_y + 44)
+
+                # --- Bill / Ship To card ---
+                addr_y = pdf.get_y()
+                pdf.set_fill_color(255, 255, 255)
+                pdf.rect(10, addr_y, 190, 34, 'D')
+                pdf.set_xy(14, addr_y + 4)
+                pdf.set_font('helvetica', 'B', 9)
+                pdf.set_text_color(71, 85, 105)
+                pdf.cell(0, 5, 'BILL TO / SHIP TO', ln=True)
+                pdf.set_x(14)
+                pdf.set_text_color(15, 23, 42)
+                pdf.set_font('helvetica', 'B', 10)
+                pdf.cell(90, 5, short_text(cust_name, 42))
+                pdf.set_font('helvetica', '', 9)
+                if buyer and buyer.gst_number:
+                    pdf.cell(86, 5, f'Buyer GSTIN: {buyer.gst_number}', align='R', ln=True)
+                else:
+                    pdf.ln(5)
+                pdf.set_x(14)
+                address_line = ", ".join(
+                    part for part in [
+                        shipping_data.get('address_line1', ''),
+                        shipping_data.get('address_line2', ''),
+                        city,
+                        state,
+                        pincode,
+                    ] if part
+                )
+                pdf.cell(176, 5, short_text(address_line, 100), ln=True)
+                pdf.set_x(14)
+                pdf.cell(176, 5, f'Phone: {shipping_data.get("phone", "")}', ln=True)
+                pdf.ln(8)
 
                 # --- Items Table ---
-                pdf.set_fill_color(200, 220, 255)
-                pdf.set_draw_color(50, 50, 100)
-                pdf.set_line_width(0.3)
-                pdf.set_font('helvetica', 'B', 9)
+                pdf.set_fill_color(31, 41, 55)
+                pdf.set_draw_color(203, 213, 225)
+                pdf.set_line_width(0.2)
+                pdf.set_font('helvetica', 'B', 8)
+                pdf.set_text_color(255, 255, 255)
 
                 col_widths = [8, 34, 22, 10, 28, 20, 20, 20, 28]
                 headers = ['#', 'Item', 'HSN Code', 'Qty', 'Taxable Value', 'CGST', 'SGST', 'IGST', 'Invoice Amt']
@@ -203,9 +264,8 @@ class InvoiceService:
                     pdf.cell(col_widths[i], 7, headers[i], border=1, align='C', fill=True)
                 pdf.ln()
 
-                pdf.set_fill_color(224, 235, 255)
-                pdf.set_text_color(0)
-                pdf.set_font('helvetica', '', 9)
+                pdf.set_text_color(15, 23, 42)
+                pdf.set_font('helvetica', '', 8)
 
                 fill = False
                 seller_gross_total = Decimal("0")
@@ -224,7 +284,8 @@ class InvoiceService:
                 is_interstate = bool(seller_state_code and buyer_state_code and seller_state_code != buyer_state_code)
                 
                 for idx, item in enumerate(items, 1):
-                    pdf.cell(col_widths[0], 6, str(idx), border='LR', align='C', fill=fill)
+                    pdf.set_fill_color(248, 250, 252) if fill else pdf.set_fill_color(255, 255, 255)
+                    pdf.cell(col_widths[0], 7, str(idx), border=1, align='C', fill=True)
                     
                     name = item.product_name
                     if len(name) > 22:
@@ -234,9 +295,9 @@ class InvoiceService:
                     if len(hsn_code) > 12:
                         hsn_code = hsn_code[:12]
 
-                    pdf.cell(col_widths[1], 6, name, border='LR', align='L', fill=fill)
-                    pdf.cell(col_widths[2], 6, hsn_code, border='LR', align='C', fill=fill)
-                    pdf.cell(col_widths[3], 6, str(item.quantity), border='LR', align='C', fill=fill)
+                    pdf.cell(col_widths[1], 7, name, border=1, align='L', fill=True)
+                    pdf.cell(col_widths[2], 7, hsn_code, border=1, align='C', fill=True)
+                    pdf.cell(col_widths[3], 7, str(item.quantity), border=1, align='C', fill=True)
                     prod = products.get(item.product_id)
                     gst_rate = Decimal(str(getattr(prod, 'gst_percentage', 18))) if prod else Decimal("18")
                     gross_line_total = Decimal(str(item.total_price))
@@ -257,11 +318,11 @@ class InvoiceService:
                         sgst_amount = gst_amount / Decimal("2")
                         igst_amount = Decimal("0")
 
-                    pdf.cell(col_widths[4], 6, money(taxable_value), border='LR', align='R', fill=fill)
-                    pdf.cell(col_widths[5], 6, money(cgst_amount), border='LR', align='R', fill=fill)
-                    pdf.cell(col_widths[6], 6, money(sgst_amount), border='LR', align='R', fill=fill)
-                    pdf.cell(col_widths[7], 6, money(igst_amount), border='LR', align='R', fill=fill)
-                    pdf.cell(col_widths[8], 6, money(paid_line_total), border='LR', align='R', fill=fill)
+                    pdf.cell(col_widths[4], 7, money(taxable_value), border=1, align='R', fill=True)
+                    pdf.cell(col_widths[5], 7, money(cgst_amount), border=1, align='R', fill=True)
+                    pdf.cell(col_widths[6], 7, money(sgst_amount), border=1, align='R', fill=True)
+                    pdf.cell(col_widths[7], 7, money(igst_amount), border=1, align='R', fill=True)
+                    pdf.cell(col_widths[8], 7, money(paid_line_total), border=1, align='R', fill=True)
                     pdf.ln()
                     fill = not fill
                     seller_gross_total += gross_line_total
@@ -271,39 +332,61 @@ class InvoiceService:
                     seller_sgst += sgst_amount
                     seller_igst += igst_amount
 
-                pdf.cell(sum(col_widths), 0, '', border='T', ln=True)
-                pdf.ln(5)
-
                 # --- Totals ---
-                pdf.set_font('helvetica', 'B', 10)
                 invoice_amount = seller_taxable + seller_cgst + seller_sgst + seller_igst
+                pdf.ln(6)
 
-                pdf.cell(140, 6, 'Item Total (GST Inclusive):', align='R')
-                pdf.cell(50, 6, money(seller_gross_total), align='R', ln=True)
-
+                totals = [
+                    ('Item Total (GST Inclusive)', money(seller_gross_total)),
+                ]
                 if seller_discount > 0:
-                    pdf.cell(140, 6, f'Discount ({order.promo_code or "Promo"}):', align='R')
-                    pdf.cell(50, 6, f"-{money(seller_discount)}", align='R', ln=True)
+                    totals.append((f'Discount ({order.promo_code or "Promo"})', f"-{money(seller_discount)}"))
+                totals.extend([
+                    ('Taxable Value', money(seller_taxable)),
+                    ('CGST', money(seller_cgst)),
+                    ('SGST', money(seller_sgst)),
+                    ('IGST', money(seller_igst)),
+                ])
 
-                pdf.cell(140, 6, 'Taxable Value:', align='R')
-                pdf.cell(50, 6, money(seller_taxable), align='R', ln=True)
+                totals_x = 112
+                pdf.set_x(totals_x)
+                pdf.set_font('helvetica', 'B', 9)
+                pdf.set_fill_color(248, 250, 252)
+                pdf.cell(88, 7, 'PRICE SUMMARY', border=1, fill=True, ln=True)
+                pdf.set_font('helvetica', '', 9)
+                for label, value in totals:
+                    pdf.set_x(totals_x)
+                    pdf.cell(52, 6, label, border=1)
+                    pdf.cell(36, 6, value, border=1, align='R', ln=True)
 
-                pdf.cell(140, 6, 'CGST:', align='R')
-                pdf.cell(50, 6, money(seller_cgst), align='R', ln=True)
-
-                pdf.cell(140, 6, 'SGST:', align='R')
-                pdf.cell(50, 6, money(seller_sgst), align='R', ln=True)
-
-                pdf.cell(140, 6, 'IGST:', align='R')
-                pdf.cell(50, 6, money(seller_igst), align='R', ln=True)
-
-                pdf.set_font('helvetica', 'B', 12)
-                pdf.cell(140, 8, 'Invoice Amount:', align='R')
-                pdf.cell(50, 8, money(invoice_amount), align='R', ln=True)
+                pdf.set_x(totals_x)
+                pdf.set_font('helvetica', 'B', 11)
+                pdf.set_fill_color(17, 24, 39)
+                pdf.set_text_color(255, 255, 255)
+                pdf.cell(52, 8, 'Invoice Amount', border=1, fill=True)
+                pdf.cell(36, 8, money(invoice_amount), border=1, align='R', fill=True, ln=True)
+                pdf.set_text_color(0, 0, 0)
 
                 pdf.ln(10)
-                pdf.set_font('helvetica', 'I', 9)
-                pdf.cell(0, 6, f'Thank you for shopping with {seller_name}!', align='C')
+                pdf.set_draw_color(226, 232, 240)
+                pdf.line(10, pdf.get_y(), 200, pdf.get_y())
+                pdf.ln(5)
+                pdf.set_font('helvetica', '', 8)
+                pdf.multi_cell(
+                    112,
+                    5,
+                    'Declaration: This invoice is generated from the Pranjay marketplace system. '
+                    'Prices are GST inclusive unless stated otherwise.',
+                )
+                signature_y = pdf.get_y() - 10
+                pdf.set_xy(145, signature_y)
+                pdf.set_font('helvetica', 'B', 9)
+                pdf.cell(50, 5, 'For ' + short_text(seller_name, 28), align='C', ln=True)
+                pdf.set_x(145)
+                pdf.set_font('helvetica', '', 8)
+                pdf.cell(50, 14, '', border='B', ln=True)
+                pdf.set_x(145)
+                pdf.cell(50, 5, 'Authorized Signatory', align='C')
 
             # Get PDF bytes
             pdf_bytes = bytes(pdf.output())
