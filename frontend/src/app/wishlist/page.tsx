@@ -1,7 +1,6 @@
 'use client';
 
 import Link from 'next/link';
-import Image from 'next/image';
 import { Heart, ShoppingCart, Trash2, ArrowRight } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -11,7 +10,7 @@ import { Footer } from '@/components/layout/Footer';
 import { useWishlistStore } from '@/store/wishlist-store';
 import { useCartStore } from '@/store/cart-store';
 import { useToast } from '@/hooks/use-toast';
-import { formatPrice, getDiscountPercentage } from '@/lib/utils';
+import { formatPrice, getDiscountPercentage, resolveImageUrl } from '@/lib/utils';
 
 export default function WishlistPage() {
     const { items, removeItem, clearWishlist } = useWishlistStore();
@@ -67,17 +66,16 @@ export default function WishlistPage() {
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                         {items.map((product) => {
                             const discount = getDiscountPercentage(product.mrp, product.selling_price);
-                            const primaryImage = product.images[0]?.image_url;
+                            const primaryImage = product.image_url || product.images[0]?.image_url;
 
                             return (
                                 <Card key={product.id} className="group overflow-hidden hover:shadow-lg transition-all">
                                     <div className="relative aspect-square overflow-hidden bg-muted">
                                         <Link href={`/products/${product.slug}`}>
-                                            <Image
-                                                src={primaryImage}
+                                            <img
+                                                src={resolveImageUrl(primaryImage)}
                                                 alt={product.name}
-                                                fill
-                                                className="object-cover transition-transform duration-300 group-hover:scale-105"
+                                                className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                                             />
                                         </Link>
 

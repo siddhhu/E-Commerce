@@ -1,11 +1,10 @@
 import Link from 'next/link';
-import Image from 'next/image';
 import { Heart, ShoppingCart } from 'lucide-react';
 import { Product } from '@/lib/api';
 import { useCartStore } from '@/store/cart-store';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { formatCurrency } from '@/lib/utils';
+import { formatCurrency, resolveImageUrl } from '@/lib/utils';
 import { getProductLabels } from '@/lib/product-labels';
 
 interface ProductCardProps {
@@ -73,11 +72,10 @@ export function ProductCard({ product }: ProductCardProps) {
 
                     {/* Product Image */}
                     <div className="relative w-full h-full">
-                        <Image
-                            src={product.image_url || '/placeholder.jpg'}
+                        <img
+                            src={resolveImageUrl(product.image_url)}
                             alt={product.name}
-                            fill
-                            className="object-contain group-hover:scale-105 transition-transform duration-500"
+                            className="h-full w-full object-contain group-hover:scale-105 transition-transform duration-500"
                         />
                     </div>
                 </div>

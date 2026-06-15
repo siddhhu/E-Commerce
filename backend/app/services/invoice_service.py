@@ -384,7 +384,7 @@ class InvoiceService:
                 signature_y = pdf.get_y() - 10
                 pdf.set_xy(145, signature_y)
                 pdf.set_font('helvetica', 'B', 9)
-                pdf.cell(50, 5, 'For ' + short_text(seller_name, 28), align='C', ln=True)
+                pdf.cell(50, 5, 'For ' + short_text(settings.invoice_company_name, 28), align='C', ln=True)
                 pdf.set_x(145)
                 pdf.set_font('helvetica', '', 8)
                 pdf.cell(50, 14, '', border='B', ln=True)

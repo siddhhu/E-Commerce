@@ -95,17 +95,16 @@ export default function ProfileSetupPage() {
             toast({ title: 'Invalid email', description: 'Please enter a valid email address', variant: 'destructive' });
             return;
         }
-        if (!termsViewed) {
-            toast({ title: 'View terms first', description: 'Please open and read the Terms and Conditions before creating your account.', variant: 'destructive' });
-            return;
-        }
-        if (!termsAccepted) {
-            toast({ title: 'Terms required', description: 'Please agree to the Terms and Conditions after viewing them.', variant: 'destructive' });
-            return;
-        }
-
         // GST is mandatory for sellers — validate format
         if (businessType === 'seller') {
+            if (!termsViewed) {
+                toast({ title: 'View terms first', description: 'Please open and read the seller Terms and Conditions before creating your seller account.', variant: 'destructive' });
+                return;
+            }
+            if (!termsAccepted) {
+                toast({ title: 'Terms required', description: 'Please agree to the seller Terms and Conditions after viewing them.', variant: 'destructive' });
+                return;
+            }
             if (!gstNumber.trim()) {
                 toast({ title: 'GST Number required', description: 'Please enter your 15-digit GST number to register as a seller.', variant: 'destructive' });
                 return;
@@ -627,40 +626,48 @@ export default function ProfileSetupPage() {
                             </>
                         )}
 
-                        <label className="flex items-start gap-2 rounded-lg border border-slate-200 bg-slate-50/80 p-3 text-xs text-slate-600">
-                            <input
-                                type="checkbox"
-                                checked={termsAccepted}
-                                disabled={!termsViewed}
-                                onChange={(e) => setTermsAccepted(e.target.checked)}
-                                className="mt-0.5 h-4 w-4 rounded border-slate-300 text-primary disabled:cursor-not-allowed disabled:opacity-50"
-                            />
-                            <span>
-                                I agree to the{' '}
-                                <a
-                                    href="/terms"
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    className="font-semibold text-primary underline"
-                                >
-                                    Terms and Conditions
-                                </a>{' '}
-                                and confirm the information provided is correct.
-                                {!termsViewed && (
-                                    <span className="mt-1 block text-amber-700">
-                                        You must open and view the Terms and Conditions first. After viewing, return here to tick this checkbox and continue.
+                        {businessType === 'seller' && (
+                            <>
+                                <label className="flex items-start gap-2 rounded-lg border border-slate-200 bg-slate-50/80 p-3 text-xs text-slate-600">
+                                    <input
+                                        type="checkbox"
+                                        checked={termsAccepted}
+                                        disabled={!termsViewed}
+                                        onChange={(e) => setTermsAccepted(e.target.checked)}
+                                        className="mt-0.5 h-4 w-4 rounded border-slate-300 text-primary disabled:cursor-not-allowed disabled:opacity-50"
+                                    />
+                                    <span>
+                                        I agree to the{' '}
+                                        <a
+                                            href="/terms"
+                                            target="_blank"
+                                            rel="noreferrer"
+                                            className="font-semibold text-primary underline"
+                                        >
+                                            Seller Terms and Conditions
+                                        </a>{' '}
+                                        and confirm the business information provided is correct.
+                                        {!termsViewed && (
+                                            <span className="mt-1 block text-amber-700">
+                                                You must open and view the Seller Terms and Conditions first. After viewing, return here to tick this checkbox and continue.
+                                            </span>
+                                        )}
                                     </span>
-                                )}
-                            </span>
-                        </label>
+                                </label>
 
-                        {!termsViewed && (
-                            <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800">
-                                Account creation is locked until you view the Terms and Conditions.
-                            </p>
+                                {!termsViewed && (
+                                    <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800">
+                                        Seller account creation is locked until you view the Terms and Conditions.
+                                    </p>
+                                )}
+                            </>
                         )}
 
-                        <Button type="submit" className="w-full" disabled={isLoading || !termsViewed || !termsAccepted}>
+                        <Button
+                            type="submit"
+                            className="w-full"
+                            disabled={isLoading || (businessType === 'seller' && (!termsViewed || !termsAccepted))}
+                        >
                             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                             {businessType === 'seller' ? 'Next: Upload Document →' : 'Save & Continue'}
                         </Button>

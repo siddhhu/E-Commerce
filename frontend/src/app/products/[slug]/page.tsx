@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import Image from 'next/image';
 import Link from 'next/link';
 import { Heart, ShoppingCart, Minus, Plus, Truck, Shield, Loader2, Share2, Check, ChevronLeft, BadgePercent, Sparkles } from 'lucide-react';
 
@@ -17,7 +16,7 @@ import { productsApi, Product as APIProduct } from '@/lib/api';
 import { ProductCard } from '@/components/products/ProductCard';
 import { useCartStore } from '@/store/cart-store';
 import { useWishlistStore } from '@/store/wishlist-store';
-import { cn, formatPrice, getDiscountPercentage } from '@/lib/utils';
+import { cn, formatPrice, getDiscountPercentage, resolveImageUrl } from '@/lib/utils';
 import { getProductLabels } from '@/lib/product-labels';
 
 // ── Variant type detection ──────────────────────────────────────────────────
@@ -193,7 +192,7 @@ export default function ProductDetailPage() {
     const discount = getDiscountPercentage(product.mrp, product.selling_price);
     const primaryImage = imgError
         ? '/placeholder.jpg'
-        : (activeImage || product.image_url || product.images?.find((img) => img.is_primary)?.image_url || product.images?.[0]?.image_url || '/placeholder.jpg');
+        : resolveImageUrl(activeImage || product.image_url || product.images?.find((img) => img.is_primary)?.image_url || product.images?.[0]?.image_url);
     const inWishlist = isInWishlist(product.id);
     const productLabels = getProductLabels(product);
 
@@ -300,7 +299,8 @@ export default function ProductDetailPage() {
                             const colorName = a.color_name || a.shade || a.color || v.name;
                             const isSelected = v.id === product.id;
                             const hasValidHex = colorHex && /^(#[0-9A-Fa-f]{3,6}|[a-zA-Z]+)$/.test(colorHex);
-                            const vImage = v.image_url || v.images?.find((img: any) => img.is_primary)?.image_url || v.images?.[0]?.image_url;
+                            const rawVImage = v.image_url || v.images?.find((img: any) => img.is_primary)?.image_url || v.images?.[0]?.image_url;
+                            const vImage = rawVImage ? resolveImageUrl(rawVImage) : null;
 
                             return (
                                 <button
@@ -316,7 +316,7 @@ export default function ProductDetailPage() {
                                     style={hasValidHex ? { backgroundColor: colorHex } : {}}
                                 >
                                     {!hasValidHex && vImage && (
-                                        <Image src={vImage} alt={colorName} fill className="object-cover" />
+                                        <img src={vImage} alt={colorName} className="h-full w-full object-cover" />
                                     )}
                                     {!hasValidHex && !vImage && (
                                         <span className="absolute inset-0 flex items-center justify-center text-[9px] font-bold text-slate-600 bg-slate-100 text-center leading-tight px-0.5">
@@ -431,12 +431,10 @@ export default function ProductDetailPage() {
                         <div className="space-y-3">
                             {/* Main Image */}
                             <div className="relative aspect-square rounded-2xl md:rounded-3xl overflow-hidden bg-gradient-to-b from-white to-slate-50 border border-slate-100 shadow-sm">
-                                <Image
+                                <img
                                     src={primaryImage}
                                     alt={product.name}
-                                    fill
-                                    className="object-contain p-4 md:p-8"
-                                    priority
+                                    className="h-full w-full object-contain p-4 md:p-8"
                                     onError={() => setImgError(true)}
                                 />
                                 <div className="absolute top-3 left-3 flex flex-wrap gap-1.5 max-w-[70%]">
@@ -470,7 +468,7 @@ export default function ProductDetailPage() {
                                                     isSelected ? "border-primary scale-105 shadow-md" : "border-transparent opacity-60 hover:opacity-100"
                                                 )}
                                             >
-                                                <Image src={img.image_url} alt={img.alt_text || product.name} fill className="object-cover" />
+                                                <img src={resolveImageUrl(img.image_url)} alt={img.alt_text || product.name} className="h-full w-full object-cover" />
                                             </button>
                                         );
                                     })}

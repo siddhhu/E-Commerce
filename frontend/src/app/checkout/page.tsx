@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import Image from 'next/image';
 import Link from 'next/link';
 import { CreditCard, Banknote, MapPin, ArrowLeft, CheckCircle2, ShoppingBag, FileText, AlertCircle, CheckCircle, Building2, Shield, Truck } from 'lucide-react';
 
@@ -19,7 +18,7 @@ import { useOrderStore, Order } from '@/store/order-store';
 import { useAuthStore } from '@/store/auth-store';
 import { useToast } from '@/hooks/use-toast';
 import { cartApi, usersApi, ordersApi, authApi } from '@/lib/api';
-import { formatPrice, cn } from '@/lib/utils';
+import { formatPrice, cn, resolveImageUrl } from '@/lib/utils';
 
 // Official Indian GST Number regex: 2-digit state + PAN (10 chars) + 1 entity digit + Z + 1 checksum
 const GST_REGEX = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
@@ -702,9 +701,11 @@ export default function CheckoutPage() {
                                         {items.map((item) => (
                                             <div key={item.id} className="flex gap-3">
                                                 <div className="relative w-12 h-12 rounded bg-muted shrink-0 overflow-hidden">
-                                                    {item.product.images?.[0]?.image_url && (
-                                                        <Image src={item.product.images[0].image_url} alt={item.product.name} fill className="object-cover" />
-                                                    )}
+                                                    <img
+                                                        src={resolveImageUrl(item.product.image_url || item.product.images?.[0]?.image_url)}
+                                                        alt={item.product.name}
+                                                        className="h-full w-full object-cover"
+                                                    />
                                                 </div>
                                                 <div className="flex-1 min-w-0">
                                                     <p className="text-sm font-medium truncate">{item.product.name}</p>

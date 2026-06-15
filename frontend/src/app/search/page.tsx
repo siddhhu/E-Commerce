@@ -3,7 +3,6 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import Image from 'next/image';
 import { Search, Heart, ShoppingCart, ArrowLeft, Loader2 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -16,7 +15,7 @@ import { dummyProducts, Product } from '@/lib/dummy-data';
 import { useCartStore } from '@/store/cart-store';
 import { useWishlistStore } from '@/store/wishlist-store';
 import { useToast } from '@/hooks/use-toast';
-import { formatPrice, getDiscountPercentage } from '@/lib/utils';
+import { formatPrice, getDiscountPercentage, resolveImageUrl } from '@/lib/utils';
 
 function SearchContent() {
     const router = useRouter();
@@ -92,9 +91,10 @@ function SearchContent() {
             category_name: '',
             brand_id: '',
             brand_name: '',
+            image_url: product.primary_image ? resolveImageUrl(product.primary_image) : undefined,
             images: product.primary_image ? [{
                 id: '1',
-                image_url: product.primary_image,
+                image_url: resolveImageUrl(product.primary_image),
                 alt_text: product.name,
                 is_primary: true
             }] : [],
@@ -134,9 +134,10 @@ function SearchContent() {
             category_name: '',
             brand_id: '',
             brand_name: '',
+            image_url: product.primary_image ? resolveImageUrl(product.primary_image) : undefined,
             images: product.primary_image ? [{
                 id: '1',
-                image_url: product.primary_image,
+                image_url: resolveImageUrl(product.primary_image),
                 alt_text: product.name,
                 is_primary: true
             }] : [],
@@ -209,11 +210,11 @@ function SearchContent() {
                                 <Card key={product.id} className="group overflow-hidden hover:shadow-lg transition-all">
                                     <div className="relative aspect-square overflow-hidden bg-muted">
                                         <Link href={`/products/${product.slug}`}>
-                                            <Image
-                                                src={product.primary_image || '/placeholder.jpg'}
+                                            <img
+                                                src={resolveImageUrl(product.primary_image)}
                                                 alt={product.name}
-                                                fill
-                                                className="object-cover transition-transform duration-300 group-hover:scale-105"
+                                                className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                                                onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/placeholder.jpg'; }}
                                             />
                                         </Link>
 

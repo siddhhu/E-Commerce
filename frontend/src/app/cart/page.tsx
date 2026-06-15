@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { Trash2, Minus, Plus, ShoppingBag, ArrowRight } from 'lucide-react';
 
@@ -11,7 +10,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/componen
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { useCartStore } from '@/store/cart-store';
-import { formatPrice } from '@/lib/utils';
+import { formatPrice, resolveImageUrl } from '@/lib/utils';
 import { promoCodesApi } from '@/lib/api';
 import { useAuthStore } from '@/store/auth-store';
 
@@ -94,11 +93,10 @@ export default function CartPage() {
                                                             '/placeholder.jpg');
 
                                                 return (
-                                            <Image
-                                                src={imageUrl}
+                                            <img
+                                                src={resolveImageUrl(imageUrl)}
                                                 alt={item.product.name}
-                                                fill
-                                                className="object-cover"
+                                                className="h-full w-full object-cover"
                                                 onError={() =>
                                                     setImgErrors((prev) => ({
                                                         ...prev,

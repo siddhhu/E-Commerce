@@ -17,6 +17,18 @@ export function formatPrice(price: number): string {
 
 export const formatCurrency = formatPrice;
 
+export function resolveImageUrl(url?: string | null): string {
+    if (!url) return '/placeholder.jpg';
+    if (url.startsWith('http') || url.startsWith('data:') || url.startsWith('blob:')) return url;
+
+    if (url.startsWith('/uploads')) {
+        const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL?.replace(/\/api\/v1\/?$/, '').replace(/\/$/, '');
+        return apiBaseUrl ? `${apiBaseUrl}${url}` : url;
+    }
+
+    return url.startsWith('/') ? url : `/${url}`;
+}
+
 export function formatDate(date: string | Date): string {
     return new Intl.DateTimeFormat('en-IN', {
         year: 'numeric',

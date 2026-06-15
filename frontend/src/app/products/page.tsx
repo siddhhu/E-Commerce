@@ -2,7 +2,6 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Filter, Heart, ShoppingCart, Grid3X3, List, Loader2, SlidersHorizontal, Sparkles, X } from 'lucide-react';
 
@@ -13,7 +12,7 @@ import { Footer } from '@/components/layout/Footer';
 import { useCartStore } from '@/store/cart-store';
 import { useWishlistStore } from '@/store/wishlist-store';
 import { useToast } from '@/hooks/use-toast';
-import { formatPrice, getDiscountPercentage } from '@/lib/utils';
+import { formatPrice, getDiscountPercentage, resolveImageUrl } from '@/lib/utils';
 import { categoriesApi, productsApi, ProductSummary, Product as APIProduct, CategoryRead } from '@/lib/api';
 import { Product as StoreProduct } from '@/lib/dummy-data';
 import { ProductCard } from '@/components/products/ProductCard';
@@ -411,15 +410,11 @@ function ProductsContent() {
                                     <div className="flex">
                                         <div className="relative w-40 h-40 shrink-0">
                                             <Link href={`/products/${product.slug}`}>
-                                                <Image
-                                                    src={product.primary_image || '/placeholder.jpg'}
+                                                <img
+                                                    src={resolveImageUrl(product.primary_image)}
                                                     alt={product.name}
-                                                    fill
-                                                    className="object-cover"
-                                                    // Simple fallback for list view
-                                                    onError={(e) => {
-                                                        (e.target as HTMLImageElement).src = '/placeholder.jpg';
-                                                    }}
+                                                    className="h-full w-full object-cover"
+                                                    onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/placeholder.jpg'; }}
                                                 />
                                             </Link>
                                         </div>

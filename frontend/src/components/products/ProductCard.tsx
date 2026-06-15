@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
-import Image from 'next/image';
 import Link from 'next/link';
 import { Heart, ShoppingCart } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Product } from '@/lib/api';
-import { cn, formatPrice, getDiscountPercentage } from '@/lib/utils';
+import { cn, formatPrice, getDiscountPercentage, resolveImageUrl } from '@/lib/utils';
 import { getProductLabels } from '@/lib/product-labels';
 
 interface ProductCardProps {
@@ -22,12 +21,12 @@ export function ProductCard({
 }: ProductCardProps) {
     const [imgError, setImgError] = useState(false);
     
-    const primaryImage = imgError ? '/placeholder.jpg' : (
+    const primaryImage = resolveImageUrl(imgError ? '/placeholder.jpg' : (
         product.image_url ||
         product.images?.find((img) => img.is_primary)?.image_url ||
         product.images?.[0]?.image_url ||
         '/placeholder.jpg'
-    );
+    ));
 
     const discount = getDiscountPercentage(product.mrp, product.selling_price);
     const isOutOfStock = product.stock_quantity <= 0;
@@ -49,11 +48,10 @@ export function ProductCard({
         <Card className="group overflow-hidden hover:shadow-lg transition-all duration-300">
             <div className="relative aspect-square overflow-hidden bg-muted">
                 <Link href={`/products/${product.slug}`}>
-                    <Image
+                    <img
                         src={primaryImage}
                         alt={product.name}
-                        fill
-                        className="object-cover transition-transform duration-300 group-hover:scale-105"
+                        className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                         onError={() => setImgError(true)}
                     />
                 </Link>
