@@ -71,7 +71,7 @@ class APIService {
     private baseUrl: string;
 
     constructor(baseUrl: string = API_BASE_URL) {
-        this.baseUrl = baseUrl;
+        this.baseUrl = baseUrl.replace(/\/api\/v1\/?$/, '').replace(/\/+$/, '');
     }
 
     private async fetch<T>(endpoint: string, options?: RequestInit): Promise<T> {

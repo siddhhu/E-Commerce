@@ -10,6 +10,7 @@ To enable email sending you need:
 Without RESEND_API_KEY all email methods are silently skipped (no errors).
 """
 import resend
+from html import escape
 
 from app.config import settings
 
@@ -103,23 +104,30 @@ class EmailService:
     async def send_contact_email(self, first_name: str, last_name: str, email: str, subject: str, message: str) -> bool:
         """Send contact form submission to admin."""
         if not self._enabled:
-            self._log_skip("send_contact_email", self.admin_email or "support@admin.com")
+            self._log_skip("send_contact_email", self.admin_email or "support@pranjay.com")
             # If no resend key, we still want to pretend it succeeded for the frontend if they test it without keys
             return True
+        safe_first_name = escape(first_name.strip())
+        safe_last_name = escape(last_name.strip())
+        reply_to_email = email.strip()
+        safe_email = escape(reply_to_email)
+        safe_subject = escape(subject.strip())
+        safe_message = escape(message.strip()).replace("\n", "<br>")
         try:
             params = {
                 "from": self.from_email,
-                "to": [self.admin_email or "support@admin.com"],
-                "subject": f"New Contact Form Submission: {subject}",
+                "to": [self.admin_email or "support@pranjay.com"],
+                "reply_to": reply_to_email,
+                "subject": f"New Contact Form Submission: {safe_subject}",
                 "html": f"""
                     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
                         <h2 style="color: #1a1a1a;">New Contact Form Message</h2>
-                        <p><strong>Name:</strong> {first_name} {last_name}</p>
-                        <p><strong>Email:</strong> {email}</p>
-                        <p><strong>Subject:</strong> {subject}</p>
+                        <p><strong>Name:</strong> {safe_first_name} {safe_last_name}</p>
+                        <p><strong>Email:</strong> {safe_email}</p>
+                        <p><strong>Subject:</strong> {safe_subject}</p>
                         <p><strong>Message:</strong></p>
                         <blockquote style="border-left: 4px solid #eee; padding-left: 15px; color: #555;">
-                            {message.replace(chr(10), '<br>')}
+                            {safe_message}
                         </blockquote>
                     </div>
                 """

@@ -4,7 +4,7 @@ Admin Orders Router
 from typing import Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, BackgroundTasks, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic import BaseModel
 
@@ -152,12 +152,13 @@ async def get_order_admin(
 async def update_order_status(
     order_id: UUID,
     data: UpdateOrderStatus,
+    background_tasks: BackgroundTasks,
     current_user: User = Depends(get_current_admin),
     session: AsyncSession = Depends(get_session)
 ):
     """Update order status."""
     order_service = OrderService(session)
-    order = await order_service.update_order_status(order_id, data.status)
+    order = await order_service.update_order_status(order_id, data.status, background_tasks)
     return build_order_read(order)
 
 

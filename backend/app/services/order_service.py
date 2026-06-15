@@ -43,6 +43,10 @@ class OrderService:
     
     def __init__(self, session: AsyncSession):
         self.session = session
+
+    def _get_notification_email(self, user: User) -> str:
+        """Prefer the real contact email over phone-generated placeholder emails."""
+        return (user.contact_email or user.email).strip().lower()
     
     def _generate_order_number(self) -> str:
         """Generate unique order number."""
@@ -339,7 +343,7 @@ class OrderService:
 
                 background_tasks.add_task(
                     email_service.send_order_confirmation_email,
-                    user.email,
+                    self._get_notification_email(user),
                     order.order_number,
                     float(order.total_amount),
                     len(order_items)
@@ -348,7 +352,7 @@ class OrderService:
                 background_tasks.add_task(
                     email_service.send_order_notification_to_admin,
                     order.order_number,
-                    user.email,
+                    self._get_notification_email(user),
                     user.full_name or user.email,
                     float(order.total_amount),
                     len(order_items)
@@ -380,7 +384,8 @@ class OrderService:
     async def update_order_status(
         self,
         order_id: UUID,
-        status: OrderStatus
+        status: OrderStatus,
+        background_tasks: Optional[BackgroundTasks] = None,
     ) -> Order:
         """Update order status."""
         order = await self.get_order_by_id(order_id)
@@ -409,35 +414,28 @@ class OrderService:
         )
         order_result = result.scalar_one()
         
-        # Send status update notification
-        try:
-            from app.models.user import User
-            from app.services.email_service import email_service
-            user_result = await self.session.execute(
-                select(User).where(User.id == order.user_id)
-            )
-            user = user_result.scalar_one()
-            
-            # Use appropriate email template based on status
+        async def _send_status_email() -> None:
+            """Send status email after DB commit without blocking admin response."""
             if status == OrderStatus.SHIPPED:
                 await email_service.send_order_shipped_email(
-                    user.email,
+                    self._get_notification_email(order_result.user),
                     order.order_number
                 )
             else:
-                # Add a generic status update method if it doesn't exist, or just log
-                # The user asked to be notified on any change. We will send a welcome/confirmation style email 
-                # or we can create a generic send_order_status_update method in email_service.
-                # Let's call a new method we'll add to email_service
-                if hasattr(email_service, 'send_order_status_update'):
-                    await email_service.send_order_status_update(
-                        user.email,
-                        order.order_number,
-                        status.value,
-                        user.full_name
-                    )
+                await email_service.send_order_status_update(
+                    self._get_notification_email(order_result.user),
+                    order.order_number,
+                    status.value,
+                    order_result.user.full_name or "Customer"
+                )
+
+        # Send status update notification.
+        try:
+            if order_result.user:
+                if background_tasks:
+                    background_tasks.add_task(_send_status_email)
                 else:
-                    print(f"Skipping email for status {status.value} - method not implemented")
+                    await _send_status_email()
         except Exception as e:
             print(f"Error sending order status email: {e}")
         
