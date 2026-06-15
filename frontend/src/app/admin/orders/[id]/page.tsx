@@ -107,7 +107,7 @@ export default function AdminOrderDetailPage({ params }: { params: { id: string 
                                     </div>
                                 )}
                                 <div className="flex justify-between">
-                                    <span className="text-slate-500">Shipping</span>
+                                    <span className="text-slate-500">Delivery Fee</span>
                                     <span>{order.shipping_amount === 0 ? 'Free' : formatCurrency(order.shipping_amount)}</span>
                                 </div>
                                 <div className="flex justify-between">
@@ -171,12 +171,12 @@ export default function AdminOrderDetailPage({ params }: { params: { id: string 
                         <CardHeader className="pb-3">
                             <CardTitle className="text-lg flex items-center gap-2">
                                 <Truck className="h-5 w-5 text-slate-500" />
-                                Shipping & Delivery
+                                Delivery Details
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="text-sm space-y-4">
                             <div>
-                                <p className="font-medium text-slate-900 mb-2">Shipping Address</p>
+                                <p className="font-medium text-slate-900 mb-2">Delivery Address</p>
                                 {order.shipping_address_data ? (
                                     <div className="text-slate-600 space-y-1">
                                         <p className="font-medium">{order.shipping_address_data.full_name}</p>
@@ -189,11 +189,11 @@ export default function AdminOrderDetailPage({ params }: { params: { id: string 
                                         </p>
                                     </div>
                                 ) : (
-                                    <p className="text-slate-500 italic">No shipping address recorded for this order.</p>
+                                    <p className="text-slate-500 italic">No delivery address recorded for this order.</p>
                                 )}
                             </div>
                             <div className="pt-4 border-t">
-                                <p className="font-medium mb-1 text-slate-500">Shipping Method</p>
+                                <p className="font-medium mb-1 text-slate-500">Delivery Method</p>
                                 <p className="text-slate-900">Standard Delivery</p>
                             </div>
                         </CardContent>

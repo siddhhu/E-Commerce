@@ -24,6 +24,7 @@ from fastapi import BackgroundTasks
 from app.services.promo_code_service import PromoCodeService
 from app.models.user import UserType
 from app.core.cache import response_cache
+from app.core.delivery import calculate_delivery_fee
 
 
 def _clear_public_product_cache() -> None:
@@ -197,8 +198,8 @@ class OrderService:
             discount_amount = promo_service.compute_valid_discount(promo, subtotal)
             normalized_promo_code = promo.code
 
-        # Calculate order totals (GST-inclusive pricing model)
-        shipping_amount = Decimal("0")  # Free shipping for now
+        # Calculate order totals (GST-inclusive pricing model).
+        shipping_amount = calculate_delivery_fee(subtotal, discount_amount)
         total_amount = max(Decimal("0"), subtotal - discount_amount + shipping_amount)
         
         # Proportionally reduce tax if there's a discount

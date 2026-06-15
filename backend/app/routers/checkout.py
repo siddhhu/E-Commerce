@@ -21,6 +21,7 @@ from pydantic import BaseModel
 from sqlmodel import select
 
 from app.core.dependencies import get_current_active_user
+from app.core.delivery import calculate_delivery_fee
 from app.database import get_session
 from app.models.order import OrderRead, build_order_read
 from app.models.user import User
@@ -118,7 +119,8 @@ async def prepare_checkout(
         promo = await promo_service.validate_for_subtotal(data.promo_code, subtotal)
         discount = promo_service.compute_valid_discount(promo, subtotal)
 
-    total_amount = max(Decimal("0"), subtotal - discount)
+    delivery_fee = calculate_delivery_fee(subtotal, discount)
+    total_amount = max(Decimal("0"), subtotal - discount + delivery_fee)
     amount_paise = int(total_amount * 100)
 
     if amount_paise <= 0:

@@ -179,8 +179,8 @@ export default function HomePageClient({
     const features = [
         {
             icon: Truck,
-            title: 'Free Shipping',
-            description: 'On orders above ₹5,000',
+            title: 'Free Delivery',
+            description: 'On orders ₹1,500+',
         },
         {
             icon: Shield,
@@ -497,7 +497,7 @@ export default function HomePageClient({
                                     <span className="text-2xl">📦</span>
                                 </div>
                                 <h4 className="font-bold text-lg text-slate-900">Fast Bulk Dispatch</h4>
-                                <p className="text-slate-600 text-sm">Priority shipping lane for B2B partners.</p>
+                                <p className="text-slate-600 text-sm">Priority dispatch lane for B2B partners.</p>
                             </div>
                             <div className="space-y-4">
                                 <div className="mx-auto w-16 h-16 bg-[#f0e6d2] rounded-full flex items-center justify-center">

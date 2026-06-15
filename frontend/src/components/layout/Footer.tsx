@@ -10,7 +10,7 @@ export function Footer() {
     const supportLinks = [
         { href: '/contact', label: 'Contact Us' },
         { href: '/faq', label: 'FAQ' },
-        { href: '/shipping', label: 'Shipping Policy' },
+        { href: '/shipping', label: 'Delivery Policy' },
     ];
 
     return (

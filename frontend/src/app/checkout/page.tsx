@@ -38,7 +38,17 @@ function validateDoc(type: string, value: string): boolean {
 export default function CheckoutPage() {
     const router = useRouter();
     const { toast } = useToast();
-    const { items, getSubtotal, getDiscount, getTax, getTotal, clearCart, promo_code } = useCartStore();
+    const {
+        items,
+        getSubtotal,
+        getDiscount,
+        getDeliveryFee,
+        getFreeDeliveryShortfall,
+        getTax,
+        getTotal,
+        clearCart,
+        promo_code,
+    } = useCartStore();
     const { addOrder } = useOrderStore();
     const { isAuthenticated, isLoading: isAuthLoading, _hasHydrated, user, setUser } = useAuthStore();
 
@@ -394,7 +404,7 @@ export default function CheckoutPage() {
             })),
             subtotal: getSubtotal(),
             tax_amount: getTax(),
-            shipping_amount: 0,
+            shipping_amount: getDeliveryFee(),
             total_amount: getTotal(),
             shipping_address: address,
             created_at: new Date().toISOString(),
@@ -572,11 +582,11 @@ export default function CheckoutPage() {
                                 </CardContent>
                             </Card>
 
-                            {/* 2. Shipping Address */}
+                            {/* 2. Delivery Address */}
                             <Card>
                                 <CardHeader>
                                     <CardTitle className="flex items-center gap-2">
-                                        <MapPin className="h-5 w-5" /> Shipping Address
+                                        <MapPin className="h-5 w-5" /> Delivery Address
                                     </CardTitle>
                                 </CardHeader>
                                 <CardContent className="grid gap-4">
@@ -711,9 +721,18 @@ export default function CheckoutPage() {
                                             <span>{formatPrice(getSubtotal())}</span>
                                         </div>
                                         <div className="flex justify-between">
-                                            <span className="text-muted-foreground">Shipping</span>
-                                            <span className="text-green-600 font-medium">Free</span>
+                                            <span className="text-muted-foreground">Delivery Fee</span>
+                                            {getDeliveryFee() === 0 ? (
+                                                <span className="text-green-600 font-medium">Free</span>
+                                            ) : (
+                                                <span className="font-medium">{formatPrice(getDeliveryFee())}</span>
+                                            )}
                                         </div>
+                                        {getDeliveryFee() > 0 && (
+                                            <p className="text-xs text-muted-foreground">
+                                                Add {formatPrice(getFreeDeliveryShortfall())} more for free delivery.
+                                            </p>
+                                        )}
                                         <p className="text-xs text-muted-foreground pt-1">Inclusive of all taxes</p>
                                         {docValid && docNumber && (
                                             <div className="flex justify-between text-xs bg-blue-50 text-blue-700 px-2 py-1.5 rounded-lg">
@@ -739,7 +758,7 @@ export default function CheckoutPage() {
                                         </div>
                                         <div className="flex items-center gap-2">
                                             <Truck className="h-4 w-4 text-primary" />
-                                            <span>Free shipping and fast dispatch</span>
+                                            <span>Free delivery above ₹1,500 and fast dispatch</span>
                                         </div>
                                     </div>
 

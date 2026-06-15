@@ -165,7 +165,7 @@ class InvoiceService:
             pdf.alias_nb_pages()
 
             # Generate a separate page/invoice for each seller
-            for (seller_name, seller_gst, seller_address), items in seller_groups.items():
+            for group_index, ((seller_name, seller_gst, seller_address), items) in enumerate(seller_groups.items()):
                 pdf.add_page()
 
                 shipping_data = order.shipping_address_data or {}
@@ -333,7 +333,8 @@ class InvoiceService:
                     seller_igst += igst_amount
 
                 # --- Totals ---
-                invoice_amount = seller_taxable + seller_cgst + seller_sgst + seller_igst
+                delivery_fee = Decimal(str(order.shipping_amount or 0)) if group_index == 0 else Decimal("0")
+                invoice_amount = seller_taxable + seller_cgst + seller_sgst + seller_igst + delivery_fee
                 pdf.ln(6)
 
                 totals = [
@@ -341,6 +342,8 @@ class InvoiceService:
                 ]
                 if seller_discount > 0:
                     totals.append((f'Discount ({order.promo_code or "Promo"})', f"-{money(seller_discount)}"))
+                if delivery_fee > 0:
+                    totals.append(('Delivery Fee', money(delivery_fee)))
                 totals.extend([
                     ('Taxable Value', money(seller_taxable)),
                     ('CGST', money(seller_cgst)),

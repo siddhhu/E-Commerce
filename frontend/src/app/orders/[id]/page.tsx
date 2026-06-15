@@ -182,9 +182,19 @@ export default function OrderDetailPage() {
                                         <span className="text-muted-foreground">Subtotal</span>
                                         <span>{formatPrice(order.subtotal)}</span>
                                     </div>
+                                    {order.discount_amount > 0 && (
+                                        <div className="flex justify-between text-sm text-green-600">
+                                            <span>Discount</span>
+                                            <span>-{formatPrice(order.discount_amount)}</span>
+                                        </div>
+                                    )}
                                     <div className="flex justify-between text-sm">
-                                        <span className="text-muted-foreground">Shipping</span>
-                                        <span className="text-green-600">Free</span>
+                                        <span className="text-muted-foreground">Delivery Fee</span>
+                                        {order.shipping_amount === 0 ? (
+                                            <span className="text-green-600">Free</span>
+                                        ) : (
+                                            <span>{formatPrice(order.shipping_amount)}</span>
+                                        )}
                                     </div>
                                     <div className="flex justify-between font-bold text-lg pt-2 border-t">
                                         <span>Total</span>
@@ -196,7 +206,7 @@ export default function OrderDetailPage() {
 
                         {/* Delivery & Payment */}
                         <div className="space-y-8">
-                            {/* Shipping Address */}
+                            {/* Delivery Address */}
                             <Card>
                                 <CardHeader>
                                     <CardTitle className="flex items-center gap-2">

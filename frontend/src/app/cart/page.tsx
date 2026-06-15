@@ -23,6 +23,8 @@ export default function CartPage() {
         updateQuantity,
         getSubtotal,
         getDiscount,
+        getDeliveryFee,
+        getFreeDeliveryShortfall,
         getTax,
         getTotal,
         clearCart,
@@ -239,9 +241,18 @@ export default function CartPage() {
                                         </div>
                                     )}
                                     <div className="flex justify-between">
-                                        <span className="text-muted-foreground">Shipping</span>
-                                        <span className="text-green-600">Free</span>
+                                        <span className="text-muted-foreground">Delivery Fee</span>
+                                        {getDeliveryFee() === 0 ? (
+                                            <span className="text-green-600">Free</span>
+                                        ) : (
+                                            <span>{formatPrice(getDeliveryFee())}</span>
+                                        )}
                                     </div>
+                                    {getDeliveryFee() > 0 && (
+                                        <p className="text-xs text-muted-foreground">
+                                            Add {formatPrice(getFreeDeliveryShortfall())} more for free delivery.
+                                        </p>
+                                    )}
                                     <p className="text-xs text-muted-foreground">Inclusive of all taxes</p>
                                     <div className="border-t pt-4 flex justify-between text-lg font-bold">
                                         <span>Total</span>

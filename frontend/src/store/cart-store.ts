@@ -1,6 +1,10 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { Product, getProductById } from '@/lib/dummy-data';
+import {
+    getDeliveryFee as calculateDeliveryFee,
+    getFreeDeliveryShortfall as calculateFreeDeliveryShortfall,
+} from '@/lib/delivery';
 
 export interface CartItem {
     id: string;
@@ -30,6 +34,8 @@ interface CartState {
     getItemCount: () => number;
     getSubtotal: () => number;
     getDiscount: () => number;
+    getDeliveryFee: () => number;
+    getFreeDeliveryShortfall: () => number;
     getTax: () => number;
     getTotal: () => number;
 }
@@ -124,6 +130,14 @@ export const useCartStore = create<CartState>()(
                 return Math.max(0, discount);
             },
 
+            getDeliveryFee: () => {
+                return calculateDeliveryFee(get().getSubtotal(), get().getDiscount());
+            },
+
+            getFreeDeliveryShortfall: () => {
+                return calculateFreeDeliveryShortfall(get().getSubtotal(), get().getDiscount());
+            },
+
             getTax: () => {
                 const items = get().items;
                 const subtotal = get().getSubtotal();
@@ -146,8 +160,8 @@ export const useCartStore = create<CartState>()(
             },
 
             getTotal: () => {
-                // Total is GST-inclusive already
-                return get().getSubtotal() - get().getDiscount();
+                // Product prices are GST-inclusive already; delivery is added separately.
+                return get().getSubtotal() - get().getDiscount() + get().getDeliveryFee();
             },
         }),
         {
