@@ -293,7 +293,7 @@ function LoginForm() {
                             <Input
                                 id="otp"
                                 type="text"
-                                placeholder="123456"
+                                placeholder="Enter code"
                                 className="text-center text-2xl tracking-[0.5em]"
                                 maxLength={6}
                                 value={otp}
