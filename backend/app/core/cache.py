@@ -13,7 +13,7 @@ class TTLCache:
     def get(self, key: Hashable) -> Any | None:
         item = self._items.get(key)
         if not item:
-            return None
+            return None #yes
 
         expires_at, value = item
         if expires_at <= monotonic():
