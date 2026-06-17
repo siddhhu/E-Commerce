@@ -88,6 +88,20 @@ class StorageService:
 
     async def delete_file(self, file_url: str) -> bool:
         """Delete a file from storage."""
+        if file_url and file_url.startswith("/uploads/"):
+            try:
+                uploads_dir = Path(os.getenv("UPLOADS_DIR", "uploads")).resolve()
+                relative_path = file_url.replace("/uploads/", "", 1)
+                local_path = (uploads_dir / relative_path).resolve()
+                if not str(local_path).startswith(str(uploads_dir)):
+                    return False
+                if local_path.exists():
+                    await run_in_threadpool(local_path.unlink)
+                return True
+            except Exception as e:
+                print(f"Error deleting local file: {e}")
+                return False
+
         if not self.is_available:
             return True
             

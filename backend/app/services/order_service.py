@@ -25,6 +25,7 @@ from app.services.promo_code_service import PromoCodeService
 from app.models.user import UserType
 from app.core.cache import response_cache
 from app.core.delivery import calculate_delivery_fee
+from app.services.storage_service import storage_service
 
 
 def _clear_public_product_cache() -> None:
@@ -47,6 +48,46 @@ class OrderService:
     def _get_notification_email(self, user: User) -> str:
         """Prefer the real contact email over phone-generated placeholder emails."""
         return (user.contact_email or user.email).strip().lower()
+
+    async def _recalculate_order_totals(self, order: Order) -> None:
+        """Recalculate totals from active order items using GST-inclusive pricing."""
+        active_items = [item for item in order.items if not getattr(item, "is_cancelled", False)]
+        subtotal = sum((Decimal(str(item.total_price)) for item in active_items), Decimal("0"))
+
+        discount_amount = min(Decimal(str(order.discount_amount or 0)), subtotal)
+        shipping_amount = calculate_delivery_fee(subtotal, discount_amount) if active_items else Decimal("0")
+
+        raw_tax_total = Decimal("0")
+        product_ids = [item.product_id for item in active_items if item.product_id]
+        products: dict[UUID, Product] = {}
+        if product_ids:
+            product_result = await self.session.execute(
+                select(Product).where(Product.id.in_(product_ids))
+            )
+            products = {product.id: product for product in product_result.scalars().all()}
+
+        for item in active_items:
+            product = products.get(item.product_id)
+            gst_rate = Decimal(str(getattr(product, "gst_percentage", 18))) if product else Decimal("18")
+            line_total = Decimal(str(item.total_price))
+            base_price = line_total / (Decimal("1") + gst_rate / Decimal("100"))
+            raw_tax_total += line_total - base_price
+
+        if subtotal > 0 and discount_amount > 0:
+            discount_ratio = discount_amount / subtotal
+            tax_amount = raw_tax_total * (Decimal("1") - discount_ratio)
+        else:
+            tax_amount = raw_tax_total
+
+        order.subtotal = subtotal.quantize(Decimal("0.01"))
+        order.discount_amount = discount_amount.quantize(Decimal("0.01"))
+        order.shipping_amount = Decimal(str(shipping_amount)).quantize(Decimal("0.01"))
+        order.tax_amount = tax_amount.quantize(Decimal("0.01"))
+        order.total_amount = max(
+            Decimal("0"),
+            order.subtotal - order.discount_amount + order.shipping_amount,
+        ).quantize(Decimal("0.01"))
+        order.updated_at = datetime.utcnow()
     
     def _generate_order_number(self) -> str:
         """Generate unique order number."""
@@ -469,6 +510,117 @@ class OrderService:
             )
         )
         return result.scalar_one()
+
+    async def cancel_order_item(
+        self,
+        order_id: UUID,
+        item_id: UUID,
+        reason: Optional[str] = None,
+        background_tasks: Optional[BackgroundTasks] = None,
+    ) -> Order:
+        """Cancel one unavailable line item, recalculate totals, and regenerate invoice."""
+        order = await self.get_order_by_id(order_id)
+
+        if order.status in [OrderStatus.SHIPPED, OrderStatus.DELIVERED, OrderStatus.CANCELLED]:
+            raise BadRequestException("Cannot cancel an item after the order is shipped, delivered, or cancelled.")
+
+        item = next((order_item for order_item in order.items if order_item.id == item_id), None)
+        if not item:
+            raise NotFoundException("Order item")
+        if item.is_cancelled:
+            raise BadRequestException("This item is already cancelled.")
+
+        previous_total = Decimal(str(order.total_amount or 0))
+        previous_invoice_url = order.invoice_url
+        cancellation_reason = (reason or "Item unavailable").strip()[:500]
+
+        item.is_cancelled = True
+        item.cancelled_at = datetime.utcnow()
+        item.cancellation_reason = cancellation_reason
+        self.session.add(item)
+
+        await self._recalculate_order_totals(order)
+
+        active_items = [order_item for order_item in order.items if not getattr(order_item, "is_cancelled", False)]
+        if not active_items:
+            order.status = OrderStatus.CANCELLED
+        elif order.status == OrderStatus.PENDING:
+            order.status = OrderStatus.CONFIRMED
+
+        metadata = dict(order.order_metadata or {})
+        if order.payment_method == PaymentMethod.ONLINE and order.payment_status == PaymentStatus.PAID:
+            refund_due = max(Decimal("0"), previous_total - Decimal(str(order.total_amount or 0)))
+            if refund_due > 0:
+                existing_refund_due = Decimal(str(metadata.get("refund_due_amount") or "0"))
+                metadata["refund_due_amount"] = str((existing_refund_due + refund_due).quantize(Decimal("0.01")))
+                metadata["refund_reason"] = "One or more order items were cancelled because they were unavailable."
+        metadata["last_adjustment_reason"] = cancellation_reason
+        metadata["last_adjusted_at"] = datetime.utcnow().isoformat()
+        order.order_metadata = metadata
+
+        order.invoice_url = None
+        self.session.add(order)
+        await self.session.commit()
+        _clear_public_product_cache()
+
+        result = await self.session.execute(
+            select(Order)
+            .where(Order.id == order.id)
+            .options(
+                selectinload(Order.items),
+                selectinload(Order.user),
+                selectinload(Order.shipping_address)
+            )
+        )
+        order_result = result.scalar_one()
+        has_active_items = any(not getattr(active_item, "is_cancelled", False) for active_item in order_result.items)
+        customer_email = self._get_notification_email(order_result.user) if order_result.user else None
+        customer_name = order_result.user.full_name if order_result.user and order_result.user.full_name else "Customer"
+        order_number = order.order_number
+        cancelled_product_name = item.product_name
+        cancelled_quantity = item.quantity
+        cancelled_amount = float(item.total_price)
+        updated_total = float(order_result.total_amount)
+
+        async def _post_adjustment_tasks() -> None:
+            try:
+                if previous_invoice_url:
+                    await storage_service.delete_file(previous_invoice_url)
+            except Exception as e:
+                print(f"Error deleting old invoice for {order_number}: {e}")
+
+            try:
+                from app.services.invoice_service import InvoiceService
+                from app.database import get_session as _get_session
+
+                if has_active_items:
+                    async for bg_session in _get_session():
+                        await InvoiceService.generate_and_upload_invoice(order.id, bg_session)
+                        break
+            except Exception as e:
+                print(f"Error regenerating invoice for {order_number}: {e}")
+
+            try:
+                if customer_email:
+                    await email_service.send_order_item_cancelled_email(
+                        customer_email,
+                        order_number,
+                        customer_name,
+                        cancelled_product_name,
+                        cancelled_quantity,
+                        cancelled_amount,
+                        updated_total,
+                        cancellation_reason,
+                    )
+            except Exception as e:
+                print(f"Error sending item cancellation email for {order_number}: {e}")
+
+        if background_tasks:
+            background_tasks.add_task(_post_adjustment_tasks)
+        else:
+            await _post_adjustment_tasks()
+
+        return order_result
     
     async def cancel_order(self, order_id: UUID, user_id: Optional[UUID] = None) -> Order:
         """Cancel an order and restore stock."""
@@ -484,6 +636,8 @@ class OrderService:
         
         # Restore stock
         for item in order.items:
+            if getattr(item, "is_cancelled", False):
+                continue
             if item.product_id:
                 product_result = await self.session.execute(
                     select(Product).where(Product.id == item.product_id)

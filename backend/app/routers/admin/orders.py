@@ -35,6 +35,11 @@ class UpdatePaymentStatus(BaseModel):
     payment_status: PaymentStatus
 
 
+class CancelOrderItemRequest(BaseModel):
+    """Cancel one order item when it cannot be fulfilled."""
+    reason: Optional[str] = "Item unavailable"
+
+
 @router.get("", response_model=PaginatedOrdersAdmin)
 async def list_orders_admin(
     page: int = Query(1, ge=1),
@@ -172,6 +177,26 @@ async def update_payment_status(
     """Update payment status."""
     order_service = OrderService(session)
     order = await order_service.update_payment_status(order_id, data.payment_status)
+    return build_order_read(order)
+
+
+@router.post("/{order_id}/items/{item_id}/cancel", response_model=OrderRead)
+async def cancel_order_item_admin(
+    order_id: UUID,
+    item_id: UUID,
+    data: CancelOrderItemRequest,
+    background_tasks: BackgroundTasks,
+    current_user: User = Depends(get_current_admin),
+    session: AsyncSession = Depends(get_session)
+):
+    """Cancel a single unavailable product from an order and regenerate invoice."""
+    order_service = OrderService(session)
+    order = await order_service.cancel_order_item(
+        order_id=order_id,
+        item_id=item_id,
+        reason=data.reason,
+        background_tasks=background_tasks,
+    )
     return build_order_read(order)
 
 

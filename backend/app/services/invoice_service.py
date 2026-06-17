@@ -123,13 +123,18 @@ class InvoiceService:
                 print(f"InvoiceService: Order {order_id} not found.")
                 return None
 
+            active_items = [item for item in order.items if not getattr(item, "is_cancelled", False)]
+            if not active_items:
+                print(f"InvoiceService: Order {order_id} has no active items.")
+                return None
+
             if order.invoice_url:
                 print(f"InvoiceService: Order {order_id} already has an invoice.")
                 return order.invoice_url
 
             # Fetch products to get seller info
             from app.models.product import Product
-            product_ids = [item.product_id for item in order.items if item.product_id]
+            product_ids = [item.product_id for item in active_items if item.product_id]
             products = {}
             if product_ids:
                 prod_result = await session.execute(select(Product).where(Product.id.in_(product_ids)))
@@ -143,7 +148,7 @@ class InvoiceService:
 
             # Group items by seller
             seller_groups = {}
-            for item in order.items:
+            for item in active_items:
                 prod = products.get(item.product_id)
                 seller = seller_users.get(prod.seller_id) if prod and prod.seller_id else None
 

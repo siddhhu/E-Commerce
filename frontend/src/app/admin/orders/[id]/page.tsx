@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { adminApi, Order } from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Package, Truck, CreditCard, User as UserIcon } from 'lucide-react';
+import { ArrowLeft, Package, Truck, CreditCard, User as UserIcon, XCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import Link from 'next/link';
@@ -12,6 +12,7 @@ import Link from 'next/link';
 export default function AdminOrderDetailPage({ params }: { params: { id: string } }) {
     const [order, setOrder] = useState<Order | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [cancellingItemId, setCancellingItemId] = useState<string | null>(null);
     const { toast } = useToast();
 
     const fetchOrder = async () => {
@@ -48,6 +49,34 @@ export default function AdminOrderDetailPage({ params }: { params: { id: string 
         }
     };
 
+    const canCancelItems = !['shipped', 'delivered', 'cancelled'].includes(order?.status || '');
+
+    const handleCancelItem = async (itemId: string, productName: string) => {
+        const reason = window.prompt(
+            `Reason for cancelling "${productName}"?`,
+            'Item unavailable with admin/seller'
+        );
+        if (reason === null) return;
+
+        setCancellingItemId(itemId);
+        try {
+            const updatedOrder = await adminApi.cancelOrderItem(params.id, itemId, reason.trim() || 'Item unavailable');
+            setOrder(updatedOrder);
+            toast({
+                title: 'Product cancelled from order',
+                description: 'Totals were recalculated, invoice regeneration started, and customer email was queued.',
+            });
+        } catch (error: any) {
+            toast({
+                title: 'Failed to cancel product',
+                description: error.message || 'Please try again.',
+                variant: 'destructive'
+            });
+        } finally {
+            setCancellingItemId(null);
+        }
+    };
+
     if (isLoading) return <div className="p-8 text-center text-slate-500">Loading order details...</div>;
     if (!order) return <div className="p-8 text-center text-slate-500">Order not found.</div>;
 
@@ -81,18 +110,54 @@ export default function AdminOrderDetailPage({ params }: { params: { id: string 
                         <CardContent>
                             <div className="space-y-4">
                                 {order.items?.map((item, index) => (
-                                    <div key={index} className="flex justify-between items-start border-b pb-4 last:border-0 last:pb-0">
-                                        <div>
-                                            <p className="font-medium text-slate-900">{item.product_name}</p>
+                                    <div key={item.id || index} className={`flex justify-between gap-4 items-start border-b pb-4 last:border-0 last:pb-0 ${item.is_cancelled ? 'opacity-70' : ''}`}>
+                                        <div className="min-w-0">
+                                            <div className="flex flex-wrap items-center gap-2">
+                                                <p className={`font-medium ${item.is_cancelled ? 'text-slate-500 line-through' : 'text-slate-900'}`}>
+                                                    {item.product_name}
+                                                </p>
+                                                {item.is_cancelled && (
+                                                    <span className="rounded-full bg-red-50 px-2 py-0.5 text-xs font-semibold text-red-700">
+                                                        Cancelled
+                                                    </span>
+                                                )}
+                                            </div>
                                             <p className="text-sm text-slate-500">HSN Code: {item.product_sku}</p>
                                             <p className="text-sm text-slate-600 mt-1">
                                                 Qty: {item.quantity} × {formatCurrency(item.unit_price)}
                                             </p>
+                                            {item.cancellation_reason && (
+                                                <p className="mt-1 text-xs text-red-600">
+                                                    Reason: {item.cancellation_reason}
+                                                </p>
+                                            )}
                                         </div>
-                                        <p className="font-medium">{formatCurrency(item.total_price)}</p>
+                                        <div className="flex shrink-0 flex-col items-end gap-2">
+                                            <p className={`font-medium ${item.is_cancelled ? 'text-slate-400 line-through' : ''}`}>
+                                                {formatCurrency(item.total_price)}
+                                            </p>
+                                            {canCancelItems && !item.is_cancelled && (
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    size="sm"
+                                                    className="h-8 gap-1 border-red-200 text-red-700 hover:bg-red-50 hover:text-red-800"
+                                                    disabled={cancellingItemId === item.id}
+                                                    onClick={() => handleCancelItem(item.id, item.product_name)}
+                                                >
+                                                    <XCircle className="h-3.5 w-3.5" />
+                                                    {cancellingItemId === item.id ? 'Cancelling...' : 'Cancel item'}
+                                                </Button>
+                                            )}
+                                        </div>
                                     </div>
                                 ))}
                             </div>
+                            {canCancelItems && (
+                                <p className="mt-4 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                                    Use item cancellation only when a product cannot be fulfilled. The order total and invoice will be revised automatically.
+                                </p>
+                            )}
                         </CardContent>
                         <div className="bg-slate-50 p-6 border-t mt-4">
                             <div className="space-y-2 text-sm">
@@ -212,6 +277,20 @@ export default function AdminOrderDetailPage({ params }: { params: { id: string 
                                 <div>
                                     <p className="text-slate-500 mb-1">Promo Code</p>
                                     <p className="font-mono font-medium">{order.promo_code}</p>
+                                </div>
+                            )}
+
+                            {order.order_metadata?.refund_due_amount && (
+                                <div className="rounded-lg border border-amber-200 bg-amber-50 p-3">
+                                    <p className="font-semibold text-amber-900">Refund/adjustment due</p>
+                                    <p className="mt-1 text-amber-800">
+                                        {formatCurrency(Number(order.order_metadata.refund_due_amount))}
+                                    </p>
+                                    {order.order_metadata.refund_reason && (
+                                        <p className="mt-1 text-xs text-amber-700">
+                                            {order.order_metadata.refund_reason}
+                                        </p>
+                                    )}
                                 </div>
                             )}
 

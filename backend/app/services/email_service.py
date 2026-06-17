@@ -303,6 +303,55 @@ class EmailService:
             print(f"Error sending order status email: {e}")
             return False
 
+    async def send_order_item_cancelled_email(
+        self,
+        to_email: str,
+        order_number: str,
+        customer_name: str,
+        product_name: str,
+        quantity: int,
+        removed_amount: float,
+        new_total: float,
+        reason: str | None = None,
+    ) -> bool:
+        """Notify customer when an unavailable item is removed from an order."""
+        if not self._enabled:
+            self._log_skip("send_order_item_cancelled_email", to_email)
+            return False
+
+        safe_customer = escape(customer_name or "Customer")
+        safe_product = escape(product_name)
+        safe_reason = escape(reason or "Item is currently unavailable with the seller/admin.")
+        try:
+            params = {
+                "from": self.from_email,
+                "to": [to_email],
+                "subject": f"Order Updated - {order_number}",
+                "html": f"""
+                    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                        <h2 style="color: #1a1a1a;">Your order has been updated</h2>
+                        <p>Hi {safe_customer},</p>
+                        <p>We are sorry, one item from your order <strong>#{order_number}</strong> could not be fulfilled and has been removed.</p>
+                        <div style="background: #fff7ed; border-left: 4px solid #f97316; padding: 16px; margin: 20px 0;">
+                            <p><strong>Cancelled item:</strong> {safe_product}</p>
+                            <p><strong>Quantity:</strong> {quantity}</p>
+                            <p><strong>Amount removed:</strong> ₹{removed_amount:,.2f}</p>
+                            <p><strong>Reason:</strong> {safe_reason}</p>
+                        </div>
+                        <div style="background: #f8fafc; padding: 16px; margin: 20px 0;">
+                            <p style="margin: 0;"><strong>Updated order total:</strong> ₹{new_total:,.2f}</p>
+                        </div>
+                        <p>A revised invoice will be available on your order shortly. If you already paid online, our support team will coordinate the eligible refund/adjustment.</p>
+                        <p>For help, reply to this email or contact support.</p>
+                    </div>
+                """
+            }
+            resend.Emails.send(params)
+            return True
+        except Exception as e:
+            print(f"Error sending order item cancellation email: {e}")
+            return False
+
     async def send_seller_application_received(
         self,
         to_email: str,

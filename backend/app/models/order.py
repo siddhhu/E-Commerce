@@ -70,7 +70,7 @@ class Order(OrderBase, table=True):
     user_id: Optional[UUID] = Field(default=None, foreign_key="users.id", index=True)
     shipping_address_id: Optional[UUID] = Field(default=None, foreign_key="addresses.id")
     shipping_address_data: Optional[dict] = Field(default=None, sa_column=Column(JSON))
-    order_metadata: dict = Field(default={}, sa_column=Column(JSON))
+    order_metadata: dict = Field(default_factory=dict, sa_column=Column(JSON))
     placed_at: Optional[datetime] = Field(default=None)
     shipped_at: Optional[datetime] = Field(default=None)
     delivered_at: Optional[datetime] = Field(default=None)
@@ -90,6 +90,9 @@ class OrderItemBase(SQLModel):
     unit_price: Decimal = Field(max_digits=10, decimal_places=2)
     quantity: int
     total_price: Decimal = Field(max_digits=12, decimal_places=2)
+    is_cancelled: bool = Field(default=False)
+    cancelled_at: Optional[datetime] = Field(default=None)
+    cancellation_reason: Optional[str] = Field(default=None, max_length=500)
 
 
 class OrderItem(OrderItemBase, table=True):
@@ -144,6 +147,7 @@ class OrderRead(OrderBase):
     created_at: datetime
     updated_at: datetime
     items: list[OrderItemRead] = []
+    order_metadata: dict = Field(default_factory=dict)
     
     # Extra fields for admin display
     customer_name: Optional[str] = None

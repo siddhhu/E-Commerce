@@ -490,6 +490,8 @@ export const adminApi = {
     getOrder: (id: string) => api.get<Order>(`/admin/orders/${id}`),
     updateOrderStatus: (id: string, status: string) => 
         api.patch(`/admin/orders/${id}/status`, { status }),
+    cancelOrderItem: (orderId: string, itemId: string, reason?: string) =>
+        api.post<Order>(`/admin/orders/${orderId}/items/${itemId}/cancel`, { reason }),
     cancelOrder: (id: string) =>
         api.post<Order>(`/admin/orders/${id}/cancel`),
         
@@ -768,6 +770,7 @@ export interface Order {
     tax_amount: number;
     total_amount: number;
     invoice_url?: string | null;
+    order_metadata?: Record<string, any>;
     product_summary?: string;
     items_count?: number;
     
@@ -803,6 +806,9 @@ export interface OrderItem {
     unit_price: number;
     quantity: number;
     total_price: number;
+    is_cancelled?: boolean;
+    cancelled_at?: string | null;
+    cancellation_reason?: string | null;
 }
 
 export interface PaginatedOrders {

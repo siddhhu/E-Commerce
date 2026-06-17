@@ -163,17 +163,33 @@ export default function OrderDetailPage() {
                             </CardHeader>
                             <CardContent className="space-y-4">
                                 {order.items.map((item, index) => (
-                                    <div key={index} className="flex gap-4">
+                                    <div key={item.id || index} className={`flex gap-4 ${item.is_cancelled ? 'opacity-70' : ''}`}>
                                         <div className="relative w-16 h-16 rounded bg-muted shrink-0 flex items-center justify-center">
                                             <Package className="h-8 w-8 text-muted-foreground" />
                                         </div>
                                         <div className="flex-1 min-w-0">
-                                            <p className="font-medium">{item.product_name}</p>
+                                            <div className="flex flex-wrap items-center gap-2">
+                                                <p className={`font-medium ${item.is_cancelled ? 'line-through text-muted-foreground' : ''}`}>
+                                                    {item.product_name}
+                                                </p>
+                                                {item.is_cancelled && (
+                                                    <span className="rounded-full bg-red-50 px-2 py-0.5 text-xs font-semibold text-red-700">
+                                                        Cancelled
+                                                    </span>
+                                                )}
+                                            </div>
                                             <p className="text-sm text-muted-foreground">
                                                 {formatPrice(item.unit_price)} × {item.quantity}
                                             </p>
+                                            {item.cancellation_reason && (
+                                                <p className="mt-1 text-xs text-red-600">
+                                                    Reason: {item.cancellation_reason}
+                                                </p>
+                                            )}
                                         </div>
-                                        <p className="font-medium">{formatPrice(item.total_price)}</p>
+                                        <p className={`font-medium ${item.is_cancelled ? 'line-through text-muted-foreground' : ''}`}>
+                                            {formatPrice(item.total_price)}
+                                        </p>
                                     </div>
                                 ))}
 
@@ -200,6 +216,12 @@ export default function OrderDetailPage() {
                                         <span>Total</span>
                                         <span className="text-primary">{formatPrice(order.total_amount)}</span>
                                     </div>
+                                    {order.order_metadata?.refund_due_amount && (
+                                        <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+                                            <p className="font-semibold">Refund/adjustment due: {formatPrice(Number(order.order_metadata.refund_due_amount))}</p>
+                                            <p className="mt-1 text-xs">Support will coordinate this for your prepaid order.</p>
+                                        </div>
+                                    )}
                                 </div>
                             </CardContent>
                         </Card>

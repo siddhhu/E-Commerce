@@ -195,6 +195,24 @@ async def run_startup_migrations() -> None:
                 await conn.execute(sa.text("ALTER TABLE users ADD COLUMN IF NOT EXISTS bank_name VARCHAR(255);"))
                 await conn.execute(sa.text("ALTER TABLE users ADD COLUMN IF NOT EXISTS seller_bank_proof_url VARCHAR(1024);"))
 
+        print("Database: Running order item cancellation schema migrations...")
+        async with engine.connect() as conn:
+            conn = await conn.execution_options(isolation_level="AUTOCOMMIT")
+            if "sqlite" in db_url:
+                for sql in [
+                    "ALTER TABLE order_items ADD COLUMN is_cancelled BOOLEAN DEFAULT 0 NOT NULL;",
+                    "ALTER TABLE order_items ADD COLUMN cancelled_at DATETIME;",
+                    "ALTER TABLE order_items ADD COLUMN cancellation_reason VARCHAR(500);",
+                ]:
+                    try:
+                        await conn.execute(sa.text(sql))
+                    except Exception:
+                        pass
+            else:
+                await conn.execute(sa.text("ALTER TABLE order_items ADD COLUMN IF NOT EXISTS is_cancelled BOOLEAN NOT NULL DEFAULT FALSE;"))
+                await conn.execute(sa.text("ALTER TABLE order_items ADD COLUMN IF NOT EXISTS cancelled_at TIMESTAMP;"))
+                await conn.execute(sa.text("ALTER TABLE order_items ADD COLUMN IF NOT EXISTS cancellation_reason VARCHAR(500);"))
+
         # 5. Performance indexes — idempotent (CREATE INDEX IF NOT EXISTS)
         if "postgresql" in db_url:
             print("Database: Ensuring performance indexes...")
