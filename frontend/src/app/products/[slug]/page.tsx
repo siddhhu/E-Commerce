@@ -224,6 +224,7 @@ export default function ProductDetailPage() {
         unit: p.unit,
         is_active: p.is_active,
         is_featured: p.is_featured,
+        is_discounted_featured: p.is_discounted_featured ?? false,
         category_id: p.category_id || '',
         category_name: '',
         brand_id: p.brand_id || '',
