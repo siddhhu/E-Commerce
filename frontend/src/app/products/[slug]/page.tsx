@@ -142,6 +142,7 @@ export default function ProductDetailPage() {
                             unit: 'pcs',
                             is_active: true,
                             is_featured: item.is_featured,
+                            is_discounted_featured: item.is_discounted_featured ?? false,
                             image_url: item.primary_image || undefined,
                             images: item.primary_image ? [{ id: 'related', product_id: item.id, image_url: item.primary_image, is_primary: true, sort_order: 0 }] : [],
                             attributes: {},
