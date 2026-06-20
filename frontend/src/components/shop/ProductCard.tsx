@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Heart, ShoppingCart } from 'lucide-react';
+import { Heart, ShoppingCart, Clock } from 'lucide-react';
 import { Product } from '@/lib/api';
 import { useCartStore } from '@/store/cart-store';
 import { Button } from '@/components/ui/button';
@@ -59,6 +59,11 @@ export function ProductCard({ product }: ProductCardProps) {
                                 {label.text}
                             </div>
                         ))}
+                        {product.is_discounted_featured && (
+                            <div className="absolute top-2 left-2 flex flex-col gap-1">
+                                <span className="bg-[#d81b60] text-white text-[10px] uppercase font-extrabold tracking-wide px-2 py-1 rounded-full shadow-sm animate-pulse">Live Discount</span>
+                            </div>
+                        )}
                     </div>
                     
                     {/* Top Right Wishlist */}
@@ -105,7 +110,15 @@ export function ProductCard({ product }: ProductCardProps) {
                             )}
                         </div>
                         
-                        {/* Add to Cart Button */}
+                        
+                    {product.is_discounted_featured && (
+                        <div className="mt-2 flex items-center gap-1.5 text-xs font-bold text-rose-500 bg-rose-50 px-2 py-1.5 rounded-md">
+                            <Clock className="h-3.5 w-3.5" />
+                            <span>Offer might end soon</span>
+                        </div>
+                    )}
+                    
+                    {/* Add to Cart Button */}
                         <Button 
                             onClick={handleAddToCart}
                             className="w-full h-9 md:h-10 bg-[#e91e63] hover:bg-[#c2185b] text-white text-xs md:text-sm font-semibold rounded-lg shadow-sm shadow-pink-200"

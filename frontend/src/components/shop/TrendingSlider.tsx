@@ -7,9 +7,13 @@ import { Product } from '@/lib/api';
 
 interface TrendingSliderProps {
     products: Product[];
+    title?: string;
+    subtitle?: string;
+    subDescription?: string;
+    icon?: React.ReactNode;
 }
 
-export function TrendingSlider({ products }: TrendingSliderProps) {
+export function TrendingSlider({ products, title, subtitle, subDescription, icon }: TrendingSliderProps) {
     const scrollContainerRef = useRef<HTMLDivElement>(null);
     const [scrollProgress, setScrollProgress] = useState(0);
     const [visibleCount, setVisibleCount] = useState(20);
@@ -64,14 +68,17 @@ export function TrendingSlider({ products }: TrendingSliderProps) {
             <div className="container relative">
                 <div className="flex items-center justify-center gap-2 mb-6 md:mb-8">
                     <span className="h-10 w-10 rounded-full bg-rose-50 text-[#e91e63] flex items-center justify-center">
-                        <Sparkles className="h-5 w-5" />
+                        {icon || <Sparkles className="h-5 w-5" />}
                     </span>
                     <div className="text-center">
                         <h2 className="text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight">
-                            Trending Now
+                            {title || "Trending Now"}
                         </h2>
                         <p className="text-sm text-slate-500 mt-1">
-                            {hasMoreProducts ? `Showing ${visibleProducts.length} of ${products.length} featured products` : `${products.length} featured products`}
+                            {subtitle || (hasMoreProducts ? `Showing ${visibleProducts.length} of ${products.length} featured products` : `${products.length} featured products`)}
+                        </p>
+                        <p className="text-xs text-slate-400 mt-1 font-medium">
+                            {subDescription || "Products are trending due to its quality and its discount"}
                         </p>
                     </div>
                 </div>

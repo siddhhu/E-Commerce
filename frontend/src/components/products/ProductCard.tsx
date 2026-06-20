@@ -4,6 +4,7 @@ import { Heart, ShoppingCart } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { Clock } from 'lucide-react';
 import { Product } from '@/lib/api';
 import { cn, formatPrice, getDiscountPercentage, resolveImageUrl } from '@/lib/utils';
 import { getProductLabels } from '@/lib/product-labels';
@@ -58,6 +59,7 @@ export function ProductCard({
 
                 {/* Badges */}
                 <div className="absolute top-2 left-2 flex flex-col gap-1">
+                    {product.is_discounted_featured && <span className="bg-[#d81b60] text-white text-[10px] uppercase font-extrabold tracking-wide px-2 py-1 rounded-full shadow-sm animate-pulse">Live Discount</span>}
                     {discount > 0 && <span className="bg-primary text-primary-foreground text-xs font-semibold px-2 py-1 rounded-full">{discount}% OFF</span>}
                     {labels.map((label) => (
                         <span key={label.text} className={cn("text-xs font-semibold px-2 py-1 rounded-full shadow-sm", label.className)}>
@@ -85,6 +87,13 @@ export function ProductCard({
                         {product.name}
                     </h3>
                 </Link>
+
+                {product.is_discounted_featured && (
+                    <div className="mt-3 flex items-center gap-1.5 text-xs font-bold text-rose-500 bg-rose-50 px-2 py-1.5 rounded-md">
+                        <Clock className="h-3.5 w-3.5" />
+                        <span>Offer might end soon</span>
+                    </div>
+                )}
 
                 {product.short_description && (
                     <p className="text-sm text-muted-foreground truncate mt-1">

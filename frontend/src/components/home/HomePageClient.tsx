@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ArrowRight, Sparkles, Truck, Shield, Clock, Heart, ShoppingCart, Loader2 } from 'lucide-react';
+import { ArrowRight, Sparkles, Truck, Shield, Clock, Heart, ShoppingCart, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -286,31 +286,62 @@ export default function HomePageClient({
 
                 {/* Live Discounts — admin-curated products with is_discounted_featured=true */}
                 {!discountsLoading && discountedProducts.length > 0 && (
-                    <section className="py-10 bg-[#fff7fb] border-y border-rose-100">
-                        <div className="container">
+                    <section className="py-10 bg-[#fff7fb] border-y border-rose-100 relative">
+                        <div className="container relative group/slider">
                             <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6">
                                 <div>
                                     <p className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-xs font-bold uppercase tracking-wide text-[#d81b60] shadow-sm">
                                         <Sparkles className="h-3.5 w-3.5" /> Live product discounts
                                     </p>
-                                    <h2 className="mt-3 text-2xl md:text-4xl font-extrabold text-slate-950">Today&apos;s Beauty Steals</h2>
-                                    <p className="mt-2 text-slate-600">Hand-picked by our team — the best deals available right now.</p>
+                                    <h2 className="mt-3 text-2xl md:text-4xl font-extrabold text-slate-950">These are today&apos;s show stopper deals</h2>
+                                    <p className="mt-2 text-slate-600">Everyday new product will show up here with better and live deal.</p>
                                 </div>
-                                <Link href="/products?min_discount=1" className="inline-flex items-center gap-2 text-sm font-bold text-primary hover:underline">
-                                    Shop more deals <ArrowRight className="h-4 w-4" />
-                                </Link>
+                                <div className="flex items-center gap-4">
+                                    <button 
+                                        onClick={() => {
+                                            const container = document.getElementById('discount-slider');
+                                            if (container) container.scrollBy({ left: -container.clientWidth * 0.8, behavior: 'smooth' });
+                                        }}
+                                        className="h-10 w-10 bg-white rounded-full shadow-sm flex items-center justify-center text-[#e91e63] hover:bg-slate-50 transition-colors border border-slate-200 hidden md:flex"
+                                    >
+                                        <ChevronLeft className="h-5 w-5" />
+                                    </button>
+                                    <button 
+                                        onClick={() => {
+                                            const container = document.getElementById('discount-slider');
+                                            if (container) container.scrollBy({ left: container.clientWidth * 0.8, behavior: 'smooth' });
+                                        }}
+                                        className="h-10 w-10 bg-white rounded-full shadow-sm flex items-center justify-center text-[#e91e63] hover:bg-slate-50 transition-colors border border-slate-200 hidden md:flex"
+                                    >
+                                        <ChevronRight className="h-5 w-5" />
+                                    </button>
+                                    <Link href="/products?min_discount=1" className="inline-flex items-center gap-2 text-sm font-bold text-primary hover:underline ml-2">
+                                        Shop more deals <ArrowRight className="h-4 w-4" />
+                                    </Link>
+                                </div>
                             </div>
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6">
+                            
+                            <div 
+                                id="discount-slider"
+                                className="grid grid-rows-1 grid-flow-col auto-cols-max overflow-x-auto gap-3 md:gap-6 pb-6 snap-x snap-mandatory hide-scrollbar"
+                                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                            >
                                 {discountedProducts.map((product) => (
-                                    <ProductCard
-                                        key={product.id}
-                                        product={mapFeaturedToProduct(product)}
-                                        onAddToCart={() => handleAddToCart(product)}
-                                        onAddToWishlist={() => handleToggleWishlist(product)}
-                                    />
+                                    <div key={product.id} className="w-[42vw] min-w-[160px] max-w-[200px] sm:w-[240px] sm:max-w-none md:w-[280px] snap-start h-full">
+                                        <ProductCard
+                                            product={mapFeaturedToProduct(product)}
+                                            onAddToCart={() => handleAddToCart(product)}
+                                            onAddToWishlist={() => handleToggleWishlist(product)}
+                                        />
+                                    </div>
                                 ))}
                             </div>
                         </div>
+                        <style jsx global>{`
+                            .hide-scrollbar::-webkit-scrollbar {
+                                display: none;
+                            }
+                        `}</style>
                     </section>
                 )}
 
