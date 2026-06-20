@@ -68,7 +68,8 @@ function AdminAddProductPageContent() {
         color_name: '',
         size: '',
         is_active: true,
-        is_featured: false
+        is_featured: false,
+        is_discounted_featured: false
     });
     const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false);
 
@@ -95,7 +96,8 @@ function AdminAddProductPageContent() {
                         color_name: (product.attributes?.color_name as string) || '',
                         size: (product.attributes?.size as string) || '',
                         is_active: product.is_active,
-                        is_featured: product.is_featured || false
+                        is_featured: product.is_featured || false,
+                        is_discounted_featured: (product as any).is_discounted_featured || false
                     });
                 } catch (err) {
                     console.error("Failed to fetch duplicate product:", err);
@@ -169,6 +171,7 @@ function AdminAddProductPageContent() {
                 },
                 is_active: formData.is_active,
                 is_featured: formData.is_featured,
+                is_discounted_featured: formData.is_discounted_featured,
                 slug: formData.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '') || `product-${Date.now()}`
             });
 
@@ -432,18 +435,33 @@ function AdminAddProductPageContent() {
                                         </select>
                                     </div>
                                 </div>
-                                <div className="mt-4 pt-4 border-t flex items-center space-x-2">
-                                    <input 
-                                        type="checkbox" 
-                                        id="is_featured" 
-                                        name="is_featured" 
-                                        checked={formData.is_featured} 
-                                        onChange={handleChange} 
-                                        className="h-4 w-4 rounded border-slate-300 text-[#d81b60] focus:ring-[#d81b60]"
-                                    />
-                                    <Label htmlFor="is_featured" className="text-sm font-medium leading-none cursor-pointer">
-                                        Feature this product
-                                    </Label>
+                                <div className="mt-4 pt-4 border-t space-y-3">
+                                    <div className="flex items-center space-x-2">
+                                        <input 
+                                            type="checkbox" 
+                                            id="is_featured" 
+                                            name="is_featured" 
+                                            checked={formData.is_featured} 
+                                            onChange={handleChange} 
+                                            className="h-4 w-4 rounded border-slate-300 text-[#d81b60] focus:ring-[#d81b60]"
+                                        />
+                                        <Label htmlFor="is_featured" className="text-sm font-medium leading-none cursor-pointer">
+                                            Feature this product
+                                        </Label>
+                                    </div>
+                                    <div className="flex items-center space-x-2">
+                                        <input 
+                                            type="checkbox" 
+                                            id="is_discounted_featured" 
+                                            name="is_discounted_featured" 
+                                            checked={formData.is_discounted_featured} 
+                                            onChange={handleChange} 
+                                            className="h-4 w-4 rounded border-slate-300 text-[#d81b60] focus:ring-[#d81b60]"
+                                        />
+                                        <Label htmlFor="is_discounted_featured" className="text-sm font-medium leading-none cursor-pointer">
+                                            Show in <span className="text-[#d81b60] font-bold">Live Discounts</span> on Home Page
+                                        </Label>
+                                    </div>
                                 </div>
                             </CardContent>
                         </Card>

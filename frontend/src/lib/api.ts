@@ -324,6 +324,9 @@ export const productsApi = {
     getFeatured: (limit = 10) =>
         api.get<Product[]>(`/products/featured?limit=${limit}`),
 
+    getDiscountedFeatured: (limit = 20) =>
+        api.get<ProductSummary[]>(`/products/discounted-featured?limit=${limit}`),
+
     getFeaturedBrands: () =>
         api.get<any[]>('/products/brands/featured'),
 
@@ -661,6 +664,7 @@ export interface Product {
     attributes: Record<string, unknown>;
     is_active: boolean;
     is_featured: boolean;
+    is_discounted_featured: boolean;
     image_url?: string;
     images: ProductImage[];
     seller_id?: string;
@@ -691,6 +695,7 @@ export interface ProductSummary {
     stock_quantity: number;
     gst_percentage?: number;
     is_featured: boolean;
+    is_discounted_featured: boolean;
     category_id?: string;
     category_ids?: string[];
     parent_id?: string;

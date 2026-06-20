@@ -1,6 +1,6 @@
 import HomePageClient from '@/components/home/HomePageClient';
 import { apiService } from '@/lib/api-service';
-import { bannerApi, categoriesApi, productsApi } from '@/lib/api';
+import { bannerApi, categoriesApi } from '@/lib/api';
 
 // Revalidate the page every 60 seconds (Static Site Generation / Incremental Static Regeneration)
 export const revalidate = 60;
@@ -9,21 +9,16 @@ export default async function HomePage() {
     // Fetch data in parallel on the server to eliminate loading states for the user
     let featuredProducts = null;
     let banners = null;
-    let featuredBrands = null;
     let categories = null;
 
     try {
-        const [featuredRes, bannersRes, brandsRes, categoriesRes] = await Promise.all([
+        const [featuredRes, bannersRes, categoriesRes] = await Promise.all([
             apiService.getFeaturedProducts(200).catch((err) => {
                 console.error("Server fetch error (featured):", err);
                 return null;
             }),
             bannerApi.list().catch((err) => {
                 console.error("Server fetch error (banners):", err);
-                return null;
-            }),
-            productsApi.getFeaturedBrands().catch((err) => {
-                console.error("Server fetch error (featured brands):", err);
                 return null;
             }),
             categoriesApi.list().catch((err) => {
@@ -33,7 +28,6 @@ export default async function HomePage() {
         ]);
         featuredProducts = featuredRes;
         banners = bannersRes;
-        featuredBrands = brandsRes;
         categories = categoriesRes;
     } catch (err) {
         console.error("Server fetch error (Promise.all):", err);
@@ -43,7 +37,6 @@ export default async function HomePage() {
         <HomePageClient 
             initialFeaturedProducts={featuredProducts}
             initialBanners={banners}
-            initialFeaturedBrands={featuredBrands}
             initialCategories={categories}
         />
     );

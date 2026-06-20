@@ -116,6 +116,10 @@ class APIService {
         return this.fetch<APIProduct[]>(`/api/v1/products/featured?limit=${limit}`);
     }
 
+    async getDiscountedFeaturedProducts(limit: number = 20): Promise<APIProduct[]> {
+        return this.fetch<APIProduct[]>(`/api/v1/products/discounted-featured?limit=${limit}`);
+    }
+
     async getProductBySlug(slug: string): Promise<APIProductDetail> {
         return this.fetch<APIProductDetail>(`/api/v1/products/${slug}`);
     }

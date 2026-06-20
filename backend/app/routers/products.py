@@ -54,6 +54,7 @@ def _to_list_read(product: Product) -> ProductListRead:
         stock_quantity=product.stock_quantity,
         gst_percentage=product.gst_percentage,
         is_featured=product.is_featured,
+        is_discounted_featured=product.is_discounted_featured,
         category_id=product.category_id,
         category_ids=product.category_ids or [],
         image_url=getattr(product, "image_url", None),
@@ -328,6 +329,42 @@ async def get_search_index(
         content=items,
         headers={"Cache-Control": "public, max-age=300, stale-while-revalidate=60"},
     )
+
+@router.get("/discounted-featured", response_model=list[ProductListRead])
+async def get_discounted_featured_products(
+    limit: int = Query(20, ge=1, le=100),
+    session: AsyncSession = Depends(get_session)
+):
+    """
+    Get admin-curated discounted products for the Live Discounts section on the home page.
+    Only products with is_discounted_featured=True are returned.
+    """
+    cache_key = ("products_discounted_featured", limit)
+    cached = response_cache.get(cache_key)
+    if cached is not None:
+        return JSONResponse(
+            content=cached,
+            headers={"Cache-Control": "public, max-age=120, stale-while-revalidate=30"},
+        )
+
+    product_service = ProductService(session)
+
+    products, _ = await product_service.list_product_summaries(
+        limit=limit,
+        is_active=True,
+    )
+
+    # Filter to only is_discounted_featured products
+    discounted = [p for p in products if p.is_discounted_featured]
+
+    content = [i.model_dump(mode="json") for i in discounted]
+    response_cache.set(cache_key, content, ttl_seconds=120)
+
+    return JSONResponse(
+        content=content,
+        headers={"Cache-Control": "public, max-age=120, stale-while-revalidate=30"},
+    )
+
 
 @router.get("/{slug}", response_model=ProductRead)
 async def get_product_by_slug(

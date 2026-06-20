@@ -20,7 +20,7 @@ class ProductBase(SQLModel):
     """Product base fields."""
     name: str = Field(max_length=255)
     slug: str = Field(unique=True, index=True, max_length=255)
-    sku: str = Field(unique=True, index=True, max_length=100)
+    sku: str = Field(index=True, max_length=100)  # HSN code — not unique, same code can be shared across products
     description: Optional[str] = Field(default=None)
     short_description: Optional[str] = Field(default=None)
     mrp: Decimal = Field(max_digits=10, decimal_places=2)
@@ -32,6 +32,7 @@ class ProductBase(SQLModel):
     unit: str = Field(default="pcs", max_length=50)
     is_active: bool = Field(default=True)
     is_featured: bool = Field(default=False)
+    is_discounted_featured: bool = Field(default=False)  # Admin-curated: show in Live Discounts on home page
     image_url: Optional[str] = Field(default=None, max_length=500)
     # Seller attribution
     seller_id: Optional[UUID] = Field(default=None, foreign_key="users.id")
@@ -101,6 +102,7 @@ class ProductCreate(SQLModel):
     unit: str = "pcs"
     attributes: dict = {}
     is_featured: bool = False
+    is_discounted_featured: bool = False
     parent_id: Optional[UUID] = None
     # Seller attribution — set by the router based on current_user
     seller_id: Optional[UUID] = None
@@ -127,6 +129,7 @@ class ProductUpdate(SQLModel):
     attributes: Optional[dict] = None
     is_active: Optional[bool] = None
     is_featured: Optional[bool] = None
+    is_discounted_featured: Optional[bool] = None
     parent_id: Optional[UUID] = None
 
 
@@ -150,6 +153,7 @@ class ProductRead(ProductBase):
     seller_name: Optional[str] = "Pranjay"
     seller_gst_number: Optional[str] = None
     parent_id: Optional[UUID] = None
+    is_discounted_featured: bool = False
 
 
 class ProductListRead(SQLModel):
@@ -165,6 +169,7 @@ class ProductListRead(SQLModel):
     stock_quantity: int
     gst_percentage: int = 18
     is_featured: bool
+    is_discounted_featured: bool = False
     category_id: Optional[UUID] = None
     category_ids: list[str] = []
     image_url: Optional[str] = None

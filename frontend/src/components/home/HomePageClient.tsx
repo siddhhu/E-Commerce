@@ -10,13 +10,13 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { apiService, APIProduct as APIProductSummary } from '@/lib/api-service';
-import { categoriesApi, productsApi, CategoryRead } from '@/lib/api';
+import { categoriesApi, ProductSummary, CategoryRead } from '@/lib/api';
 import { dummyProducts, getFeaturedProducts as getDummyFeatured, categories, Product as StoreProduct } from '@/lib/dummy-data';
 import { useCartStore } from '@/store/cart-store';
 import { useWishlistStore } from '@/store/wishlist-store';
 import { useAuthStore } from '@/store/auth-store';
 import { useToast } from '@/hooks/use-toast';
-import { formatPrice, getDiscountPercentage } from '@/lib/utils';
+import { formatPrice } from '@/lib/utils';
 import { BannerSlider } from '@/components/shop/BannerSlider';
 import { ProductCard } from '@/components/products/ProductCard';
 import { Product as APIProduct } from '@/lib/api';
@@ -28,22 +28,22 @@ import { Input } from '@/components/ui/input';
 export default function HomePageClient({ 
     initialFeaturedProducts = null,
     initialBanners = null,
-    initialFeaturedBrands = null,
     initialCategories = null
 }: { 
     initialFeaturedProducts?: APIProductSummary[] | null,
     initialBanners?: any[] | null,
-    initialFeaturedBrands?: any[] | null,
     initialCategories?: CategoryRead[] | null
 }) {
     const router = useRouter();
     const { isAuthenticated, user } = useAuthStore();
     const [featuredProducts, setFeaturedProducts] = useState<APIProductSummary[]>(initialFeaturedProducts || []);
     const [loading, setLoading] = useState(!initialFeaturedProducts);
-    const [featuredBrands, setFeaturedBrands] = useState<any[]>(initialFeaturedBrands || []);
     const [homeCategories, setHomeCategories] = useState<CategoryRead[]>(
         (initialCategories || []).filter((category) => category.is_active).slice(0, 8)
     );
+    const [discountedProducts, setDiscountedProducts] = useState<APIProductSummary[]>([]);
+    const [discountsLoading, setDiscountsLoading] = useState(true);
+
 
     const { addItem: addToCart } = useCartStore();
     const { addItem: addToWishlist, removeItem: removeFromWishlist, isInWishlist } = useWishlistStore();
@@ -83,17 +83,20 @@ export default function HomePageClient({
 
     // Fetch only data that was not pre-rendered by the homepage server component.
     useEffect(() => {
-        if (initialFeaturedBrands === null) {
-            productsApi.getFeaturedBrands()
-                .then(data => setFeaturedBrands(data))
-                .catch(() => {});
-        }
         if (initialCategories === null) {
             categoriesApi.list()
                 .then(data => setHomeCategories(data.filter((category) => category.is_active).slice(0, 8)))
                 .catch(() => {});
         }
-    }, [initialFeaturedBrands, initialCategories]);
+    }, [initialCategories]);
+
+    // Fetch admin-curated discounted products
+    useEffect(() => {
+        apiService.getDiscountedFeaturedProducts(20)
+            .then(data => setDiscountedProducts(data))
+            .catch(() => {})
+            .finally(() => setDiscountsLoading(false));
+    }, []);
 
     const handleAddToCart = (product: APIProductSummary) => {
         const storeProduct: StoreProduct = {
@@ -194,11 +197,6 @@ export default function HomePageClient({
         },
     ];
 
-    const topDealProducts = [...featuredProducts]
-        .filter((product) => getDiscountPercentage(Number(product.mrp), Number(product.selling_price)) > 0)
-        .sort((a, b) => getDiscountPercentage(Number(b.mrp), Number(b.selling_price)) - getDiscountPercentage(Number(a.mrp), Number(a.selling_price)))
-        .slice(0, 4);
-
     const getImageUrl = (url?: string | null) => {
         if (!url) return null;
         if (url.startsWith('http')) return url;
@@ -282,7 +280,8 @@ export default function HomePageClient({
                     </section>
                 )}
 
-                {topDealProducts.length > 0 && (
+                {/* Live Discounts — admin-curated products with is_discounted_featured=true */}
+                {!discountsLoading && discountedProducts.length > 0 && (
                     <section className="py-10 bg-[#fff7fb] border-y border-rose-100">
                         <div className="container">
                             <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6">
@@ -291,14 +290,14 @@ export default function HomePageClient({
                                         <Sparkles className="h-3.5 w-3.5" /> Live product discounts
                                     </p>
                                     <h2 className="mt-3 text-2xl md:text-4xl font-extrabold text-slate-950">Today&apos;s Beauty Steals</h2>
-                                    <p className="mt-2 text-slate-600">Automatically picked from featured products with the strongest current discounts.</p>
+                                    <p className="mt-2 text-slate-600">Hand-picked by our team — the best deals available right now.</p>
                                 </div>
-                                <Link href="/products?min_discount=25" className="inline-flex items-center gap-2 text-sm font-bold text-primary hover:underline">
+                                <Link href="/products?min_discount=1" className="inline-flex items-center gap-2 text-sm font-bold text-primary hover:underline">
                                     Shop more deals <ArrowRight className="h-4 w-4" />
                                 </Link>
                             </div>
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6">
-                                {topDealProducts.map((product) => (
+                                {discountedProducts.map((product) => (
                                     <ProductCard
                                         key={product.id}
                                         product={mapFeaturedToProduct(product)}
@@ -306,86 +305,6 @@ export default function HomePageClient({
                                         onAddToWishlist={() => handleToggleWishlist(product)}
                                     />
                                 ))}
-                            </div>
-                        </div>
-                    </section>
-                )}
-
-                {/* Shop by Brand — dynamic from DB */}
-                {featuredBrands.length > 0 && (
-                    <section className="py-12 bg-gradient-to-br from-rose-50 via-white to-amber-50 border-y border-rose-100/70">
-                        <div className="container">
-                            <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-5 mb-8">
-                                <div className="max-w-2xl">
-                                    <div className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-xs font-bold uppercase tracking-wide text-[#d81b60] shadow-sm ring-1 ring-rose-100">
-                                        <Sparkles className="h-3.5 w-3.5" />
-                                        Brand offers live now
-                                    </div>
-                                    <h2 className="mt-4 text-3xl md:text-4xl font-extrabold tracking-tight text-slate-950">
-                                        Shop by Brand. Get Better Discounts.
-                                    </h2>
-                                    <p className="mt-3 text-slate-600 text-base md:text-lg">
-                                        Explore trusted beauty and personal-care brands with the strongest deals highlighted upfront.
-                                    </p>
-                                </div>
-                                <Link href="/products" className="inline-flex items-center gap-2 text-sm font-bold text-[#d81b60] hover:text-[#b9164f]">
-                                    View all products
-                                    <ArrowRight className="h-4 w-4" />
-                                </Link>
-                            </div>
-
-                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-                                {featuredBrands.map((brand) => (
-                                    <Link
-                                        key={brand.id}
-                                        href={`/products?brand_id=${brand.id}`}
-                                        className="group overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200/70 transition-all hover:-translate-y-1 hover:shadow-xl hover:ring-rose-200"
-                                    >
-                                        <div className="relative h-32 md:h-36 flex items-center justify-center p-6 bg-gradient-to-br from-slate-50 to-white">
-                                            <div className="absolute left-3 top-3 rounded-full bg-[#d81b60] px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide text-white shadow-sm">
-                                                {brand.max_discount && brand.max_discount > 0 ? `Live deal: ${brand.max_discount}% off` : 'Brand picks'}
-                                            </div>
-                                            {brand.logo_url ? (
-                                                <div className="h-full w-full flex items-center justify-center">
-                                                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                                                    <img
-                                                        src={brand.logo_url}
-                                                        alt={brand.name}
-                                                        className="max-h-full max-w-full object-contain mix-blend-multiply transition-transform group-hover:scale-105"
-                                                        loading="lazy"
-                                                    />
-                                                </div>
-                                            ) : (
-                                                <span className="text-xl font-extrabold text-slate-800 tracking-tight group-hover:text-primary transition-colors text-center">
-                                                    {brand.name}
-                                                </span>
-                                            )}
-                                        </div>
-                                        <div className="p-4">
-                                            <div className="flex items-center justify-between gap-3">
-                                                <div>
-                                                    <p className="text-sm font-extrabold text-slate-900 line-clamp-1">{brand.name}</p>
-                                                    <p className="text-xs text-slate-500 mt-0.5">Featured brand picks</p>
-                                                </div>
-                                                <div className="h-9 w-9 rounded-full bg-rose-50 text-[#d81b60] flex items-center justify-center transition-colors group-hover:bg-[#d81b60] group-hover:text-white">
-                                                    <ArrowRight className="h-4 w-4" />
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </Link>
-                                ))}
-                            </div>
-
-                            <div className="mt-8 grid gap-3 md:grid-cols-3">
-                                <div className="rounded-xl bg-white/80 px-4 py-3 text-sm font-semibold text-slate-700 shadow-sm ring-1 ring-white">
-                                    Verified brand catalog
-                                </div>
-                                <div className="rounded-xl bg-white/80 px-4 py-3 text-sm font-semibold text-slate-700 shadow-sm ring-1 ring-white">
-                                    Better margins on bulk orders
-                                </div>
-                                <div className="rounded-xl bg-white/80 px-4 py-3 text-sm font-semibold text-slate-700 shadow-sm ring-1 ring-white">
-                                    Fresh deals before Trending Now
-                                </div>
                             </div>
                         </div>
                     </section>
