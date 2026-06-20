@@ -71,6 +71,7 @@ export default function HomePageClient({
                     b2b_price: p.b2b_price,
                     stock_quantity: p.stock_quantity,
                     is_featured: p.is_featured,
+                    is_discounted_featured: p.is_discounted_featured ?? false,
                     primary_image: p.images[0]?.image_url || null,
                 })));
             } finally {
@@ -114,6 +115,7 @@ export default function HomePageClient({
             unit: 'pcs',
             is_active: true,
             is_featured: product.is_featured,
+            is_discounted_featured: product.is_discounted_featured ?? false,
             category_id: product.category_id || '',
             category_name: '',
             brand_id: '',
@@ -152,6 +154,7 @@ export default function HomePageClient({
             unit: 'pcs',
             is_active: true,
             is_featured: product.is_featured,
+            is_discounted_featured: product.is_discounted_featured ?? false,
             category_id: product.category_id || '',
             category_name: '',
             brand_id: '',
@@ -218,6 +221,7 @@ export default function HomePageClient({
         unit: 'pcs',
         is_active: true,
         is_featured: product.is_featured,
+        is_discounted_featured: product.is_discounted_featured ?? false,
         image_url: product.primary_image || undefined,
         images: product.primary_image ? [{
             id: 'p1',

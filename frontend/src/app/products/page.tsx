@@ -158,6 +158,7 @@ function ProductsContent() {
             unit: 'pcs',
             is_active: true,
             is_featured: product.is_featured,
+            is_discounted_featured: product.is_discounted_featured ?? false,
             category_id: product.category_id || '',
             category_name: '',
             brand_id: '',
@@ -196,6 +197,7 @@ function ProductsContent() {
             unit: 'pcs',
             is_active: true,
             is_featured: product.is_featured,
+            is_discounted_featured: product.is_discounted_featured ?? false,
             category_id: product.category_id || '',
             category_name: '',
             brand_id: '',
@@ -389,6 +391,7 @@ function ProductsContent() {
                             unit: 'pcs',
                             is_active: true,
                             is_featured: product.is_featured,
+                            is_discounted_featured: product.is_discounted_featured,
                             image_url: product.primary_image || undefined,
                             images: product.primary_image ? [{ 
                                 id: 'p1', 
