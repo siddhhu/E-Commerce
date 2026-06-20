@@ -42,6 +42,7 @@ class ProductService:
         brand_id: Optional[UUID] = None,
         is_active: Optional[bool] = True,
         is_featured: Optional[bool] = None,
+        is_discounted_featured: Optional[bool] = None,
         search: Optional[str] = None,
         min_price: Optional[float] = None,
         max_price: Optional[float] = None,
@@ -63,6 +64,8 @@ class ProductService:
             query = query.where(Product.brand_id == brand_id)
         if is_featured is not None:
             query = query.where(Product.is_featured == is_featured)
+        if is_discounted_featured is not None:
+            query = query.where(Product.is_discounted_featured == is_discounted_featured)
         if search:
             tokens = [t.strip() for t in search.split() if t.strip()]
             for token in tokens:
@@ -102,6 +105,7 @@ class ProductService:
         brand_id: Optional[UUID] = None,
         is_active: bool = True,
         is_featured: Optional[bool] = None,
+        is_discounted_featured: Optional[bool] = None,
         search: Optional[str] = None,
         min_price: Optional[float] = None,
         max_price: Optional[float] = None,
@@ -150,6 +154,7 @@ class ProductService:
             brand_id=brand_id,
             is_active=is_active,
             is_featured=is_featured,
+            is_discounted_featured=is_discounted_featured,
             search=search,
             min_price=min_price,
             max_price=max_price,
@@ -192,6 +197,7 @@ class ProductService:
                 brand_id=brand_id,
                 is_active=is_active,
                 is_featured=is_featured,
+                is_discounted_featured=is_discounted_featured,
                 search=search,
                 min_price=min_price,
                 max_price=max_price,
@@ -235,6 +241,7 @@ class ProductService:
         brand_id: Optional[UUID] = None,
         is_active: bool = True,
         is_featured: Optional[bool] = None,
+        is_discounted_featured: Optional[bool] = None,
         search: Optional[str] = None,
         min_price: Optional[float] = None,
         max_price: Optional[float] = None,
@@ -250,6 +257,7 @@ class ProductService:
             brand_id=brand_id,
             is_active=is_active,
             is_featured=is_featured,
+            is_discounted_featured=is_discounted_featured,
             search=search,
             min_price=min_price,
             max_price=max_price,
@@ -268,6 +276,7 @@ class ProductService:
         brand_id: Optional[UUID] = None,
         is_active: bool = True,
         is_featured: Optional[bool] = None,
+        is_discounted_featured: Optional[bool] = None,
         search: Optional[str] = None,
         min_price: Optional[float] = None,
         max_price: Optional[float] = None,
@@ -283,6 +292,7 @@ class ProductService:
             brand_id=brand_id,
             is_active=is_active,
             is_featured=is_featured,
+            is_discounted_featured=is_discounted_featured,
             search=search,
             min_price=min_price,
             max_price=max_price,

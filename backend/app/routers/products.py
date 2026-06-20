@@ -352,12 +352,10 @@ async def get_discounted_featured_products(
     products, _ = await product_service.list_product_summaries(
         limit=limit,
         is_active=True,
+        is_discounted_featured=True,
     )
 
-    # Filter to only is_discounted_featured products
-    discounted = [p for p in products if p.is_discounted_featured]
-
-    content = [i.model_dump(mode="json") for i in discounted]
+    content = [i.model_dump(mode="json") for i in products]
     response_cache.set(cache_key, content, ttl_seconds=120)
 
     return JSONResponse(
