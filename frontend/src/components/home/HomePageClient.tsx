@@ -24,6 +24,9 @@ import { PromoBanner } from '@/components/layout/PromoBanner';
 import { TrendingSlider } from '@/components/shop/TrendingSlider';
 import { CheckCircle2, Phone } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { Testimonials } from '@/components/home/Testimonials';
+import { UGCSection } from '@/components/home/UGCSection';
+import { useRecentlyViewedStore } from '@/store/recently-viewed-store';
 
 export default function HomePageClient({ 
     initialFeaturedProducts = null,
@@ -43,7 +46,9 @@ export default function HomePageClient({
     );
     const [discountedProducts, setDiscountedProducts] = useState<APIProductSummary[]>([]);
     const [discountsLoading, setDiscountsLoading] = useState(true);
+    const [timeLeft, setTimeLeft] = useState({ hours: 4, minutes: 12, seconds: 59 });
 
+    const recentlyViewedProducts = useRecentlyViewedStore((state) => state.products);
 
     const { addItem: addToCart } = useCartStore();
     const { addItem: addToWishlist, removeItem: removeFromWishlist, isInWishlist } = useWishlistStore();
@@ -97,6 +102,30 @@ export default function HomePageClient({
             .then(data => setDiscountedProducts(data))
             .catch(() => {})
             .finally(() => setDiscountsLoading(false));
+    }, []);
+
+    // Timer logic
+    useEffect(() => {
+        const timer = setInterval(() => {
+            setTimeLeft(prev => {
+                let { hours, minutes, seconds } = prev;
+                if (hours === 0 && minutes === 0 && seconds === 0) return { hours: 4, minutes: 0, seconds: 0 };
+                
+                if (seconds > 0) {
+                    seconds -= 1;
+                } else {
+                    seconds = 59;
+                    if (minutes > 0) {
+                        minutes -= 1;
+                    } else {
+                        minutes = 59;
+                        hours -= 1;
+                    }
+                }
+                return { hours, minutes, seconds };
+            });
+        }, 1000);
+        return () => clearInterval(timer);
     }, []);
 
     const handleAddToCart = (product: APIProductSummary) => {
@@ -290,9 +319,15 @@ export default function HomePageClient({
                         <div className="container relative group/slider">
                             <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6">
                                 <div>
-                                    <p className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-xs font-bold uppercase tracking-wide text-[#d81b60] shadow-sm">
-                                        <Sparkles className="h-3.5 w-3.5" /> Live product discounts
-                                    </p>
+                                    <div className="flex flex-wrap items-center gap-3">
+                                        <p className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-xs font-bold uppercase tracking-wide text-[#d81b60] shadow-sm">
+                                            <Sparkles className="h-3.5 w-3.5" /> Live product discounts
+                                        </p>
+                                        <div className="inline-flex items-center gap-2 rounded-full bg-slate-900 px-3 py-1 text-xs font-bold tracking-wide text-white shadow-sm">
+                                            <Clock className="h-3.5 w-3.5 text-rose-400" />
+                                            <span>Ends in: {String(timeLeft.hours).padStart(2, '0')}:{String(timeLeft.minutes).padStart(2, '0')}:{String(timeLeft.seconds).padStart(2, '0')}</span>
+                                        </div>
+                                    </div>
                                     <h2 className="mt-3 text-2xl md:text-4xl font-extrabold text-slate-950">These are today&apos;s show stopper deals</h2>
                                     <p className="mt-2 text-slate-600">Everyday new product will show up here with better and live deal.</p>
                                 </div>
@@ -474,6 +509,19 @@ export default function HomePageClient({
                 </section>
 
 
+
+                <Testimonials />
+                <UGCSection />
+                
+                {recentlyViewedProducts.length > 0 && (
+                    <TrendingSlider 
+                        products={recentlyViewedProducts as APIProduct[]} 
+                        title="Recently Viewed" 
+                        subtitle="Jump right back in"
+                        subDescription="Products you recently looked at"
+                        icon={<Clock className="h-5 w-5" />}
+                    />
+                )}
 
                 {/* Newsletter Community */}
                 <section className="relative overflow-hidden bg-gradient-to-br from-[#2a1425] via-[#3b1730] to-[#5a1f45] text-white py-12 sm:py-16">

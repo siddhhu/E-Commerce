@@ -16,6 +16,7 @@ import { productsApi, Product as APIProduct } from '@/lib/api';
 import { ProductCard } from '@/components/products/ProductCard';
 import { useCartStore } from '@/store/cart-store';
 import { useWishlistStore } from '@/store/wishlist-store';
+import { useRecentlyViewedStore } from '@/store/recently-viewed-store';
 import { cn, formatPrice, getDiscountPercentage, resolveImageUrl } from '@/lib/utils';
 import { getProductLabels } from '@/lib/product-labels';
 
@@ -153,6 +154,15 @@ export default function ProductDetailPage() {
             })
             .catch(() => setRelatedProducts([]));
     }, [product]);
+
+    // Track recently viewed
+    useEffect(() => {
+        if (product && !loading) {
+            // we use the current 'product' state which is fully hydrated
+            const addProduct = useRecentlyViewedStore.getState().addProduct;
+            addProduct(product);
+        }
+    }, [product, loading]);
 
     const handleVariantSelect = (v: any) => {
         setProduct(v);
