@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 revision = 'a3b4c5d6e7f8'
-down_revision = 'f6a7b8c9d0e1'
+down_revision = ('f6a7b8c9d0e1', '0185bdd95aaa')  # Merge both branch heads
 branch_labels = None
 depends_on = None
 
