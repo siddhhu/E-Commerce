@@ -4,9 +4,9 @@ import { Instagram } from 'lucide-react';
 import Link from 'next/link';
 
 const UGC_IMAGES = [
-    { id: 1, src: 'https://images.unsplash.com/photo-1512496015851-a1c8ce954a78?w=500&auto=format&fit=crop&q=60', alt: 'Makeup flatlay' },
-    { id: 2, src: 'https://images.unsplash.com/photo-1522335789203-aabd1fc54c28?w=500&auto=format&fit=crop&q=60', alt: 'Lipstick application' },
-    { id: 3, src: 'https://images.unsplash.com/photo-1596462502278-27bf85033e5a?w=500&auto=format&fit=crop&q=60', alt: 'Skincare routine' },
+    { id: 1, src: 'https://images.unsplash.com/photo-1586495777744-4413f21062fa?w=500&auto=format&fit=crop&q=60', alt: 'Makeup flatlay' },
+    { id: 2, src: 'https://images.unsplash.com/photo-1631214540553-ff044a3ff1d4?w=500&auto=format&fit=crop&q=60', alt: 'Lipstick application' },
+    { id: 3, src: 'https://images.unsplash.com/photo-1512496015851-a90fb38ba796?w=500&auto=format&fit=crop&q=60', alt: 'Skincare routine' },
     { id: 4, src: 'https://images.unsplash.com/photo-1616683693504-3ea7e9ad6fec?w=500&auto=format&fit=crop&q=60', alt: 'Cosmetics collection' },
     { id: 5, src: 'https://images.unsplash.com/photo-1599305090598-fe179d501227?w=500&auto=format&fit=crop&q=60', alt: 'Beauty shot' },
 ];
