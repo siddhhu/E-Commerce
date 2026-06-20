@@ -323,8 +323,8 @@ export default function HomePageClient({
                                         <p className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-xs font-bold uppercase tracking-wide text-[#d81b60] shadow-sm">
                                             <Sparkles className="h-3.5 w-3.5" /> Live product discounts
                                         </p>
-                                        <div className="inline-flex items-center gap-2 rounded-full bg-slate-900 px-3 py-1 text-xs font-bold tracking-wide text-white shadow-sm">
-                                            <Clock className="h-3.5 w-3.5 text-rose-400" />
+                                        <div className="inline-flex items-center gap-2 rounded-full bg-slate-900 px-4 py-1.5 text-sm md:text-base font-bold tracking-wider text-white shadow-md">
+                                            <Clock className="h-4 w-4 md:h-5 md:w-5 text-rose-400" />
                                             <span>Ends in: {String(timeLeft.hours).padStart(2, '0')}:{String(timeLeft.minutes).padStart(2, '0')}:{String(timeLeft.seconds).padStart(2, '0')}</span>
                                         </div>
                                     </div>
