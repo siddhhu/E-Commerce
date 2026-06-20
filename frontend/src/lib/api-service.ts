@@ -15,6 +15,7 @@ export interface APIProduct {
     b2b_price: number;
     stock_quantity: number;
     is_featured: boolean;
+    is_discounted_featured?: boolean;
     primary_image: string | null;
     category_id?: string;
 }
@@ -34,6 +35,7 @@ export interface APIProductDetail {
     unit: string;
     is_active: boolean;
     is_featured: boolean;
+    is_discounted_featured?: boolean;
     category_id: string;
     brand_id: string;
     images: { id: string; image_url: string; alt_text: string; is_primary: boolean }[];
