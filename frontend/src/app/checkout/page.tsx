@@ -22,8 +22,6 @@ import { formatPrice, cn, resolveImageUrl } from '@/lib/utils';
 import {
     COD_RESTRICTED_MESSAGE,
     isCodAllowedForState,
-    SUPPORT_PHONE,
-    SUPPORT_PHONE_TEL,
 } from '@/lib/payment-rules';
 
 // Official Indian GST Number regex: 2-digit state + PAN (10 chars) + 1 entity digit + Z + 1 checksum
@@ -253,8 +251,8 @@ export default function CheckoutPage() {
 
         if (paymentMethod === 'cod' && !isCodAllowedForState(address.state)) {
             toast({
-                title: 'COD not available in your state',
-                description: `${COD_RESTRICTED_MESSAGE} Please call ${SUPPORT_PHONE} before placing your order if you have any doubts.`,
+                title: 'COD not available',
+                description: COD_RESTRICTED_MESSAGE,
                 variant: 'destructive',
             });
             return;
@@ -670,15 +668,7 @@ export default function CheckoutPage() {
                                     {codRestricted && (
                                         <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
                                             <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
-                                            <div>
-                                                <p className="font-medium">{COD_RESTRICTED_MESSAGE}</p>
-                                                <p className="mt-1">
-                                                    Please call before placing your order if you have any doubts:{' '}
-                                                    <a href={SUPPORT_PHONE_TEL} className="font-semibold underline">
-                                                        {SUPPORT_PHONE}
-                                                    </a>
-                                                </p>
-                                            </div>
+                                            <p>{COD_RESTRICTED_MESSAGE}</p>
                                         </div>
                                     )}
                                 </CardContent>
@@ -718,22 +708,13 @@ export default function CheckoutPage() {
                                                 <div>
                                                     <p className="font-medium">{label}</p>
                                                     <p className="text-sm text-muted-foreground">
-                                                        {isDisabled ? 'Available only in Bihar' : sub}
+                                                        {isDisabled ? 'Not available outside Bihar' : sub}
                                                     </p>
                                                 </div>
                                             </div>
                                         </div>
                                         );
                                     })}
-                                    {codRestricted && (
-                                        <p className="text-xs text-muted-foreground">
-                                            Online payment is required for delivery outside Bihar. Please call{' '}
-                                            <a href={SUPPORT_PHONE_TEL} className="font-medium text-primary underline">
-                                                {SUPPORT_PHONE}
-                                            </a>{' '}
-                                            before placing your order if you have any doubts.
-                                        </p>
-                                    )}
                                 </CardContent>
                             </Card>
 
