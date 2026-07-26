@@ -31,6 +31,11 @@ const nextConfig = {
                 protocol: 'https',
                 hostname: 'www.pranjay.com',
             },
+            {
+                // Colors Queen / Shopify imported product images
+                protocol: 'https',
+                hostname: 'cdn.shopify.com',
+            },
         ],
     },
     ...(process.env.NEXT_PUBLIC_API_URL && {
