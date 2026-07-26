@@ -19,6 +19,12 @@ import { useAuthStore } from '@/store/auth-store';
 import { useToast } from '@/hooks/use-toast';
 import { cartApi, usersApi, ordersApi, authApi } from '@/lib/api';
 import { formatPrice, cn, resolveImageUrl } from '@/lib/utils';
+import {
+    COD_RESTRICTED_MESSAGE,
+    isCodAllowedForState,
+    SUPPORT_PHONE,
+    SUPPORT_PHONE_TEL,
+} from '@/lib/payment-rules';
 
 // Official Indian GST Number regex: 2-digit state + PAN (10 chars) + 1 entity digit + Z + 1 checksum
 const GST_REGEX = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
@@ -126,9 +132,18 @@ export default function CheckoutPage() {
         }
     };
 
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         setAddress({ ...address, [e.target.name]: e.target.value });
     };
+
+    const codRestricted = Boolean(address.state) && !isCodAllowedForState(address.state);
+    const codAllowed = !codRestricted;
+
+    useEffect(() => {
+        if (codRestricted && paymentMethod === 'cod') {
+            setPaymentMethod('online');
+        }
+    }, [codRestricted, paymentMethod]);
 
     const validateForm = () => {
         const required = ['full_name', 'phone', 'address_line1', 'city', 'state', 'postal_code'];
@@ -231,6 +246,15 @@ export default function CheckoutPage() {
             toast({
                 title: 'Promo needs a higher cart value',
                 description: 'Add more quantity or products to use this promo code.',
+                variant: 'destructive',
+            });
+            return;
+        }
+
+        if (paymentMethod === 'cod' && !isCodAllowedForState(address.state)) {
+            toast({
+                title: 'COD not available in your state',
+                description: `${COD_RESTRICTED_MESSAGE} Please call ${SUPPORT_PHONE} before placing your order if you have any doubts.`,
                 variant: 'destructive',
             });
             return;
@@ -643,6 +667,20 @@ export default function CheckoutPage() {
                                             <Input id="postal_code" name="postal_code" value={address.postal_code} onChange={handleInputChange} placeholder="400001" />
                                         </div>
                                     </div>
+                                    {codRestricted && (
+                                        <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+                                            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+                                            <div>
+                                                <p className="font-medium">{COD_RESTRICTED_MESSAGE}</p>
+                                                <p className="mt-1">
+                                                    Please call before placing your order if you have any doubts:{' '}
+                                                    <a href={SUPPORT_PHONE_TEL} className="font-semibold underline">
+                                                        {SUPPORT_PHONE}
+                                                    </a>
+                                                </p>
+                                            </div>
+                                        </div>
+                                    )}
                                 </CardContent>
                             </Card>
 
@@ -653,27 +691,49 @@ export default function CheckoutPage() {
                                     {[
                                         { id: 'cod', label: 'Cash on Delivery', sub: 'Pay when you receive your order', icon: Banknote },
                                         { id: 'online', label: 'Online Payment', sub: 'Pay securely via Razorpay (Cards, UPI, NetBanking)', icon: CreditCard },
-                                    ].map(({ id, label, sub, icon: Icon }) => (
+                                    ].map(({ id, label, sub, icon: Icon }) => {
+                                        const isCodOption = id === 'cod';
+                                        const isDisabled = isCodOption && !codAllowed;
+
+                                        return (
                                         <div
                                             key={id}
                                             className={cn(
-                                                "border rounded-xl p-4 cursor-pointer transition-all",
-                                                paymentMethod === id ? "border-primary bg-primary/5" : "hover:border-slate-300"
+                                                "border rounded-xl p-4 transition-all",
+                                                isDisabled
+                                                    ? "cursor-not-allowed border-slate-200 bg-slate-50 opacity-60"
+                                                    : "cursor-pointer",
+                                                !isDisabled && paymentMethod === id ? "border-primary bg-primary/5" : !isDisabled ? "hover:border-slate-300" : ""
                                             )}
-                                            onClick={() => setPaymentMethod(id as 'cod' | 'online')}
+                                            onClick={() => {
+                                                if (isDisabled) return;
+                                                setPaymentMethod(id as 'cod' | 'online');
+                                            }}
                                         >
                                             <div className="flex items-center gap-3">
-                                                <div className={cn("h-5 w-5 rounded-full border-2 flex items-center justify-center shrink-0", paymentMethod === id ? "border-primary" : "border-slate-300")}>
-                                                    {paymentMethod === id && <div className="h-2.5 w-2.5 rounded-full bg-primary" />}
+                                                <div className={cn("h-5 w-5 rounded-full border-2 flex items-center justify-center shrink-0", paymentMethod === id && !isDisabled ? "border-primary" : "border-slate-300")}>
+                                                    {paymentMethod === id && !isDisabled && <div className="h-2.5 w-2.5 rounded-full bg-primary" />}
                                                 </div>
                                                 <Icon className="h-5 w-5 text-slate-400" />
                                                 <div>
                                                     <p className="font-medium">{label}</p>
-                                                    <p className="text-sm text-muted-foreground">{sub}</p>
+                                                    <p className="text-sm text-muted-foreground">
+                                                        {isDisabled ? 'Available only in Bihar' : sub}
+                                                    </p>
                                                 </div>
                                             </div>
                                         </div>
-                                    ))}
+                                        );
+                                    })}
+                                    {codRestricted && (
+                                        <p className="text-xs text-muted-foreground">
+                                            Online payment is required for delivery outside Bihar. Please call{' '}
+                                            <a href={SUPPORT_PHONE_TEL} className="font-medium text-primary underline">
+                                                {SUPPORT_PHONE}
+                                            </a>{' '}
+                                            before placing your order if you have any doubts.
+                                        </p>
+                                    )}
                                 </CardContent>
                             </Card>
 

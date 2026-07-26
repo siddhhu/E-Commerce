@@ -22,6 +22,7 @@ from sqlmodel import select
 
 from app.core.dependencies import get_current_active_user
 from app.core.delivery import calculate_delivery_fee
+from app.core.payment_rules import COD_RESTRICTED_MESSAGE, is_cod_allowed_for_state
 from app.database import get_session
 from app.models.order import OrderRead, build_order_read
 from app.models.user import User
@@ -214,6 +215,9 @@ async def complete_checkout(
     if not data.cart_items:
         raise BadRequestException("Cart is empty")
 
+    if data.payment_method == "cod" and not is_cod_allowed_for_state(data.state):
+        raise BadRequestException(COD_RESTRICTED_MESSAGE)
+
     # ── ONLINE: verify Razorpay signature BEFORE touching the DB ─────────────
     # This is the key security + correctness gate:
     # - If payment failed/was cancelled → signature missing → 400 → no order created
@@ -318,8 +322,9 @@ async def checkout(
     Create order from cart (legacy — uses pre-existing address ID).
     Admin and seller accounts cannot place orders.
     """
-    from app.core.exceptions import ForbiddenException
+    from app.core.exceptions import ForbiddenException, BadRequestException, NotFoundException
     from app.models.user import UserRole
+    from app.models.address import Address
 
     is_admin = current_user.role in [UserRole.ADMIN, UserRole.SUPER_ADMIN]
     is_seller = current_user.seller_status == "approved" and current_user.user_type == "seller"
@@ -328,6 +333,19 @@ async def checkout(
             "Admin and seller accounts cannot place orders. "
             "Please use a separate customer account to make purchases."
         )
+
+    address_result = await session.execute(
+        select(Address).where(
+            Address.id == data.shipping_address_id,
+            Address.user_id == current_user.id,
+        )
+    )
+    shipping_address = address_result.scalar_one_or_none()
+    if not shipping_address:
+        raise NotFoundException("Shipping address not found")
+
+    if data.payment_method == "cod" and not is_cod_allowed_for_state(shipping_address.state):
+        raise BadRequestException(COD_RESTRICTED_MESSAGE)
 
     order_service = OrderService(session)
     order = await order_service.create_order_from_cart(
