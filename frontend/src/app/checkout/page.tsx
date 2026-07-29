@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { CreditCard, Banknote, MapPin, ArrowLeft, CheckCircle2, ShoppingBag, FileText, AlertCircle, CheckCircle, Building2, Shield, Truck } from 'lucide-react';
@@ -11,8 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Header } from '@/components/layout/Header';
-import { Footer } from '@/components/layout/Footer';
+import { ShopShell } from '@/components/layout/ShopShell';
 import { useCartStore } from '@/store/cart-store';
 import { useOrderStore, Order } from '@/store/order-store';
 import { useAuthStore } from '@/store/auth-store';
@@ -59,6 +58,12 @@ export default function CheckoutPage() {
     const [isProcessing, setIsProcessing] = useState(false);
     const [orderPlaced, setOrderPlaced] = useState<Order | null>(null);
     const [isRazorpayReady, setIsRazorpayReady] = useState(false);
+    const [prefetchedPrep, setPrefetchedPrep] = useState<{
+        razorpay_order_id: string;
+        amount_paise: number;
+        amount_display: number;
+    } | null>(null);
+    const prefetchedPrepKeyRef = useRef<string>('');
     const [savedAddressId, setSavedAddressId] = useState<string | null>(null); // pre-loaded address
     const [address, setAddress] = useState({
         full_name: '',
@@ -233,6 +238,65 @@ export default function CheckoutPage() {
             .catch(() => { /* Non-critical: warmup failed, checkout will still work */ });
     }, [isAuthenticated, _hasHydrated, isAuthLoading]);
 
+    const cartPayload = useMemo(
+        () => items.map(item => ({ product_id: item.product.id, quantity: item.quantity })),
+        [items]
+    );
+
+    const checkoutPayloadBase = useMemo(
+        () => ({
+            full_name: address.full_name,
+            phone: address.phone,
+            address_line1: address.address_line1,
+            address_line2: address.address_line2 || undefined,
+            city: address.city,
+            state: address.state,
+            postal_code: address.postal_code,
+            country: 'India' as const,
+            existing_address_id: savedAddressId || undefined,
+            cart_items: cartPayload,
+            promo_code: promo_code || undefined,
+        }),
+        [address, savedAddressId, cartPayload, promo_code]
+    );
+
+    // Pre-warm Razorpay order while user is on checkout with online payment selected
+    useEffect(() => {
+        if (paymentMethod !== 'online' || cartPayload.length === 0 || !isAuthenticated) {
+            setPrefetchedPrep(null);
+            return;
+        }
+        const key = JSON.stringify({ cart: cartPayload, promo: promo_code || '' });
+        if (prefetchedPrepKeyRef.current === key && prefetchedPrep) return;
+
+        const timer = window.setTimeout(() => {
+            ordersApi.prepareCheckout({
+                cart_items: cartPayload,
+                promo_code: promo_code || undefined,
+            })
+                .then((prep) => {
+                    prefetchedPrepKeyRef.current = key;
+                    setPrefetchedPrep(prep);
+                })
+                .catch(() => setPrefetchedPrep(null));
+        }, 400);
+
+        return () => window.clearTimeout(timer);
+    }, [paymentMethod, cartPayload, promo_code, isAuthenticated]);
+
+    const saveProfileDocIfNeeded = useCallback(async () => {
+        if (!docValid || !docNumber || docSavedToProfile) return;
+        const updateData: Record<string, string> = {};
+        updateData[docType === 'shop_license' ? 'shop_license' : docType] = docNumber;
+        try {
+            const updated = await authApi.updateProfile(updateData);
+            setUser(updated);
+            setDocSavedToProfile(true);
+        } catch {
+            // Non-blocking — checkout already succeeded
+        }
+    }, [docValid, docNumber, docSavedToProfile, docType, setUser]);
+
     const handlePlaceOrder = async () => {
         if (!validateForm()) return;
         if (items.length === 0) {
@@ -269,62 +333,23 @@ export default function CheckoutPage() {
         setIsProcessing(true);
 
         try {
-            // Profile update is independent — fire it in parallel if needed
-            let profileTask = Promise.resolve<any>(undefined);
-            if (docValid && docNumber && !docSavedToProfile) {
-                const updateData: any = {};
-                updateData[docType === 'shop_license' ? 'shop_license' : docType] = docNumber;
-                profileTask = authApi.updateProfile(updateData).then(u => setUser(u));
-            }
-
             if (paymentMethod === 'cod') {
-                // ── COD: one-shot ─────────────────────────────────────────────
-                // Address + cart sync + order creation in one request.
-                // No payment gateway involved — safe to create order immediately.
-                const [createdOrder] = await Promise.all([
-                    ordersApi.completeCheckout({
-                        full_name: address.full_name,
-                        phone: address.phone,
-                        address_line1: address.address_line1,
-                        address_line2: address.address_line2 || undefined,
-                        city: address.city,
-                        state: address.state,
-                        postal_code: address.postal_code,
-                        country: 'India',
-                        cart_items: items.map(item => ({
-                            product_id: item.product.id,
-                            quantity: item.quantity,
-                        })),
-                        payment_method: 'cod',
-                        promo_code: promo_code || undefined,
-                    }),
-                    profileTask,
-                ]);
+                const createdOrder = await ordersApi.completeCheckout({
+                    ...checkoutPayloadBase,
+                    payment_method: 'cod',
+                });
                 completeOrderDisplay(createdOrder.id, createdOrder.order_number, 'cod', 'Cash on Delivery');
+                void saveProfileDocIfNeeded();
 
             } else {
-                // ── ONLINE: two-phase ─────────────────────────────────────────
-                //
-                // PHASE 1: Prepare — validate cart + create Razorpay order.
-                //          NO DB order is created. Returns razorpay_order_id.
-                //
-                // PHASE 2: Razorpay popup
-                //   ├─ SUCCESS  → PHASE 3: call completeCheckout with Razorpay signature
-                //   │             Backend verifies signature THEN creates DB order with payment_status=PAID
-                //   ├─ CANCEL   → user redirected to /cart. NO completeCheckout call → NO DB order.
-                //   └─ FAILED   → user redirected to /cart. NO completeCheckout call → NO DB order.
-                //
-                // KEY POINT: if payment is not successful, completeCheckout is NEVER called.
-                // No DB order is created, no stock is decremented.
-
-                // PHASE 1: Prepare
-                const prep = await ordersApi.prepareCheckout({
-                    cart_items: items.map(item => ({
-                        product_id: item.product.id,
-                        quantity: item.quantity,
-                    })),
-                    promo_code: promo_code || undefined,
-                });
+                const prepKey = JSON.stringify({ cart: cartPayload, promo: promo_code || '' });
+                let prep = prefetchedPrep && prefetchedPrepKeyRef.current === prepKey ? prefetchedPrep : null;
+                if (!prep) {
+                    prep = await ordersApi.prepareCheckout({
+                        cart_items: cartPayload,
+                        promo_code: promo_code || undefined,
+                    });
+                }
 
                 let paymentHandled = false;
 
@@ -340,47 +365,29 @@ export default function CheckoutPage() {
                     router.push('/cart');
                 };
 
-                // PHASE 2: Open Razorpay
                 const options = {
-                    key: "rzp_live_SZO4iQslfD86WW",
+                    key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "rzp_live_SZO4iQslfD86WW",
                     amount: prep.amount_paise,
                     currency: "INR",
-                    name: "Pranjay Cosmetics",
+                    name: "PARLOUR HOUSE",
                     description: `Order of ${items.length} item${items.length !== 1 ? 's' : ''}`,
                     image: "/logo.png",
-                    order_id: prep.razorpay_order_id,  // REQUIRED — links payment to backend
-                    prefill: { name: address.full_name, email: "customer@example.com", contact: address.phone },
+                    order_id: prep.razorpay_order_id,
+                    prefill: { name: address.full_name, email: user?.email || "customer@example.com", contact: address.phone },
                     theme: { color: "#0f172a" },
 
                     handler: async (response: any) => {
-                        // ✅ Razorpay confirmed payment — now create the DB order
                         paymentHandled = true;
                         try {
-                            // PHASE 3: Complete — backend verifies signature then creates order
-                            const [createdOrder] = await Promise.all([
-                                ordersApi.completeCheckout({
-                                    full_name: address.full_name,
-                                    phone: address.phone,
-                                    address_line1: address.address_line1,
-                                    address_line2: address.address_line2 || undefined,
-                                    city: address.city,
-                                    state: address.state,
-                                    postal_code: address.postal_code,
-                                    country: 'India',
-                                    cart_items: items.map(item => ({
-                                        product_id: item.product.id,
-                                        quantity: item.quantity,
-                                    })),
-                                    payment_method: 'online',
-                                    promo_code: promo_code || undefined,
-                                    // Razorpay proof — backend verifies HMAC before creating order
-                                    razorpay_payment_id: response.razorpay_payment_id,
-                                    razorpay_order_id: response.razorpay_order_id,
-                                    razorpay_signature: response.razorpay_signature,
-                                }),
-                                profileTask,
-                            ]);
+                            const createdOrder = await ordersApi.completeCheckout({
+                                ...checkoutPayloadBase,
+                                payment_method: 'online',
+                                razorpay_payment_id: response.razorpay_payment_id,
+                                razorpay_order_id: response.razorpay_order_id,
+                                razorpay_signature: response.razorpay_signature,
+                            });
                             completeOrderDisplay(createdOrder.id, createdOrder.order_number, 'paid', 'Online Payment');
+                            void saveProfileDocIfNeeded();
                         } catch (err: any) {
                             setIsProcessing(false);
                             toast({
@@ -400,7 +407,9 @@ export default function CheckoutPage() {
                 rzp.on('payment.failed', (response: any) => {
                     handleCancel(response.error?.description || 'Payment Failed');
                 });
+                setIsProcessing(false);
                 rzp.open();
+                return;
             }
         } catch (error: any) {
             setIsProcessing(false);
@@ -440,10 +449,8 @@ export default function CheckoutPage() {
     // ─── Order Success Screen ───────────────────────────────────────────────
     if (orderPlaced) {
         return (
-            <div className="min-h-screen flex flex-col">
-                <Header />
-                <main className="flex-1 flex items-center justify-center py-12">
-                    <div className="text-center max-w-lg mx-auto px-4">
+            <ShopShell hideBottomNav mainClassName="flex items-center justify-center py-12">
+                <div className="text-center max-w-lg mx-auto px-4">
                         <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-green-100 flex items-center justify-center">
                             <CheckCircle2 className="h-10 w-10 text-green-600" />
                         </div>
@@ -478,42 +485,33 @@ export default function CheckoutPage() {
                             <Link href={`/orders/${orderPlaced.id}`}><Button size="lg">View Order Details</Button></Link>
                             <Link href="/products"><Button variant="outline" size="lg"><ShoppingBag className="h-4 w-4 mr-2" />Continue Shopping</Button></Link>
                         </div>
-                    </div>
-                </main>
-                <Footer />
-            </div>
+                </div>
+            </ShopShell>
         );
     }
 
     // ─── Empty Cart Screen ──────────────────────────────────────────────────
     if (items.length === 0) {
         return (
-            <div className="min-h-screen flex flex-col">
-                <Header />
-                <main className="flex-1 flex items-center justify-center py-12">
-                    <div className="text-center max-w-md mx-auto px-4">
+            <ShopShell hideBottomNav mainClassName="flex items-center justify-center py-12">
+                <div className="text-center max-w-md mx-auto px-4">
                         <ShoppingBag className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
                         <h1 className="text-2xl font-bold mb-2">No Items to Checkout</h1>
                         <p className="text-muted-foreground mb-6">Add some products to your cart to proceed.</p>
                         <Link href="/products"><Button size="lg">Browse Products</Button></Link>
-                    </div>
-                </main>
-                <Footer />
-            </div>
+                </div>
+            </ShopShell>
         );
     }
 
     // ─── Main Checkout Page ─────────────────────────────────────────────────
     return (
-        <div className="min-h-screen flex flex-col">
+        <ShopShell hideBottomNav mainClassName="py-8">
             <Script
                 src="https://checkout.razorpay.com/v1/checkout.js"
                 strategy="afterInteractive"
                 onLoad={() => setIsRazorpayReady(true)}
             />
-            <Header />
-
-            <main className="flex-1 py-8">
                 <div className="container max-w-5xl">
                     <Button variant="ghost" className="mb-6" onClick={() => router.push('/cart')}>
                         <ArrowLeft className="h-4 w-4 mr-2" /> Back to Cart
@@ -837,8 +835,6 @@ export default function CheckoutPage() {
                         </div>
                     </div>
                 </div>
-            </main>
-            <Footer />
-        </div>
+        </ShopShell>
     );
 }

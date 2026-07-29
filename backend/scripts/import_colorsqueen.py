@@ -41,7 +41,7 @@ DEFAULT_BASE_URL = os.getenv("COLORSQUEEN_BASE_URL", "https://colorsqueen.com").
 UPLOAD_IMAGES = os.getenv("IMPORT_UPLOAD_IMAGES", "").strip() in {"1", "true", "yes"}
 IMPORT_VARIANTS = os.getenv("IMPORT_VARIANTS", "1").strip() not in {"0", "false", "no"}
 MAX_IMAGES_PER_PRODUCT = 6
-BRAND_NAME = "Colors Queen"
+BRAND_NAME = "PARLOUR HOUSE"
 BRAND_SLUG = "colors-queen"
 
 
@@ -241,7 +241,7 @@ async def get_or_create_brand(session: AsyncSession) -> Brand:
     brand = Brand(
         name=BRAND_NAME,
         slug=BRAND_SLUG,
-        description="Colors Queen cosmetics and beauty products",
+        description="PARLOUR HOUSE cosmetics and beauty products",
         is_active=True,
     )
     session.add(brand)

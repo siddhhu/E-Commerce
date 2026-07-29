@@ -207,7 +207,7 @@ export function Header() {
 
     return (
         <header className="sticky top-0 z-50 w-full border-b border-pink-100/80 bg-white/90 shadow-[0_10px_30px_rgba(236,72,153,0.06)] backdrop-blur-xl supports-[backdrop-filter]:bg-white/75">
-            <div className="container flex h-[72px] items-center justify-between gap-3">
+            <div className="container flex h-14 md:h-[72px] items-center justify-between gap-2 md:gap-3">
                 {/* Logo */}
                 <Link href="/" className="group flex items-center gap-2">
                     <div className="logo-glow flex items-center gap-2">

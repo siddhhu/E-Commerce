@@ -321,6 +321,32 @@ export const productsApi = {
         return api.get<PaginatedProducts>(`/products?${searchParams}`);
     },
 
+    catalogBootstrap: (params?: {
+        page?: number;
+        page_size?: number;
+        category_id?: string;
+        brand_id?: string;
+        search?: string;
+        min_price?: number;
+        max_price?: number;
+        min_discount?: number;
+        in_stock?: boolean;
+    }) => {
+        const searchParams = new URLSearchParams();
+        if (params) {
+            Object.entries(params).forEach(([key, value]) => {
+                if (value !== undefined && value !== null && value !== '') {
+                    searchParams.append(key, String(value));
+                }
+            });
+        }
+        return api.get<{
+            categories: CategoryRead[];
+            brands: Array<{ id: string; name: string; slug: string; logo_url?: string; max_discount: number; product_count: number }>;
+            products: PaginatedProducts;
+        }>(`/products/catalog-bootstrap?${searchParams}`);
+    },
+
     getFeatured: (limit = 10) =>
         api.get<Product[]>(`/products/featured?limit=${limit}`),
 
@@ -335,6 +361,13 @@ export const productsApi = {
 
     getBySlug: (slug: string) =>
         api.get<Product>(`/products/${slug}`),
+
+    getDetailBundle: (slug: string) =>
+        api.get<{
+            product: Product;
+            variants: ProductSummary[];
+            related: ProductSummary[];
+        }>(`/products/${slug}/detail`),
 
     getVariants: (slug: string) =>
         api.get<ProductSummary[]>(`/products/${slug}/variants`),
@@ -434,6 +467,7 @@ export const ordersApi = {
         state: string;
         postal_code: string;
         country?: string;
+        existing_address_id?: string;
         // Cart
         cart_items: { product_id: string; quantity: number }[];
         // Order

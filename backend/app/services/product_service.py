@@ -12,6 +12,7 @@ from slugify import slugify
 
 from app.core.cache import response_cache
 from app.core.exceptions import ConflictException, NotFoundException
+from app.core.seller_branding import normalize_seller_name
 from app.models.product import Product, ProductCreate, ProductImage, ProductListRead, ProductUpdate
 
 
@@ -29,6 +30,9 @@ class ProductService:
             "products_brands_featured",
             "products_brands",
             "products_search_index",
+            "catalog_bootstrap",
+            "product_detail_bundle",
+            "product_slug",
             "categories_list",
             "categories_tree",
             "categories_slug",
@@ -185,7 +189,7 @@ class ProductService:
                 image_url=row.image_url,
                 primary_image=row.primary_image,
                 seller_id=row.seller_id,
-                seller_name=row.seller_name or "Pranjay",
+                seller_name=normalize_seller_name(row.seller_name),
                 parent_id=row.parent_id,
             )
             for row in rows

@@ -1,5 +1,6 @@
 'use client';
 
+import { ShopShell } from '@/components/layout/ShopShell';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -7,8 +8,8 @@ import { Package, ArrowRight, ShoppingBag } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Header } from '@/components/layout/Header';
-import { Footer } from '@/components/layout/Footer';
+
+
 import { ordersApi, Order } from '@/lib/api';
 import { useAuthStore } from '@/store/auth-store';
 import { formatPrice, formatDate } from '@/lib/utils';
@@ -42,35 +43,27 @@ export default function OrdersPage() {
 
     if (isLoading || isAuthLoading) {
         return (
-            <div className="min-h-screen flex flex-col">
-                <Header />
-                <main className="flex-1 flex items-center justify-center">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-                </main>
-                <Footer />
-            </div>
+            <ShopShell mainClassName="flex items-center justify-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+            </ShopShell>
         );
     }
 
     if (orders.length === 0) {
         return (
-            <div className="min-h-screen flex flex-col">
-                <Header />
-                <main className="flex-1 flex items-center justify-center">
-                    <div className="text-center">
-                        <Package className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-                        <h1 className="text-2xl font-bold">No Orders Yet</h1>
-                        <p className="text-muted-foreground mt-2">Start shopping to see your orders here!</p>
-                        <Link href="/products">
-                            <Button className="mt-6">
-                                <ShoppingBag className="h-4 w-4 mr-2" />
-                                Browse Products
-                            </Button>
-                        </Link>
-                    </div>
-                </main>
-                <Footer />
-            </div>
+            <ShopShell mainClassName="flex items-center justify-center">
+                <div className="text-center">
+                    <Package className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+                    <h1 className="text-2xl font-bold">No Orders Yet</h1>
+                    <p className="text-muted-foreground mt-2">Start shopping to see your orders here!</p>
+                    <Link href="/products">
+                        <Button className="mt-6">
+                            <ShoppingBag className="h-4 w-4 mr-2" />
+                            Browse Products
+                        </Button>
+                    </Link>
+                </div>
+            </ShopShell>
         );
     }
 
@@ -90,10 +83,7 @@ export default function OrdersPage() {
     };
 
     return (
-        <div className="min-h-screen flex flex-col">
-            <Header />
-
-            <main className="flex-1 py-8">
+        <ShopShell mainClassName="py-8">
                 <div className="container max-w-4xl">
                     <h1 className="text-3xl font-bold mb-8">My Orders</h1>
 
@@ -139,9 +129,6 @@ export default function OrdersPage() {
                         ))}
                     </div>
                 </div>
-            </main>
-
-            <Footer />
-        </div>
+        </ShopShell>
     );
 }

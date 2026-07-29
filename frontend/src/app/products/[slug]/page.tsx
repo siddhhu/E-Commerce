@@ -7,8 +7,7 @@ import Image from 'next/image';
 import { Heart, ShoppingCart, Minus, Plus, Truck, Shield, Loader2, Share2, Check, ChevronLeft, BadgePercent, Sparkles } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
-import { Header } from '@/components/layout/Header';
-import { Footer } from '@/components/layout/Footer';
+import { ShopShell } from '@/components/layout/ShopShell';
 import { PromoBanner } from '@/components/layout/PromoBanner';
 
 import { useToast } from '@/hooks/use-toast';
@@ -19,6 +18,7 @@ import { useCartStore } from '@/store/cart-store';
 import { useWishlistStore } from '@/store/wishlist-store';
 import { useRecentlyViewedStore } from '@/store/recently-viewed-store';
 import { cn, formatPrice, getDiscountPercentage, resolveImageUrl } from '@/lib/utils';
+import { displaySellerName } from '@/lib/seller-branding';
 import { getProductLabels } from '@/lib/product-labels';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -93,17 +93,33 @@ export default function ProductDetailPage() {
             if (!params.slug) return;
             setLoading(true);
             try {
-                // Fetch product and variants in parallel to reduce load time
-                const [productData, variantsData] = await Promise.all([
-                    productsApi.getBySlug(params.slug as string),
-                    productsApi.getVariants(params.slug as string).catch((err) => {
-                        console.error('Failed to fetch variants:', err);
-                        return [];
-                    })
-                ]);
-                
-                setProduct(productData);
-                setVariants(variantsData);
+                const bundle = await productsApi.getDetailBundle(params.slug as string);
+                setProduct(bundle.product);
+                setVariants(bundle.variants);
+                setRelatedProducts(
+                    bundle.related.map((item) => ({
+                        id: item.id,
+                        name: item.name,
+                        slug: item.slug,
+                        sku: item.sku,
+                        short_description: item.short_description || '',
+                        mrp: Number(item.mrp),
+                        selling_price: Number(item.selling_price),
+                        b2b_price: item.b2b_price ? Number(item.b2b_price) : undefined,
+                        stock_quantity: item.stock_quantity,
+                        min_order_quantity: 1,
+                        unit: 'pcs',
+                        is_active: true,
+                        is_featured: item.is_featured,
+                        is_discounted_featured: item.is_discounted_featured ?? false,
+                        image_url: item.primary_image || undefined,
+                        images: item.primary_image ? [{ id: 'related', product_id: item.id, image_url: item.primary_image, is_primary: true, sort_order: 0 }] : [],
+                        attributes: {},
+                        created_at: '',
+                        updated_at: '',
+                    }))
+                );
+                setRelatedLoading(false);
                 setError(false);
             } catch (err) {
                 console.error('Failed to fetch product:', err);
@@ -121,43 +137,6 @@ export default function ProductDetailPage() {
         const maxQty = Math.max(minQty, product.stock_quantity || minQty);
         setQuantity((q) => Math.min(Math.max(q, minQty), maxQty));
         setActiveImage(null);
-
-        setRelatedLoading(true);
-        productsApi.list({
-            page: 1,
-            page_size: 8,
-            category_id: product.category_id || undefined,
-        })
-            .then((res) => {
-                setRelatedProducts(
-                    res.items
-                        .filter((item) => item.id !== product.id)
-                        .slice(0, 4)
-                        .map((item) => ({
-                            id: item.id,
-                            name: item.name,
-                            slug: item.slug,
-                            sku: item.sku,
-                            short_description: item.short_description || '',
-                            mrp: Number(item.mrp),
-                            selling_price: Number(item.selling_price),
-                            b2b_price: item.b2b_price ? Number(item.b2b_price) : undefined,
-                            stock_quantity: item.stock_quantity,
-                            min_order_quantity: 1,
-                            unit: 'pcs',
-                            is_active: true,
-                            is_featured: item.is_featured,
-                            is_discounted_featured: item.is_discounted_featured ?? false,
-                            image_url: item.primary_image || undefined,
-                            images: item.primary_image ? [{ id: 'related', product_id: item.id, image_url: item.primary_image, is_primary: true, sort_order: 0 }] : [],
-                            attributes: {},
-                            created_at: '',
-                            updated_at: '',
-                        }))
-                );
-            })
-            .catch(() => setRelatedProducts([]))
-            .finally(() => setRelatedLoading(false));
     }, [product]);
 
     // Track recently viewed
@@ -176,32 +155,24 @@ export default function ProductDetailPage() {
 
     if (loading) {
         return (
-            <div className="min-h-screen flex flex-col">
-                <Header />
-                <main className="flex-1 flex items-center justify-center">
-                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                    <span className="ml-2">Loading product...</span>
-                </main>
-                <Footer />
-            </div>
+            <ShopShell mainClassName="flex items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <span className="ml-2">Loading product...</span>
+            </ShopShell>
         );
     }
 
     if (error || !product) {
         return (
-            <div className="min-h-screen flex flex-col">
-                <Header />
-                <main className="flex-1 flex items-center justify-center">
-                    <div className="text-center">
-                        <h1 className="text-2xl font-bold">Product Not Found</h1>
-                        <p className="text-muted-foreground mt-2">The product you&apos;re looking for doesn&apos;t exist.</p>
-                        <Link href="/products">
-                            <Button className="mt-4">Browse Products</Button>
-                        </Link>
-                    </div>
-                </main>
-                <Footer />
-            </div>
+            <ShopShell mainClassName="flex items-center justify-center">
+                <div className="text-center">
+                    <h1 className="text-2xl font-bold">Product Not Found</h1>
+                    <p className="text-muted-foreground mt-2">The product you&apos;re looking for doesn&apos;t exist.</p>
+                    <Link href="/products">
+                        <Button className="mt-4">Browse Products</Button>
+                    </Link>
+                </div>
+            </ShopShell>
         );
     }
 
@@ -428,12 +399,10 @@ export default function ProductDetailPage() {
     };
 
     return (
-        <div className="min-h-screen flex flex-col">
-            <Header />
+        <ShopShell extraBottomPadding>
             <PromoBanner />
 
-            <main className="flex-1 pb-24 md:pb-8">
-                <div className="container py-4 md:py-8">
+            <div className="container py-4 md:py-8">
                     {/* Breadcrumb */}
                     <div className="flex items-center gap-1.5 text-xs md:text-sm text-muted-foreground mb-4 md:mb-8 overflow-x-auto whitespace-nowrap">
                         <Link href="/" className="hover:text-primary shrink-0">Home</Link>
@@ -541,7 +510,7 @@ export default function ProductDetailPage() {
                             <div className="flex items-center flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground bg-slate-50 border border-slate-100 rounded-lg px-3 py-2">
                                 <span>
                                     <span className="font-semibold text-slate-700">Sold by:</span>{' '}
-                                    {product.seller_name || 'Pranjay'}
+                                    {displaySellerName(product.seller_name)}
                                 </span>
                                 {product.seller_gst_number && (
                                     <span className="text-slate-400">
@@ -564,7 +533,7 @@ export default function ProductDetailPage() {
                                 <div className="rounded-2xl border border-emerald-100 bg-emerald-50 p-3">
                                     <Shield className="h-5 w-5 text-emerald-600 mb-1" />
                                     <p className="text-sm font-bold text-slate-900">Genuine</p>
-                                    <p className="text-xs text-slate-600">Sold by {product.seller_name || 'Pranjay'}</p>
+                                    <p className="text-xs text-slate-600">Sold by {displaySellerName(product.seller_name)}</p>
                                 </div>
                             </div>
 
@@ -702,7 +671,6 @@ export default function ProductDetailPage() {
                         </section>
                     )}
                 </div>
-            </main>
 
             {/* ── Sticky bottom bar (Mobile only) ────────────────────────────── */}
             <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-slate-200 shadow-[0_-4px_16px_rgba(0,0,0,0.08)] safe-area-inset">
@@ -731,8 +699,6 @@ export default function ProductDetailPage() {
                     )}
                 </div>
             </div>
-
-            <Footer />
-        </div>
+        </ShopShell>
     );
 }

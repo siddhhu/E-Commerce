@@ -7,8 +7,7 @@ import { Trash2, Minus, Plus, ShoppingBag, ArrowRight } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Header } from '@/components/layout/Header';
-import { Footer } from '@/components/layout/Footer';
+import { ShopShell } from '@/components/layout/ShopShell';
 import { useCartStore } from '@/store/cart-store';
 import { formatPrice, resolveImageUrl } from '@/lib/utils';
 import { promoCodesApi } from '@/lib/api';
@@ -47,10 +46,8 @@ export default function CartPage() {
 
     if (items.length === 0) {
         return (
-            <div className="min-h-screen flex flex-col">
-                <Header />
-                <main className="flex-1 flex items-center justify-center">
-                    <div className="text-center">
+            <ShopShell mainClassName="flex items-center justify-center">
+                <div className="text-center">
                         <ShoppingBag className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
                         <h1 className="text-2xl font-bold">Your Cart is Empty</h1>
                         <p className="text-muted-foreground mt-2">Add some products to get started!</p>
@@ -59,18 +56,13 @@ export default function CartPage() {
                                 Browse Products <ArrowRight className="ml-2 h-4 w-4" />
                             </Button>
                         </Link>
-                    </div>
-                </main>
-                <Footer />
-            </div>
+                </div>
+            </ShopShell>
         );
     }
 
     return (
-        <div className="min-h-screen flex flex-col">
-            <Header />
-
-            <main className="flex-1 py-8">
+        <ShopShell mainClassName="py-8">
                 <div className="container">
                     <h1 className="text-2xl md:text-3xl font-bold mb-6 md:mb-8">Shopping Cart</h1>
 
@@ -283,9 +275,6 @@ export default function CartPage() {
                         </div>
                     </div>
                 </div>
-            </main>
-
-            <Footer />
-        </div>
+        </ShopShell>
     );
 }

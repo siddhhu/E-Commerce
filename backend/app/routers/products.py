@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic import BaseModel
 
 from app.core.cache import response_cache
+from app.core.seller_branding import normalize_seller_name
 from app.database import get_session
 from app.models.product import Product, ProductListRead, ProductRead
 from app.models.user import User
@@ -60,7 +61,7 @@ def _to_list_read(product: Product) -> ProductListRead:
         image_url=getattr(product, "image_url", None),
         primary_image=_primary_image(product),
         seller_id=product.seller_id,
-        seller_name=product.seller_name or "Pranjay",
+        seller_name=normalize_seller_name(product.seller_name),
         parent_id=product.parent_id,
     )
 
@@ -347,7 +348,7 @@ async def get_search_index(
             "mrp": float(row.mrp),
             "image": row.image_url,
             "short_description": row.short_description or "",
-            "seller_name": row.seller_name or "Pranjay",
+            "seller_name": normalize_seller_name(row.seller_name),
         })
 
     response_cache.set(cache_key, items, ttl_seconds=300)
@@ -390,16 +391,169 @@ async def get_discounted_featured_products(
     )
 
 
-@router.get("/{slug}", response_model=ProductRead)
-async def get_product_by_slug(
-    slug: str,
-    session: AsyncSession = Depends(get_session)
+class CatalogBootstrapResponse(BaseModel):
+    """Single round-trip for products page: filters + first page of products."""
+    categories: list
+    brands: list
+    products: PaginatedProducts
+
+
+@router.get("/catalog-bootstrap", response_model=CatalogBootstrapResponse)
+async def catalog_bootstrap(
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+    category_id: Optional[UUID] = None,
+    brand_id: Optional[UUID] = None,
+    search: Optional[str] = None,
+    min_price: Optional[float] = None,
+    max_price: Optional[float] = None,
+    min_discount: Optional[float] = None,
+    in_stock: Optional[bool] = None,
+    session: AsyncSession = Depends(get_session),
 ):
-    """Get product details by slug."""
+    """
+    One request for the products page: categories, brands, and paginated products.
+    Replaces 3 separate frontend calls (~400–900ms saved on cold paths).
+    """
+    cache_key = (
+        "catalog_bootstrap",
+        page,
+        page_size,
+        str(category_id) if category_id else "",
+        str(brand_id) if brand_id else "",
+        search or "",
+        min_price,
+        max_price,
+        min_discount,
+        in_stock,
+    )
+    cached = response_cache.get(cache_key)
+    if cached is not None:
+        return JSONResponse(
+            content=cached,
+            headers={"Cache-Control": "public, max-age=60, stale-while-revalidate=30"},
+        )
+
+    from app.models.category import Category, CategoryRead
+    from app.models.brand import Brand
+    from sqlalchemy import func, case
+
+    product_service = ProductService(session)
+    skip = (page - 1) * page_size
+
+    cat_result = await session.execute(
+        select(Category)
+        .where(Category.is_active == True)
+        .order_by(Category.sort_order, Category.name)
+    )
+    categories = [
+        CategoryRead.model_validate(c).model_dump(mode="json")
+        for c in cat_result.scalars().all()
+    ]
+
+    discount_expr = func.max(
+        case(
+            (Product.mrp > 0, (Product.mrp - Product.selling_price) / Product.mrp * 100),
+            else_=0,
+        )
+    )
+    brand_result = await session.execute(
+        select(
+            Brand.id,
+            Brand.name,
+            Brand.slug,
+            Brand.logo_url,
+            discount_expr.label("max_discount"),
+            func.count(Product.id).label("product_count"),
+        )
+        .join(Product, Product.brand_id == Brand.id)
+        .where(Product.is_active == True)
+        .where(Brand.is_active == True)
+        .group_by(Brand.id, Brand.name, Brand.slug, Brand.logo_url)
+        .having(func.count(Product.id) > 0)
+        .order_by(Brand.name.asc())
+    )
+    brands = [
+        {
+            "id": str(row.id),
+            "name": row.name,
+            "slug": row.slug,
+            "logo_url": row.logo_url,
+            "max_discount": int(row.max_discount) if row.max_discount else 0,
+            "product_count": int(row.product_count or 0),
+        }
+        for row in brand_result.all()
+    ]
+
+    products, total = await product_service.list_product_summaries(
+        skip=skip,
+        limit=page_size,
+        category_id=category_id,
+        brand_id=brand_id,
+        search=search,
+        min_price=min_price,
+        max_price=max_price,
+        min_discount=min_discount,
+        in_stock=in_stock,
+        is_active=True,
+        include_total=True,
+    )
+    pages = (total + page_size - 1) // page_size
+    paginated = PaginatedProducts(
+        items=products,
+        total=total,
+        page=page,
+        page_size=page_size,
+        pages=pages,
+    )
+
+    content = CatalogBootstrapResponse(
+        categories=categories,
+        brands=brands,
+        products=paginated,
+    ).model_dump(mode="json")
+    response_cache.set(cache_key, content, ttl_seconds=60)
+
+    return JSONResponse(
+        content=content,
+        headers={"Cache-Control": "public, max-age=60, stale-while-revalidate=30"},
+    )
+
+
+class ProductDetailBundle(BaseModel):
+    """Product + variants + related items in one response."""
+    product: ProductRead
+    variants: list[ProductListRead]
+    related: list[ProductListRead]
+
+
+@router.get("/{slug}/detail", response_model=ProductDetailBundle)
+async def get_product_detail_bundle(
+    slug: str,
+    session: AsyncSession = Depends(get_session),
+):
+    """Single round-trip for product detail page (product, variants, related)."""
+    cache_key = ("product_detail_bundle", slug)
+    cached = response_cache.get(cache_key)
+    if cached is not None:
+        return JSONResponse(
+            content=cached,
+            headers={"Cache-Control": "public, max-age=120, stale-while-revalidate=30"},
+        )
+
     product_service = ProductService(session)
     product = await product_service.get_product_by_slug(slug)
+    variants = await product_service.get_product_variants(slug)
 
-    # Enrich with seller GST number. Admin-owned products use Mahaganpati GST.
+    related_items: list[ProductListRead] = []
+    if product.category_id:
+        related_raw, _ = await product_service.list_product_summaries(
+            limit=8,
+            category_id=product.category_id,
+            is_active=True,
+        )
+        related_items = [r for r in related_raw if r.id != product.id][:4]
+
     seller_gst_number: Optional[str] = settings.invoice_company_gst
     if product.seller_id:
         seller_result = await session.execute(
@@ -410,8 +564,60 @@ async def get_product_by_slug(
             seller_gst_number = seller.gst_number or seller_gst_number
 
     product_data = ProductRead.model_validate(product)
+    product_data.seller_name = normalize_seller_name(product_data.seller_name)
     product_data.seller_gst_number = seller_gst_number
-    return product_data
+
+    bundle = ProductDetailBundle(
+        product=product_data,
+        variants=[_to_list_read(v) for v in variants],
+        related=related_items,
+    )
+    content = bundle.model_dump(mode="json")
+    response_cache.set(cache_key, content, ttl_seconds=120)
+
+    return JSONResponse(
+        content=content,
+        headers={"Cache-Control": "public, max-age=120, stale-while-revalidate=30"},
+    )
+
+
+@router.get("/{slug}", response_model=ProductRead)
+async def get_product_by_slug(
+    slug: str,
+    session: AsyncSession = Depends(get_session)
+):
+    """Get product details by slug. Cached 2 minutes."""
+    cache_key = ("product_slug", slug)
+    cached = response_cache.get(cache_key)
+    if cached is not None:
+        return JSONResponse(
+            content=cached,
+            headers={"Cache-Control": "public, max-age=120, stale-while-revalidate=30"},
+        )
+
+    product_service = ProductService(session)
+    product = await product_service.get_product_by_slug(slug)
+
+    seller_gst_number: Optional[str] = settings.invoice_company_gst
+    if product.seller_id:
+        seller_result = await session.execute(
+            select(User).where(User.id == product.seller_id)
+        )
+        seller = seller_result.scalar_one_or_none()
+        if seller:
+            seller_gst_number = seller.gst_number or seller_gst_number
+
+    product_data = ProductRead.model_validate(product)
+    product_data.seller_name = normalize_seller_name(product_data.seller_name)
+    product_data.seller_gst_number = seller_gst_number
+
+    content = product_data.model_dump(mode="json")
+    response_cache.set(cache_key, content, ttl_seconds=120)
+
+    return JSONResponse(
+        content=content,
+        headers={"Cache-Control": "public, max-age=120, stale-while-revalidate=30"},
+    )
 
 
 @router.get("/{slug}/variants", response_model=list[ProductListRead])

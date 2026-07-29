@@ -1,5 +1,6 @@
 'use client';
 
+import { ShopShell } from '@/components/layout/ShopShell';
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
@@ -8,8 +9,8 @@ import { CheckCircle2, Package, Truck, MapPin, ArrowLeft, ShoppingBag, Phone } f
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Header } from '@/components/layout/Header';
-import { Footer } from '@/components/layout/Footer';
+
+
 import { ordersApi, Order } from '@/lib/api';
 import { useAuthStore } from '@/store/auth-store';
 import { formatPrice, formatDate } from '@/lib/utils';
@@ -44,32 +45,24 @@ export default function OrderDetailPage() {
 
     if (isLoading || isAuthLoading) {
         return (
-            <div className="min-h-screen flex flex-col">
-                <Header />
-                <main className="flex-1 flex items-center justify-center">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-                </main>
-                <Footer />
-            </div>
+            <ShopShell mainClassName="flex items-center justify-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+            </ShopShell>
         );
     }
 
     if (!order) {
         return (
-            <div className="min-h-screen flex flex-col">
-                <Header />
-                <main className="flex-1 flex items-center justify-center">
-                    <div className="text-center">
-                        <Package className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-                        <h1 className="text-2xl font-bold">Order Not Found</h1>
-                        <p className="text-muted-foreground mt-2">This order doesn't exist or has expired.</p>
-                        <Link href="/orders">
-                            <Button className="mt-6">View All Orders</Button>
-                        </Link>
-                    </div>
-                </main>
-                <Footer />
-            </div>
+            <ShopShell mainClassName="flex items-center justify-center">
+                <div className="text-center">
+                    <Package className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+                    <h1 className="text-2xl font-bold">Order Not Found</h1>
+                    <p className="text-muted-foreground mt-2">This order doesn't exist or has expired.</p>
+                    <Link href="/orders">
+                        <Button className="mt-6">View All Orders</Button>
+                    </Link>
+                </div>
+            </ShopShell>
         );
     }
 
@@ -85,10 +78,7 @@ export default function OrderDetailPage() {
     const isCodOrder = paymentMethod === 'cod';
 
     return (
-        <div className="min-h-screen flex flex-col">
-            <Header />
-
-            <main className="flex-1 py-8">
+        <ShopShell mainClassName="py-8">
                 <div className="container max-w-4xl">
                     <Button
                         variant="ghost"
@@ -325,9 +315,6 @@ export default function OrderDetailPage() {
                         </Link>
                     </div>
                 </div>
-            </main>
-
-            <Footer />
-        </div>
+        </ShopShell>
     );
 }

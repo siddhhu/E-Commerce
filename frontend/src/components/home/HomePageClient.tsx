@@ -7,8 +7,7 @@ import { ArrowRight, Sparkles, Truck, Shield, Clock, Heart, ShoppingCart, Loader
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Header } from '@/components/layout/Header';
-import { Footer } from '@/components/layout/Footer';
+import { ShopShell } from '@/components/layout/ShopShell';
 import { apiService, APIProduct as APIProductSummary } from '@/lib/api-service';
 import { categoriesApi, ProductSummary, CategoryRead } from '@/lib/api';
 import { dummyProducts, getFeaturedProducts as getDummyFeatured, categories, Product as StoreProduct } from '@/lib/dummy-data';
@@ -235,11 +234,10 @@ export default function HomePageClient({
     } as APIProduct);
 
     return (
-        <div className="min-h-screen flex flex-col">
-            <Header />
+        <ShopShell>
             <PromoBanner />
 
-            <main className="flex-1">
+            <div className="flex-1">
                 <div className="container py-4">
                     <BannerSlider initialBanners={initialBanners} />
                 </div>
@@ -529,9 +527,7 @@ export default function HomePageClient({
                         </div>
                     </div>
                 </section>
-            </main>
-
-            <Footer />
-        </div>
+            </div>
+        </ShopShell>
     );
 }

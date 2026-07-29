@@ -1,5 +1,6 @@
 'use client';
 
+import { ShopShell } from '@/components/layout/ShopShell';
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -8,8 +9,8 @@ import { Search, Heart, ShoppingCart, ArrowLeft, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
-import { Header } from '@/components/layout/Header';
-import { Footer } from '@/components/layout/Footer';
+
+
 import { productsApi, ProductSummary } from '@/lib/api';
 import { dummyProducts, Product } from '@/lib/dummy-data';
 import { useCartStore } from '@/store/cart-store';
@@ -166,7 +167,7 @@ function SearchContent() {
     };
 
     return (
-        <main className="flex-1 py-8">
+        <div className="container py-8">
             <div className="container">
                 <Link href="/products">
                     <Button variant="ghost" className="mb-4">
@@ -293,22 +294,20 @@ function SearchContent() {
                     </div>
                 )}
             </div>
-        </main>
+        </div>
     );
 }
 
 export default function SearchPage() {
     return (
-        <div className="min-h-screen flex flex-col">
-            <Header />
+        <ShopShell mainClassName="py-8">
             <Suspense fallback={
-                <main className="flex-1 flex items-center justify-center">
+                <div className="flex items-center justify-center py-20">
                     <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                </main>
+                </div>
             }>
                 <SearchContent />
             </Suspense>
-            <Footer />
-        </div>
+        </ShopShell>
     );
 }

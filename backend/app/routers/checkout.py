@@ -164,6 +164,7 @@ class CompleteCheckoutRequest(BaseModel):
     state: str
     postal_code: str
     country: str = "India"
+    existing_address_id: Optional[UUID] = None
 
     # ── Cart (frontend Zustand store is source of truth) ─────────────────────
     cart_items: List[CartItemInput]
@@ -238,28 +239,50 @@ async def complete_checkout(
         if not is_valid:
             raise BadRequestException("Payment verification failed. Invalid signature.")
 
-    # ── Step 1: Save address ───────────────────────────────────────────────────
-    prev_defaults = await session.execute(
-        select(Address).where(Address.user_id == current_user.id, Address.is_default == True)
-    )
-    for addr in prev_defaults.scalars():
-        addr.is_default = False
-        session.add(addr)
+    # ── Step 1: Save or reuse address ──────────────────────────────────────────
+    if data.existing_address_id:
+        address_result = await session.execute(
+            select(Address).where(
+                Address.id == data.existing_address_id,
+                Address.user_id == current_user.id,
+            )
+        )
+        address = address_result.scalar_one_or_none()
+        if not address:
+            raise BadRequestException("Saved address not found")
+        address.full_name = data.full_name
+        address.phone = data.phone
+        address.address_line1 = data.address_line1
+        address.address_line2 = data.address_line2
+        address.city = data.city
+        address.state = data.state
+        address.postal_code = data.postal_code
+        address.country = data.country
+        address.is_default = True
+        session.add(address)
+        await session.flush()
+    else:
+        prev_defaults = await session.execute(
+            select(Address).where(Address.user_id == current_user.id, Address.is_default == True)
+        )
+        for addr in prev_defaults.scalars():
+            addr.is_default = False
+            session.add(addr)
 
-    address = Address(
-        user_id=current_user.id,
-        full_name=data.full_name,
-        phone=data.phone,
-        address_line1=data.address_line1,
-        address_line2=data.address_line2,
-        city=data.city,
-        state=data.state,
-        postal_code=data.postal_code,
-        country=data.country,
-        is_default=True,
-    )
-    session.add(address)
-    await session.flush()  # get address.id
+        address = Address(
+            user_id=current_user.id,
+            full_name=data.full_name,
+            phone=data.phone,
+            address_line1=data.address_line1,
+            address_line2=data.address_line2,
+            city=data.city,
+            state=data.state,
+            postal_code=data.postal_code,
+            country=data.country,
+            is_default=True,
+        )
+        session.add(address)
+        await session.flush()  # get address.id
 
     # ── Step 2: Sync cart (clear + re-add from frontend store) ────────────────
     await session.execute(sql_delete(CartItem).where(CartItem.user_id == current_user.id))

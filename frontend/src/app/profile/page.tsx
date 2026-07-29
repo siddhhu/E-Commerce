@@ -1,5 +1,6 @@
 'use client';
 
+import { ShopShell } from '@/components/layout/ShopShell';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { User, Package, MapPin, Phone, Mail, Calendar, Settings, ChevronRight, LogOut, Building2, FileText, CheckCircle2, AlertCircle } from 'lucide-react';
@@ -9,8 +10,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Header } from '@/components/layout/Header';
-import { Footer } from '@/components/layout/Footer';
+
+
 import { useAuthStore } from '@/store/auth-store';
 import { ordersApi, authApi, Order } from '@/lib/api';
 import { formatDate, formatPrice } from '@/lib/utils';
@@ -91,23 +92,16 @@ export default function ProfilePage() {
 
     if (isAuthLoading || !_hasHydrated) {
         return (
-            <div className="min-h-screen flex flex-col">
-                <Header />
-                <main className="flex-1 flex items-center justify-center">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-                </main>
-                <Footer />
-            </div>
+            <ShopShell mainClassName="flex items-center justify-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+            </ShopShell>
         );
     }
 
     if (!user) return null;
 
     return (
-        <div className="min-h-screen flex flex-col bg-slate-50">
-            <Header />
-
-            <main className="flex-1 py-10">
+        <ShopShell mainClassName="py-10 bg-slate-50">
                 <div className="container max-w-5xl">
                     <div className="flex justify-between items-end mb-8">
                         <div>
@@ -413,9 +407,6 @@ export default function ProfilePage() {
                         </div>
                     </div>
                 </div>
-            </main>
-
-            <Footer />
-        </div>
+        </ShopShell>
     );
 }

@@ -1,0 +1,27 @@
+{
+  "name": "Pranjay - Wholesale Cosmetics",
+  "short_name": "Pranjay",
+  "description": "Shop cosmetics, salon essentials and wholesale-ready beauty deals.",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#fff7fb",
+  "theme_color": "#e91e63",
+  "lang": "en-IN",
+  "icons": [
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-maskable.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ],
+  "categories": ["shopping", "beauty"],
+  "prefer_related_applications": false
+}

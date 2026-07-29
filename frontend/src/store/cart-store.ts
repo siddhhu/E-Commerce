@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { Product, getProductById } from '@/lib/dummy-data';
+import { hapticLight } from '@/lib/haptics';
 import {
     getDeliveryFee as calculateDeliveryFee,
     getFreeDeliveryShortfall as calculateFreeDeliveryShortfall,
@@ -50,6 +51,7 @@ export const useCartStore = create<CartState>()(
             invoice_url: null,
 
             addItem: (product, quantity = 1) => {
+                void hapticLight();
                 set((state) => {
                     const existingItem = state.items.find(item => item.product.id === product.id);
 

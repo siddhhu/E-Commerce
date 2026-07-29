@@ -41,7 +41,7 @@ class Settings(BaseSettings):
     supabase_bucket: str = "products"
 
     # Invoice seller details for marketplace/admin-owned products
-    invoice_company_name: str = "Mahaganpati"
+    invoice_company_name: str = "PARLOUR HOUSE"
     invoice_company_gst: Optional[str] = "10ACEFM4547Q1C9"
     invoice_company_address: str = ""
     
@@ -62,7 +62,10 @@ class Settings(BaseSettings):
         "https://pranjay-frontend.onrender.com",
         "https://pranjay-frontend.onrender.com/",
         "http://pranjay-frontend.onrender.com",
-        "http://pranjay-frontend.onrender.com/"
+        "http://pranjay-frontend.onrender.com/",
+        "https://localhost",
+        "capacitor://localhost",
+        "http://localhost"
     ]
     
     # Firebase

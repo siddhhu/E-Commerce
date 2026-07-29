@@ -7,17 +7,17 @@ import { Filter, Heart, ShoppingCart, Grid3X3, List, Loader2, SlidersHorizontal,
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Header } from '@/components/layout/Header';
-import { Footer } from '@/components/layout/Footer';
+import { ShopShell } from '@/components/layout/ShopShell';
 import { useCartStore } from '@/store/cart-store';
 import { useWishlistStore } from '@/store/wishlist-store';
 import { useToast } from '@/hooks/use-toast';
 import { formatPrice, getDiscountPercentage, resolveImageUrl } from '@/lib/utils';
-import { categoriesApi, productsApi, ProductSummary, Product as APIProduct, CategoryRead } from '@/lib/api';
+import { productsApi, ProductSummary, Product as APIProduct, CategoryRead } from '@/lib/api';
 import { Product as StoreProduct } from '@/lib/dummy-data';
 import { ProductCard } from '@/components/products/ProductCard';
 import { getProductLabels } from '@/lib/product-labels';
 import { Skeleton } from '@/components/ui/skeleton';
+import { ProductFiltersPanel } from '@/components/products/ProductFiltersPanel';
 
 function ProductsContent() {
     const searchParams = useSearchParams();
@@ -45,6 +45,7 @@ function ProductsContent() {
     const [selectedDiscount, setSelectedDiscount] = useState(discountParam);
     const [priceBand, setPriceBand] = useState(minPriceParam || maxPriceParam ? `${minPriceParam || 0}-${maxPriceParam || 999999}` : '');
     const [inStockOnly, setInStockOnly] = useState(inStockParam);
+    const [filterSheetOpen, setFilterSheetOpen] = useState(false);
 
     const { addItem: addToCart } = useCartStore();
     const { addItem: addToWishlist, removeItem: removeFromWishlist, isInWishlist } = useWishlistStore();
@@ -59,18 +60,11 @@ function ProductsContent() {
     }, [categoryId, brandId, discountParam, minPriceParam, maxPriceParam, inStockParam]);
 
     useEffect(() => {
-        Promise.all([
-            categoriesApi.list().then(setCategories).catch(() => setCategories([])),
-            productsApi.getBrands().then(setBrands).catch(() => setBrands([])),
-        ]);
-    }, []);
-
-    useEffect(() => {
         setPage(1);
-        fetchProducts(1, true);
+        loadCatalog(1, true);
     }, [selectedCategory, selectedBrand, selectedDiscount, priceBand, inStockOnly, searchQuery]);
 
-    async function fetchProducts(pageNum: number, isInitial: boolean = false) {
+    async function loadCatalog(pageNum: number, isInitial: boolean = false) {
         if (isInitial) {
             if (products.length === 0) {
                 setLoading(true);
@@ -82,25 +76,30 @@ function ProductsContent() {
         }
         setError(null);
         const [minPrice, maxPrice] = priceBand ? priceBand.split('-').map(Number) : [];
+        const listParams = {
+            page: pageNum,
+            page_size: 20,
+            category_id: selectedCategory || undefined,
+            brand_id: selectedBrand || undefined,
+            search: searchQuery || undefined,
+            min_price: minPrice || undefined,
+            max_price: maxPrice || undefined,
+            min_discount: selectedDiscount ? Number(selectedDiscount) : undefined,
+            in_stock: inStockOnly || undefined,
+        };
         try {
-            const response = await productsApi.list({
-                page: pageNum,
-                page_size: 20,
-                category_id: selectedCategory || undefined,
-                brand_id: selectedBrand || undefined,
-                search: searchQuery || undefined,
-                min_price: minPrice || undefined,
-                max_price: maxPrice || undefined,
-                min_discount: selectedDiscount ? Number(selectedDiscount) : undefined,
-                in_stock: inStockOnly || undefined,
-            });
-            
-            if (isInitial) {
-                setProducts(response.items);
-            } else {
-                setProducts(prev => [...prev, ...response.items]);
+            if (!isInitial) {
+                const listResponse = await productsApi.list(listParams);
+                setProducts(prev => [...prev, ...listResponse.items]);
+                setTotal(listResponse.total);
+                return;
             }
-            setTotal(response.total);
+
+            const response = await productsApi.catalogBootstrap(listParams);
+            setCategories(response.categories);
+            setBrands(response.brands);
+            setProducts(response.products.items);
+            setTotal(response.products.total);
         } catch (err) {
             console.error('Failed to fetch products from API:', err);
             setError('Failed to load products. Please try again later.');
@@ -114,7 +113,7 @@ function ProductsContent() {
     const handleLoadMore = () => {
         const nextPage = page + 1;
         setPage(nextPage);
-        fetchProducts(nextPage);
+        loadCatalog(nextPage);
     };
 
     const updateQuery = (key: string, value: string) => {
@@ -147,6 +146,23 @@ function ProductsContent() {
     };
 
     const activeFilterCount = [selectedCategory, selectedBrand, selectedDiscount, priceBand, inStockOnly ? 'stock' : ''].filter(Boolean).length;
+
+    const filterProps = {
+        categories,
+        brands,
+        selectedCategory,
+        selectedBrand,
+        selectedDiscount,
+        priceBand,
+        inStockOnly,
+        activeFilterCount,
+        onCategoryChange: (value: string) => { setSelectedCategory(value); updateQuery('category', value); },
+        onBrandChange: (value: string) => { setSelectedBrand(value); updateQuery('brand_id', value); },
+        onDiscountChange: (value: string) => { setSelectedDiscount(value); updateQuery('min_discount', value); },
+        onPriceBandChange: (value: string) => { setPriceBand(value); updatePriceQuery(value); },
+        onInStockChange: (checked: boolean) => { setInStockOnly(checked); updateQuery('in_stock', checked ? 'true' : ''); },
+        onClear: clearFilters,
+    };
 
     const handleAddToCart = (product: ProductSummary) => {
         const storeProduct: StoreProduct = {
@@ -255,7 +271,15 @@ function ProductsContent() {
                         {loading ? 'Loading...' : `${total} products found`}
                     </p>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 w-full sm:w-auto">
+                    <Button
+                        variant="outline"
+                        className="lg:hidden flex-1 sm:flex-none gap-2 min-h-[44px]"
+                        onClick={() => setFilterSheetOpen(true)}
+                    >
+                        <SlidersHorizontal className="h-4 w-4" />
+                        Filters{activeFilterCount > 0 ? ` (${activeFilterCount})` : ''}
+                    </Button>
                     <Button
                         variant={viewMode === 'grid' ? 'default' : 'outline'}
                         size="icon"
@@ -273,96 +297,27 @@ function ProductsContent() {
                 </div>
             </div>
 
+            {filterSheetOpen && (
+                <div className="lg:hidden fixed inset-0 z-[60]">
+                    <button
+                        type="button"
+                        className="absolute inset-0 bg-black/40"
+                        aria-label="Close filters"
+                        onClick={() => setFilterSheetOpen(false)}
+                    />
+                    <div className="absolute inset-x-0 bottom-0 max-h-[85vh] overflow-y-auto rounded-t-2xl bg-white p-5 pb-safe animate-sheet-up shadow-2xl">
+                        <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-slate-200" />
+                        <ProductFiltersPanel {...filterProps} />
+                        <Button className="w-full mt-6 min-h-[48px]" onClick={() => setFilterSheetOpen(false)}>
+                            Show {total} products
+                        </Button>
+                    </div>
+                </div>
+            )}
+
             <div className="grid lg:grid-cols-[280px_1fr] gap-6">
-                <aside className="lg:sticky lg:top-24 h-fit rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                    <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center gap-2 font-bold text-slate-900">
-                            <SlidersHorizontal className="h-4 w-4 text-primary" /> Filters
-                        </div>
-                        {activeFilterCount > 0 && (
-                            <button onClick={clearFilters} className="text-xs font-bold text-primary hover:underline">Clear</button>
-                        )}
-                    </div>
-
-                    <div className="space-y-4">
-                        <div>
-                            <label className="text-xs font-bold uppercase tracking-wide text-slate-500">Category</label>
-                            <select
-                                value={selectedCategory}
-                                onChange={(e) => { setSelectedCategory(e.target.value); updateQuery('category', e.target.value); }}
-                                className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/30"
-                            >
-                                <option value="">All categories</option>
-                                {categories.map((category) => (
-                                    <option key={category.id} value={category.id}>{category.name}</option>
-                                ))}
-                            </select>
-                        </div>
-
-                        <div>
-                            <label className="text-xs font-bold uppercase tracking-wide text-slate-500">Brand</label>
-                            <select
-                                value={selectedBrand}
-                                onChange={(e) => { setSelectedBrand(e.target.value); updateQuery('brand_id', e.target.value); }}
-                                className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/30"
-                            >
-                                <option value="">All brands</option>
-                                {brands.map((brand) => (
-                                    <option key={brand.id} value={brand.id}>{brand.name}</option>
-                                ))}
-                            </select>
-                        </div>
-
-                        <div>
-                            <label className="text-xs font-bold uppercase tracking-wide text-slate-500">Discount</label>
-                            <div className="mt-2 grid grid-cols-2 gap-2">
-                                {['10', '25', '40', '60'].map((value) => (
-                                    <button
-                                        key={value}
-                                        onClick={() => {
-                                            const nextValue = selectedDiscount === value ? '' : value;
-                                            setSelectedDiscount(nextValue);
-                                            updateQuery('min_discount', nextValue);
-                                        }}
-                                        className={`rounded-full border px-3 py-2 text-xs font-bold transition-colors ${selectedDiscount === value ? 'border-primary bg-primary text-white' : 'border-slate-200 hover:border-primary/50'}`}
-                                    >
-                                        {value}%+ off
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-
-                        <div>
-                            <label className="text-xs font-bold uppercase tracking-wide text-slate-500">Price</label>
-                            <select
-                                value={priceBand}
-                                onChange={(e) => {
-                                    setPriceBand(e.target.value);
-                                    updatePriceQuery(e.target.value);
-                                }}
-                                className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/30"
-                            >
-                                <option value="">All prices</option>
-                                <option value="0-199">Under ₹199</option>
-                                <option value="200-499">₹200 - ₹499</option>
-                                <option value="500-999">₹500 - ₹999</option>
-                                <option value="1000-999999">₹1000+</option>
-                            </select>
-                        </div>
-
-                        <label className="flex items-center justify-between rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold">
-                            In stock only
-                            <input
-                                type="checkbox"
-                                checked={inStockOnly}
-                                onChange={(e) => {
-                                    setInStockOnly(e.target.checked);
-                                    updateQuery('in_stock', e.target.checked ? 'true' : '');
-                                }}
-                                className="h-4 w-4 accent-primary"
-                            />
-                        </label>
-                    </div>
+                <aside className="hidden lg:block lg:sticky lg:top-24 h-fit rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                    <ProductFiltersPanel {...filterProps} />
                 </aside>
 
                 <div>
@@ -543,21 +498,15 @@ function ProductsContent() {
 
 export default function ProductsPage() {
     return (
-        <div className="min-h-screen flex flex-col">
-            <Header />
-
-            <main className="flex-1 py-8">
-                <Suspense fallback={
-                    <div className="flex items-center justify-center py-20">
-                        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                        <span className="ml-2 text-muted-foreground">Loading products...</span>
-                    </div>
-                }>
-                    <ProductsContent />
-                </Suspense>
-            </main>
-
-            <Footer />
-        </div>
+        <ShopShell mainClassName="py-8">
+            <Suspense fallback={
+                <div className="flex items-center justify-center py-20">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    <span className="ml-2 text-muted-foreground">Loading products...</span>
+                </div>
+            }>
+                <ProductsContent />
+            </Suspense>
+        </ShopShell>
     );
 }

@@ -1,0 +1,30 @@
+{
+  "name": "pranjay-mobile",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Pranjay mobile app shell (Capacitor — Android & iOS)",
+  "scripts": {
+    "cap:sync": "npx cap sync",
+    "cap:sync:android": "npx cap sync android",
+    "cap:sync:ios": "npx cap sync ios",
+    "cap:open": "npx cap open android",
+    "cap:open:ios": "npx cap open ios",
+    "android:debug": "bash scripts/build-apk.sh",
+    "android:release": "bash scripts/build-release.sh",
+    "build:apk": "npm run cap:sync:android && npm run android:debug",
+    "ios:open": "npm run cap:sync:ios && npm run cap:open:ios"
+  },
+  "dependencies": {
+    "@capacitor/android": "^6.2.0",
+    "@capacitor/ios": "^6.2.0",
+    "@capacitor/app": "^6.0.2",
+    "@capacitor/core": "^6.2.0",
+    "@capacitor/haptics": "^6.0.2",
+    "@capacitor/splash-screen": "^6.0.3",
+    "@capacitor/status-bar": "^6.0.2"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^6.2.0",
+    "typescript": "^5.3.3"
+  }
+}

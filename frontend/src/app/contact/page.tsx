@@ -1,8 +1,9 @@
 'use client';
 
+import { ShopShell } from '@/components/layout/ShopShell';
 import { useState } from 'react';
-import { Header } from '@/components/layout/Header';
-import { Footer } from '@/components/layout/Footer';
+
+
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -45,10 +46,7 @@ export default function ContactPage() {
     };
 
     return (
-        <div className="min-h-screen flex flex-col bg-slate-50">
-            <Header />
-
-            <main className="flex-1 container py-12 md:py-24">
+        <ShopShell mainClassName="container py-12 md:py-24 bg-slate-50">
                 <div className="max-w-5xl mx-auto">
                     <div className="text-center mb-16 space-y-4">
                         <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-slate-900">
@@ -154,9 +152,6 @@ export default function ContactPage() {
                         </div>
                     </div>
                 </div>
-            </main>
-
-            <Footer />
-        </div>
+        </ShopShell>
     );
 }

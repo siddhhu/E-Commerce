@@ -94,3 +94,37 @@
   filter: drop-shadow(0 0 12px rgba(184, 134, 11, 0.25));
   transform: scale(1.02);
 }
+
+/* Safe area insets for notched phones and Capacitor Android app */
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.pt-safe {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+.safe-area-inset {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Reserve space for fixed mobile bottom nav (h-16 + safe area) */
+.pb-bottom-nav {
+  padding-bottom: calc(4rem + env(safe-area-inset-bottom, 0px));
+}
+
+@media (min-width: 768px) {
+  .pb-bottom-nav {
+    padding-bottom: 0;
+  }
+}
+
+/* Mobile filter bottom sheet animation */
+@keyframes sheet-up {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+.animate-sheet-up {
+  animation: sheet-up 0.28s cubic-bezier(0.32, 0.72, 0, 1);
+}

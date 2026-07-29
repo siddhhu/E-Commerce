@@ -14,6 +14,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { useToast } from '@/hooks/use-toast';
 import { authApi } from '@/lib/api';
 import { useAuthStore } from '@/store/auth-store';
+import { isNativeApp } from '@/lib/is-native-app';
 
 declare global {
     interface Window {
@@ -77,8 +78,9 @@ function LoginForm() {
 
         if (!window.recaptchaVerifier) {
             try {
+                const useVisibleRecaptcha = isNativeApp();
                 window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-anchor', {
-                    'size': 'invisible',
+                    'size': useVisibleRecaptcha ? 'normal' : 'invisible',
                     'callback': (response: any) => {
                         // Auto-resolved
                     },
