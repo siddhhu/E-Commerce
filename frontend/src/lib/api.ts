@@ -567,14 +567,6 @@ export const adminApi = {
     createProduct: (data: Partial<Product>) => api.post<Product>('/admin/products', data),
     updateProduct: (id: string, data: Partial<Product>) => api.patch<Product>(`/admin/products/${id}`, data),
     deleteProduct: (id: string) => api.delete(`/admin/products/${id}`),
-    assignParlourHouseInventory: () =>
-        api.post<{
-            seller_id: string;
-            seller_name: string;
-            products_updated: number;
-            categories_updated: number;
-            message?: string;
-        }>('/admin/products/assign-parlour-house-inventory'),
     
     // Banners
     listBanners: (params?: { page?: number; page_size?: number; is_active?: boolean }) => {

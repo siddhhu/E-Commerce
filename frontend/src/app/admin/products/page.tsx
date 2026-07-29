@@ -25,25 +25,6 @@ export default function AdminProductsPage() {
     const role = (user?.role || '').toString().toLowerCase();
     const isAdmin = role === 'admin' || role === 'super_admin';
 
-    const handleAssignParlourHouse = async () => {
-        if (!confirm('Move all Colors Queen / legacy inventory to the Parlour House seller account?')) return;
-        try {
-            const result = await adminApi.assignParlourHouseInventory();
-            toast({
-                title: 'Inventory updated',
-                description: result.message
-                    || `${result.products_updated} products and ${result.categories_updated} categories assigned to ${result.seller_name}.`,
-            });
-            fetchProducts(filters);
-        } catch (error: any) {
-            toast({
-                title: 'Assignment failed',
-                description: error.message,
-                variant: 'destructive',
-            });
-        }
-    };
-
     const fetchProducts = async (currentFilters: typeof filters) => {
         setIsLoading(true);
         try {
@@ -120,11 +101,6 @@ export default function AdminProductsPage() {
                     <p className="text-slate-500 text-sm mt-1">Manage your catalog, pricing, and inventory.</p>
                 </div>
                 <div className="flex gap-2 flex-wrap">
-                    {isAdmin && (
-                        <Button variant="outline" size="sm" className="gap-1.5 bg-white" onClick={handleAssignParlourHouse}>
-                            Assign to Parlour House
-                        </Button>
-                    )}
                     <Button variant="outline" size="sm" className="gap-1.5 bg-white" onClick={() => setIsUploadModalOpen(true)}>
                         <Upload className="h-3.5 w-3.5" /> Bulk Upload
                     </Button>
