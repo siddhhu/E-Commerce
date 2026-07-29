@@ -5,7 +5,8 @@ import { usePathname, useRouter } from 'next/navigation';
 import { Search, ShoppingCart, Sparkles } from 'lucide-react';
 import { useCartStore } from '@/store/cart-store';
 import { cn } from '@/lib/utils';
-import { SELLER_DISPLAY_NAME } from '@/lib/seller-branding';
+
+const BRAND = 'Pranjay';
 
 const TITLE_BY_PATH: Record<string, string> = {
     '/': 'Home',
@@ -21,7 +22,7 @@ function pageTitle(pathname: string): string {
     if (TITLE_BY_PATH[pathname]) return TITLE_BY_PATH[pathname];
     if (pathname.startsWith('/products/')) return 'Product';
     if (pathname.startsWith('/orders/')) return 'Order';
-    return SELLER_DISPLAY_NAME;
+    return BRAND;
 }
 
 export function NativeAppBar() {
@@ -40,21 +41,21 @@ export function NativeAppBar() {
                 <div className="flex h-14 items-center justify-between gap-3 px-4">
                     <div className="flex min-w-0 items-center gap-2.5">
                         <Link href="/" className="flex shrink-0 items-center gap-2">
-                            <span className="grid h-9 w-9 place-items-center rounded-2xl bg-gradient-to-br from-[#e91e63] via-[#d81b60] to-[#ad1457] text-xs font-black text-white shadow-lg shadow-pink-300/40">
-                                PH
+                            <span className="grid h-9 w-9 place-items-center rounded-2xl bg-gradient-to-br from-[#e91e63] via-[#d81b60] to-[#ad1457] text-sm font-black text-white shadow-lg shadow-pink-300/40">
+                                P
                             </span>
                         </Link>
                         <div className="min-w-0">
                             {!isHome && (
                                 <p className="truncate text-[11px] font-bold uppercase tracking-[0.14em] text-pink-400">
-                                    {SELLER_DISPLAY_NAME}
+                                    {BRAND}
                                 </p>
                             )}
                             <h1 className={cn(
                                 'truncate font-extrabold text-slate-900',
                                 isHome ? 'text-lg tracking-tight' : 'text-base leading-tight'
                             )}>
-                                {isHome ? SELLER_DISPLAY_NAME : title}
+                                {isHome ? BRAND : title}
                             </h1>
                         </div>
                     </div>

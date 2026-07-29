@@ -7,7 +7,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.cache import response_cache
 from app.database import get_session
+from app.models.banner import BannerRead
 from app.models.category import Category, CategoryRead
+from app.models.promo_code import PromoCodeRead
+from app.services.banner_service import BannerService
 from app.services.product_service import ProductService
 from app.services.promo_code_service import PromoCodeService
 from sqlmodel import select
@@ -20,6 +23,7 @@ class HomeBootstrapResponse(BaseModel):
     discounted: list
     categories: list
     promos: list
+    banners: list
 
 
 @router.get("/bootstrap", response_model=HomeBootstrapResponse)
@@ -29,8 +33,8 @@ async def home_bootstrap(
     session: AsyncSession = Depends(get_session),
 ):
     """
-    Single request for homepage: featured, live discounts, categories, active promos.
-    Used by web + native app for fast first paint when SSR data is unavailable.
+    Single request for homepage: featured, discounts, categories, promos, banners.
+    Replaces 5 separate frontend calls on first load.
     """
     cache_key = ("home_bootstrap", featured_limit, discounted_limit)
     cached = response_cache.get(cache_key)
@@ -42,6 +46,7 @@ async def home_bootstrap(
 
     product_service = ProductService(session)
     promo_service = PromoCodeService(session)
+    banner_service = BannerService(session)
 
     featured, _ = await product_service.list_product_summaries(
         limit=featured_limit, is_featured=True, is_active=True
@@ -61,13 +66,14 @@ async def home_bootstrap(
     ]
 
     promos = await promo_service.list_active_public(limit=3)
-    from app.models.promo_code import PromoCodeRead
+    banners = await banner_service.list_banners(is_active=True)
 
     content = HomeBootstrapResponse(
         featured=[i.model_dump(mode="json") for i in featured],
         discounted=[i.model_dump(mode="json") for i in discounted],
         categories=categories,
         promos=[PromoCodeRead.model_validate(p).model_dump(mode="json") for p in promos],
+        banners=[BannerRead.model_validate(b).model_dump(mode="json") for b in banners],
     ).model_dump(mode="json")
 
     response_cache.set(cache_key, content, ttl_seconds=60)

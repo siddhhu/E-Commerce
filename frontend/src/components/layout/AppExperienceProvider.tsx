@@ -52,10 +52,14 @@ export function AppExperienceProvider({ children }: { children: React.ReactNode 
         });
 
         const apiBase = process.env.NEXT_PUBLIC_API_URL?.replace(/\/+$/, '');
-        if (apiBase && (pathname === '/' || pathname.startsWith('/products'))) {
-            fetch(`${apiBase}/api/v1/products/catalog-bootstrap?page=1&page_size=20`, {
-                credentials: 'omit',
-            }).catch(() => undefined);
+        if (apiBase) {
+            const warm = [
+                `${apiBase}/api/v1/home/bootstrap?featured_limit=20&discounted_limit=20`,
+                `${apiBase}/api/v1/products/catalog-bootstrap?page=1&page_size=20`,
+            ];
+            warm.forEach((url) => {
+                fetch(url, { credentials: 'omit' }).catch(() => undefined);
+            });
         }
     }, [pathname]);
 

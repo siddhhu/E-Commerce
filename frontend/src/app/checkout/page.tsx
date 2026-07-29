@@ -369,7 +369,7 @@ export default function CheckoutPage() {
                     key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "rzp_live_SZO4iQslfD86WW",
                     amount: prep.amount_paise,
                     currency: "INR",
-                    name: "PARLOUR HOUSE",
+                    name: "Pranjay Cosmetics",
                     description: `Order of ${items.length} item${items.length !== 1 ? 's' : ''}`,
                     image: "/logo.png",
                     order_id: prep.razorpay_order_id,

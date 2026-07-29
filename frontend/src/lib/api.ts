@@ -1,3 +1,5 @@
+import { cachedGet } from '@/lib/api-cache';
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 const API_VERSION = 'v1';
 
@@ -88,11 +90,13 @@ class ApiClient {
     }
 
     async get<T>(endpoint: string): Promise<T> {
-        const response = await fetch(`${this.baseUrl}${endpoint}`, {
-            method: 'GET',
-            headers: this.getHeaders(),
+        return cachedGet<T>(endpoint, async () => {
+            const response = await fetch(`${this.baseUrl}${endpoint}`, {
+                method: 'GET',
+                headers: this.getHeaders(),
+            });
+            return this.handleResponse<T>(response);
         });
-        return this.handleResponse<T>(response);
     }
 
     async post<T>(endpoint: string, data?: unknown): Promise<T> {
@@ -195,6 +199,7 @@ export const homeApi = {
             discounted: ProductSummary[];
             categories: CategoryRead[];
             promos: PromoCode[];
+            banners: Array<{ id: string; title: string; image_url: string; link_url?: string; is_active: boolean }>;
         }>(`/home/bootstrap${qs ? `?${qs}` : ''}`);
     },
 };
