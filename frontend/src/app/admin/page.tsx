@@ -22,7 +22,9 @@ export default function AdminDashboardPage() {
     const [selectedDate, setSelectedDate] = useState<string>('');
     const { user } = useAuthStore();
     const role = (user?.role || '').toString().toLowerCase();
-    const isSellerOnly = role !== 'admin' && role !== 'super_admin' && user?.seller_status === 'approved' && user?.user_type === 'seller';
+    const isPlatformAdmin = role === 'admin' || role === 'super_admin';
+    const isSellerOnly = !isPlatformAdmin && user?.seller_status === 'approved' && user?.user_type === 'seller';
+    const sellerLabel = user?.business_name || user?.full_name || 'your store';
 
     useEffect(() => {
         const fetchDashboardData = async () => {
@@ -90,29 +92,31 @@ export default function AdminDashboardPage() {
                 </div>
             </div>
 
-            {isSellerOnly && (
-                <Card className="border-primary/20 bg-gradient-to-r from-primary/5 to-pink-50">
-                    <CardContent className="p-5">
-                        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
-                            <div className="min-w-0">
-                                <h2 className="mt-1 text-xl font-extrabold text-slate-900">PARLOUR HOUSE</h2>
-                                <p className="mt-1 text-sm font-semibold text-slate-600">GSTIN: 10ACEFM4547Q1C9</p>
-                                <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">Your seller account is registered under PARLOUR HOUSE. Feel free to reach out for approvals, GST/account updates, payouts, or urgent order issues.</p>
-                            </div>
-                            <div className="grid min-w-0 gap-2 text-sm font-semibold text-slate-700 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
-                                <a href="mailto:support@pranjay.com" className="inline-flex min-w-0 items-center gap-2 rounded-full bg-white px-4 py-2 shadow-sm ring-1 ring-pink-100 hover:text-primary">
-                                    <Mail className="h-4 w-4 shrink-0 text-primary" />
-                                    <span className="min-w-0 break-all">support@pranjay.com</span>
-                                </a>
-                                <a href="tel:+917870053331" className="inline-flex min-w-0 items-center gap-2 rounded-full bg-white px-4 py-2 shadow-sm ring-1 ring-pink-100 hover:text-primary">
-                                    <Phone className="h-4 w-4 shrink-0 text-primary" />
-                                    <span className="min-w-0 whitespace-nowrap">+91 78700 53331</span>
-                                </a>
-                            </div>
+            <Card className="border-primary/20 bg-gradient-to-r from-primary/5 to-pink-50">
+                <CardContent className="p-5">
+                    <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
+                        <div className="min-w-0">
+                            <p className="text-xs font-bold uppercase tracking-[0.18em] text-primary">Platform</p>
+                            <h2 className="mt-1 text-xl font-extrabold text-slate-900">Pranjay</h2>
+                            <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
+                                {isSellerOnly
+                                    ? `You are managing inventory as ${sellerLabel}. For payouts, account updates, or urgent order issues, contact the Pranjay team.`
+                                    : 'Wholesale beauty platform — manage catalog, orders, and sellers from this dashboard.'}
+                            </p>
                         </div>
-                    </CardContent>
-                </Card>
-            )}
+                        <div className="grid min-w-0 gap-2 text-sm font-semibold text-slate-700 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
+                            <a href="mailto:support@pranjay.com" className="inline-flex min-w-0 items-center gap-2 rounded-full bg-white px-4 py-2 shadow-sm ring-1 ring-pink-100 hover:text-primary">
+                                <Mail className="h-4 w-4 shrink-0 text-primary" />
+                                <span className="min-w-0 break-all">support@pranjay.com</span>
+                            </a>
+                            <a href="tel:+917870053331" className="inline-flex min-w-0 items-center gap-2 rounded-full bg-white px-4 py-2 shadow-sm ring-1 ring-pink-100 hover:text-primary">
+                                <Phone className="h-4 w-4 shrink-0 text-primary" />
+                                <span className="min-w-0 whitespace-nowrap">+91 78700 53331</span>
+                            </a>
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
 
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
                 <StatCard 

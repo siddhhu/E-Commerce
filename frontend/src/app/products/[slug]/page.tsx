@@ -512,11 +512,6 @@ export default function ProductDetailPage() {
                                     <span className="font-semibold text-slate-700">Sold by:</span>{' '}
                                     {displaySellerName(product.seller_name)}
                                 </span>
-                                {product.seller_gst_number && (
-                                    <span className="text-slate-400">
-                                        GSTIN: <span className="font-mono font-medium text-slate-600">{product.seller_gst_number}</span>
-                                    </span>
-                                )}
                             </div>
 
                             <div className="grid sm:grid-cols-3 gap-3">

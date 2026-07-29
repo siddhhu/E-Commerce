@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, File, Query, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic import BaseModel
 
-from app.core.dependencies import get_current_admin
+from app.core.dependencies import get_current_admin, get_current_staff_admin
 from app.core.exceptions import ForbiddenException
 from app.database import get_session
 from app.models.product import ProductCreate, ProductRead, ProductUpdate
@@ -86,6 +86,20 @@ async def create_product(
     data.seller_id = None if is_admin else current_user.id
     data.seller_name = "Pranjay" if is_admin else (current_user.business_name or current_user.full_name or "Seller")
     return await product_service.create_product(data)
+
+
+@router.post("/assign-parlour-house-inventory")
+async def assign_parlour_house_inventory(
+    current_user: User = Depends(get_current_staff_admin),
+    session: AsyncSession = Depends(get_session),
+):
+    """
+    Move Colors Queen / legacy catalog rows onto the Parlour House seller account.
+    Super admin only. Safe to run multiple times.
+    """
+    from app.services.inventory_service import assign_legacy_inventory_to_parlour_house
+
+    return await assign_legacy_inventory_to_parlour_house(session)
 
 
 @router.get("/{product_id}", response_model=ProductRead)

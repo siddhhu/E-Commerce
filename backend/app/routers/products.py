@@ -13,8 +13,6 @@ from app.core.cache import response_cache
 from app.core.seller_branding import normalize_seller_name
 from app.database import get_session
 from app.models.product import Product, ProductListRead, ProductRead
-from app.models.user import User
-from app.config import settings
 from app.services.product_service import ProductService
 from sqlmodel import select
 
@@ -64,6 +62,14 @@ def _to_list_read(product: Product) -> ProductListRead:
         seller_name=normalize_seller_name(product.seller_name),
         parent_id=product.parent_id,
     )
+
+
+def _to_public_read(product: Product) -> ProductRead:
+    """Customer-facing product — seller name only, no seller GST on PDP."""
+    product_data = ProductRead.model_validate(product)
+    product_data.seller_name = normalize_seller_name(product_data.seller_name)
+    product_data.seller_gst_number = None
+    return product_data
 
 
 @router.get("", response_model=PaginatedProducts)
@@ -554,18 +560,7 @@ async def get_product_detail_bundle(
         )
         related_items = [r for r in related_raw if r.id != product.id][:4]
 
-    seller_gst_number: Optional[str] = settings.invoice_company_gst
-    if product.seller_id:
-        seller_result = await session.execute(
-            select(User).where(User.id == product.seller_id)
-        )
-        seller = seller_result.scalar_one_or_none()
-        if seller:
-            seller_gst_number = seller.gst_number or seller_gst_number
-
-    product_data = ProductRead.model_validate(product)
-    product_data.seller_name = normalize_seller_name(product_data.seller_name)
-    product_data.seller_gst_number = seller_gst_number
+    product_data = _to_public_read(product)
 
     bundle = ProductDetailBundle(
         product=product_data,
@@ -598,19 +593,7 @@ async def get_product_by_slug(
     product_service = ProductService(session)
     product = await product_service.get_product_by_slug(slug)
 
-    seller_gst_number: Optional[str] = settings.invoice_company_gst
-    if product.seller_id:
-        seller_result = await session.execute(
-            select(User).where(User.id == product.seller_id)
-        )
-        seller = seller_result.scalar_one_or_none()
-        if seller:
-            seller_gst_number = seller.gst_number or seller_gst_number
-
-    product_data = ProductRead.model_validate(product)
-    product_data.seller_name = normalize_seller_name(product_data.seller_name)
-    product_data.seller_gst_number = seller_gst_number
-
+    product_data = _to_public_read(product)
     content = product_data.model_dump(mode="json")
     response_cache.set(cache_key, content, ttl_seconds=120)
 
