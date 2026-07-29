@@ -16,7 +16,10 @@ from app.models.category import Category
 from app.models.product import Product
 from app.models.user import User
 
-PARLOUR_MATCH_TERMS = ("parlour house", "parlour", "parlor house", "parlor")
+PARLOUR_MATCH_TERMS = (
+    "parlour house", "parlour", "parlor house", "parlor",
+    "parlar house", "parlar",  # common typo in DB
+)
 
 
 async def find_parlour_house_user(session: AsyncSession) -> User:
