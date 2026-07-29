@@ -106,9 +106,9 @@ export function primeApiCache(endpoint: string, data: unknown, ttlMs = 60_000): 
 }
 
 export function invalidateApiCache(prefix = ''): void {
-    for (const key of [...memory.keys()]) {
+    memory.forEach((_, key) => {
         if (!prefix || key.startsWith(prefix)) memory.delete(key);
-    }
+    });
     if (typeof window !== 'undefined') {
         for (let i = sessionStorage.length - 1; i >= 0; i--) {
             const k = sessionStorage.key(i);
