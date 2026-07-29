@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import React, { memo, useState } from 'react';
 import Link from 'next/link';
-import { Heart, ShoppingCart } from 'lucide-react';
+import Image from 'next/image';
+import { Heart, ShoppingCart, Clock } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Clock } from 'lucide-react';
 import { Product } from '@/lib/api';
 import { cn, formatPrice, getDiscountPercentage, resolveImageUrl } from '@/lib/utils';
 import { getProductLabels } from '@/lib/product-labels';
@@ -15,7 +15,7 @@ interface ProductCardProps {
     onAddToWishlist?: (productId: string) => void;
 }
 
-export function ProductCard({
+function ProductCardInner({
     product,
     onAddToCart,
     onAddToWishlist,
@@ -48,17 +48,19 @@ export function ProductCard({
     return (
         <Card className="group overflow-hidden hover:shadow-lg transition-all duration-300">
             <div className="relative aspect-square overflow-hidden bg-muted">
-                <Link href={`/products/${product.slug}`}>
-                    <img
+                <Link href={`/products/${product.slug}`} className="block relative h-full w-full">
+                    <Image
                         src={primaryImage}
                         alt={product.name}
-                        className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                        fill
+                        sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                        className="object-cover transition-transform duration-300 group-hover:scale-105"
                         onError={() => setImgError(true)}
                     />
                 </Link>
 
                 {/* Badges */}
-                <div className="absolute top-2 left-2 flex flex-col gap-1">
+                <div className="absolute top-2 left-2 flex flex-col gap-1 z-10">
                     {product.is_discounted_featured && <span className="bg-[#d81b60] text-white text-[10px] uppercase font-extrabold tracking-wide px-2 py-1 rounded-full shadow-sm animate-pulse">Live Discount</span>}
                     {discount > 0 && <span className="bg-primary text-primary-foreground text-xs font-semibold px-2 py-1 rounded-full">{discount}% OFF</span>}
                     {labels.map((label) => (
@@ -69,7 +71,7 @@ export function ProductCard({
                 </div>
 
                 {/* Quick Actions */}
-                <div className="absolute top-2 right-2 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="absolute top-2 right-2 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
                     <Button
                         variant="secondary"
                         size="icon"
@@ -132,3 +134,5 @@ export function ProductCard({
         </Card>
     );
 }
+
+export const ProductCard = memo(ProductCardInner);

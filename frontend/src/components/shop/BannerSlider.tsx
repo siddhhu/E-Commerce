@@ -2,14 +2,17 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { ArrowRight, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { bannerApi, Banner } from '@/lib/api';
+import { resolveImageUrl } from '@/lib/utils';
 
 export function BannerSlider({ initialBanners = null }: { initialBanners?: Banner[] | null }) {
     const [banners, setBanners] = useState<Banner[]>(initialBanners || []);
     const [currentIndex, setCurrentIndex] = useState(0);
     const [isLoading, setIsLoading] = useState(!initialBanners);
+    const [failedImages, setFailedImages] = useState<Record<string, boolean>>({});
 
     useEffect(() => {
         if (initialBanners !== null) return;
@@ -47,16 +50,24 @@ export function BannerSlider({ initialBanners = null }: { initialBanners?: Banne
     }
 
     if (banners.length === 0) {
-        return null; // Don't show anything if no active banners
+        return null;
     }
 
     const nextSlide = () => setCurrentIndex((prev) => (prev + 1) % banners.length);
     const prevSlide = () => setCurrentIndex((prev) => (prev - 1 + banners.length) % banners.length);
+    const nextIndex = (currentIndex + 1) % banners.length;
+    const indicesToRender = new Set([currentIndex, nextIndex]);
 
     return (
         <div className="relative group overflow-hidden rounded-xl md:rounded-2xl aspect-[16/10] md:aspect-[16/7] lg:h-[500px] bg-slate-100">
             {banners.map((banner, index) => {
+                if (!indicesToRender.has(index)) return null;
+
                 const isActive = index === currentIndex;
+                const imageSrc = resolveImageUrl(
+                    failedImages[banner.id] ? '/placeholder.jpg' : banner.image_url
+                );
+
                 return (
                     <div
                         key={banner.id}
@@ -64,10 +75,14 @@ export function BannerSlider({ initialBanners = null }: { initialBanners?: Banne
                             isActive ? 'opacity-100 z-10 pointer-events-auto' : 'opacity-0 z-0 pointer-events-none'
                         }`}
                     >
-                        <img
-                            src={banner.image_url}
+                        <Image
+                            src={imageSrc}
                             alt={banner.title}
-                            className="block h-full w-full object-contain object-center md:object-cover"
+                            fill
+                            priority={index === 0}
+                            sizes="100vw"
+                            className="object-contain object-center md:object-cover"
+                            onError={() => setFailedImages((prev) => ({ ...prev, [banner.id]: true }))}
                         />
                         <div className="absolute inset-x-0 bottom-0 md:inset-0 bg-gradient-to-t md:bg-gradient-to-r from-black/65 via-black/20 to-transparent flex items-end justify-center md:items-center md:justify-start pointer-events-none">
                             <div className="w-full px-5 pb-6 text-center md:container md:px-16 md:pb-0 md:text-left">
@@ -85,7 +100,6 @@ export function BannerSlider({ initialBanners = null }: { initialBanners?: Banne
                                 </div>
                             </div>
                         </div>
-                        {/* Overlay Link for the entire banner area */}
                         {banner.link_url && (
                             <Link 
                                 href={banner.link_url} 
@@ -97,7 +111,6 @@ export function BannerSlider({ initialBanners = null }: { initialBanners?: Banne
                 );
             })}
 
-            {/* Controls */}
             {banners.length > 1 && (
                 <>
                     <button
@@ -113,7 +126,6 @@ export function BannerSlider({ initialBanners = null }: { initialBanners?: Banne
                         <ChevronRight className="h-6 w-6" />
                     </button>
 
-                    {/* Indicators */}
                     <div className="absolute bottom-3 md:bottom-6 left-1/2 -translate-x-1/2 z-20 flex gap-2">
                         {banners.map((_, i) => (
                             <button

@@ -1,4 +1,6 @@
 import Link from 'next/link';
+import Image from 'next/image';
+import { memo, useState } from 'react';
 import { Heart, ShoppingCart, Clock } from 'lucide-react';
 import { Product } from '@/lib/api';
 import { useCartStore } from '@/store/cart-store';
@@ -11,12 +13,13 @@ interface ProductCardProps {
     product: Product;
 }
 
-export function ProductCard({ product }: ProductCardProps) {
+function ProductCardInner({ product }: ProductCardProps) {
     const { addItem } = useCartStore();
     const { toast } = useToast();
+    const [imgError, setImgError] = useState(false);
 
     const handleAddToCart = (e: React.MouseEvent) => {
-        e.preventDefault(); // Prevent navigating to the product page
+        e.preventDefault();
         e.stopPropagation();
         
         addItem(product as any, product.min_order_quantity || 1);
@@ -40,6 +43,7 @@ export function ProductCard({ product }: ProductCardProps) {
         ? Math.round(((product.mrp - product.selling_price) / product.mrp) * 100) 
         : 0;
     const labels = getProductLabels(product).slice(0, 2);
+    const imageSrc = resolveImageUrl(imgError ? '/placeholder.jpg' : product.image_url);
 
     return (
         <Link href={`/products/${product.slug}`} className="block">
@@ -77,28 +81,28 @@ export function ProductCard({ product }: ProductCardProps) {
 
                     {/* Product Image */}
                     <div className="relative w-full h-full">
-                        <img
-                            src={resolveImageUrl(product.image_url)}
+                        <Image
+                            src={imageSrc}
                             alt={product.name}
-                            className="h-full w-full object-contain group-hover:scale-105 transition-transform duration-500"
+                            fill
+                            sizes="(max-width: 640px) 42vw, (max-width: 768px) 240px, 280px"
+                            className="object-contain group-hover:scale-105 transition-transform duration-500"
+                            onError={() => setImgError(true)}
                         />
                     </div>
                 </div>
 
                 {/* Content Container */}
                 <div className="p-3 md:p-4 flex flex-col flex-grow">
-                    {/* Brand Name / Title */}
                     <h3 className="text-xs md:text-sm font-bold text-slate-900 line-clamp-2 uppercase tracking-tight mb-1 min-h-[2rem] md:min-h-0">
                         {product.name}
                     </h3>
                     
-                    {/* Short Description */}
                     <p className="text-[10px] md:text-xs text-slate-500 line-clamp-1 mb-2 md:mb-3 uppercase tracking-wider">
                         {product.short_description || "Premium Quality Product"}
                     </p>
                     
                     <div className="mt-auto">
-                        {/* Pricing */}
                         <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 mb-3 md:mb-4">
                             <span className="text-[#e91e63] font-bold text-base md:text-lg">
                                 {formatCurrency(product.selling_price)}
@@ -110,7 +114,6 @@ export function ProductCard({ product }: ProductCardProps) {
                             )}
                         </div>
                         
-                        
                     {product.is_discounted_featured && (
                         <div className="mt-2 flex items-center gap-1.5 text-xs font-bold text-rose-500 bg-rose-50 px-2 py-1.5 rounded-md">
                             <Clock className="h-3.5 w-3.5" />
@@ -118,7 +121,6 @@ export function ProductCard({ product }: ProductCardProps) {
                         </div>
                     )}
                     
-                    {/* Add to Cart Button */}
                         <Button 
                             onClick={handleAddToCart}
                             className="w-full h-9 md:h-10 bg-[#e91e63] hover:bg-[#c2185b] text-white text-xs md:text-sm font-semibold rounded-lg shadow-sm shadow-pink-200"
@@ -132,3 +134,5 @@ export function ProductCard({ product }: ProductCardProps) {
         </Link>
     );
 }
+
+export const ProductCard = memo(ProductCardInner);

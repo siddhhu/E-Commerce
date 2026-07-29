@@ -81,9 +81,28 @@ async def list_products(
 ):
     """
     List products with filtering and pagination.
-    Runs list + count queries in parallel (saves 1 Supabase round-trip per call).
-    Public endpoint.
+    Cached for 60 seconds (public catalog browsing).
     """
+    cache_key = (
+        "products_list",
+        page,
+        page_size,
+        str(category_id) if category_id else "",
+        str(brand_id) if brand_id else "",
+        search or "",
+        min_price,
+        max_price,
+        min_discount,
+        in_stock,
+        is_featured,
+    )
+    cached = response_cache.get(cache_key)
+    if cached is not None:
+        return JSONResponse(
+            content=cached,
+            headers={"Cache-Control": "public, max-age=60"},
+        )
+
     product_service = ProductService(session)
     skip = (page - 1) * page_size
 
@@ -104,12 +123,19 @@ async def list_products(
 
     pages = (total + page_size - 1) // page_size
 
-    return PaginatedProducts(
+    response = PaginatedProducts(
         items=products,
         total=total,
         page=page,
         page_size=page_size,
         pages=pages,
+    )
+    content = response.model_dump(mode="json")
+    response_cache.set(cache_key, content, ttl_seconds=60)
+
+    return JSONResponse(
+        content=content,
+        headers={"Cache-Control": "public, max-age=60"},
     )
 
 

@@ -24,6 +24,7 @@ class ProductService:
     @staticmethod
     def _clear_public_product_cache() -> None:
         for prefix in (
+            "products_list",
             "products_featured",
             "products_brands_featured",
             "products_brands",

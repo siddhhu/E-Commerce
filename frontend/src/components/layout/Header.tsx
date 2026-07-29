@@ -39,6 +39,18 @@ export function Header() {
     const clearOrders = useOrderStore((state) => state.clearOrders);
     const { loadIndex, search: searchIndex } = useSearchStore();
 
+    const shouldPreloadSearch = useCallback(() => {
+        if (!pathname) return false;
+        if (pathname.startsWith('/checkout')) return false;
+        if (pathname.startsWith('/admin')) return false;
+        if (pathname.startsWith('/seller')) return false;
+        return true;
+    }, [pathname]);
+
+    const ensureSearchIndex = useCallback(() => {
+        loadIndex();
+    }, [loadIndex]);
+
     const navLinks = [
         { href: '/', label: 'Home' },
         { href: '/orders', label: 'My Orders' },
@@ -55,9 +67,19 @@ export function Header() {
             }
         }
         fetchCategories();
-        // Preload search index in background
-        loadIndex();
     }, []);
+
+    useEffect(() => {
+        if (!shouldPreloadSearch()) return;
+
+        const schedule = () => loadIndex();
+        if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+            const id = window.requestIdleCallback(schedule, { timeout: 3000 });
+            return () => window.cancelIdleCallback(id);
+        }
+        const timeoutId = setTimeout(schedule, 1500);
+        return () => clearTimeout(timeoutId);
+    }, [pathname, loadIndex, shouldPreloadSearch]);
 
     // Live search as user types
     useEffect(() => {
@@ -272,7 +294,7 @@ export function Header() {
                                 className="h-12 w-full rounded-full border-pink-100 bg-white pl-11 pr-4 text-[15px] shadow-inner shadow-pink-50 placeholder:text-slate-400 focus-visible:ring-primary/30"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                onFocus={() => { if (searchQuery.trim()) setShowResults(true); }}
+                                onFocus={() => { ensureSearchIndex(); if (searchQuery.trim()) setShowResults(true); }}
                             />
                         </div>
                     </form>
@@ -371,7 +393,7 @@ export function Header() {
                                 className="h-11 w-full rounded-full border-pink-100 pl-11"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                onFocus={() => { if (searchQuery.trim()) setShowResults(true); }}
+                                onFocus={() => { ensureSearchIndex(); if (searchQuery.trim()) setShowResults(true); }}
                                 autoFocus
                             />
                         </div>

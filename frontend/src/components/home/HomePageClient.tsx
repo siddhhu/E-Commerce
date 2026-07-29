@@ -26,14 +26,17 @@ import { CheckCircle2, Phone } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Testimonials } from '@/components/home/Testimonials';
 import { UGCSection } from '@/components/home/UGCSection';
+import { CountdownTimer } from '@/components/home/CountdownTimer';
 import { useRecentlyViewedStore } from '@/store/recently-viewed-store';
 
 export default function HomePageClient({ 
     initialFeaturedProducts = null,
+    initialDiscountedProducts = null,
     initialBanners = null,
     initialCategories = null
 }: { 
     initialFeaturedProducts?: APIProductSummary[] | null,
+    initialDiscountedProducts?: APIProductSummary[] | null,
     initialBanners?: any[] | null,
     initialCategories?: CategoryRead[] | null
 }) {
@@ -44,9 +47,8 @@ export default function HomePageClient({
     const [homeCategories, setHomeCategories] = useState<CategoryRead[]>(
         (initialCategories || []).filter((category) => category.is_active).slice(0, 8)
     );
-    const [discountedProducts, setDiscountedProducts] = useState<APIProductSummary[]>([]);
-    const [discountsLoading, setDiscountsLoading] = useState(true);
-    const [timeLeft, setTimeLeft] = useState({ hours: 4, minutes: 12, seconds: 59 });
+    const [discountedProducts] = useState<APIProductSummary[]>(initialDiscountedProducts ?? []);
+    const discountsLoading = initialDiscountedProducts === null;
 
     const recentlyViewedProducts = useRecentlyViewedStore((state) => state.products);
 
@@ -59,7 +61,7 @@ export default function HomePageClient({
         
         async function fetchFeaturedProducts() {
             try {
-                const products = await apiService.getFeaturedProducts(200);
+                const products = await apiService.getFeaturedProducts(20);
                 setFeaturedProducts(products);
             } catch (err) {
                 console.error('Failed to fetch featured products, using dummy data:', err);
@@ -95,38 +97,6 @@ export default function HomePageClient({
                 .catch(() => {});
         }
     }, [initialCategories]);
-
-    // Fetch admin-curated discounted products
-    useEffect(() => {
-        apiService.getDiscountedFeaturedProducts(20)
-            .then(data => setDiscountedProducts(data))
-            .catch(() => {})
-            .finally(() => setDiscountsLoading(false));
-    }, []);
-
-    // Timer logic
-    useEffect(() => {
-        const timer = setInterval(() => {
-            setTimeLeft(prev => {
-                let { hours, minutes, seconds } = prev;
-                if (hours === 0 && minutes === 0 && seconds === 0) return { hours: 4, minutes: 0, seconds: 0 };
-                
-                if (seconds > 0) {
-                    seconds -= 1;
-                } else {
-                    seconds = 59;
-                    if (minutes > 0) {
-                        minutes -= 1;
-                    } else {
-                        minutes = 59;
-                        hours -= 1;
-                    }
-                }
-                return { hours, minutes, seconds };
-            });
-        }, 1000);
-        return () => clearInterval(timer);
-    }, []);
 
     const handleAddToCart = (product: APIProductSummary) => {
         const storeProduct: StoreProduct = {
@@ -314,7 +284,15 @@ export default function HomePageClient({
                 )}
 
                 {/* Live Discounts — admin-curated products with is_discounted_featured=true */}
-                {!discountsLoading && discountedProducts.length > 0 && (
+                {discountsLoading ? (
+                    <section className="py-10 bg-[#fff7fb] border-y border-rose-100">
+                        <div className="container">
+                            <div className="flex items-center justify-center py-12">
+                                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                            </div>
+                        </div>
+                    </section>
+                ) : discountedProducts.length > 0 && (
                     <section className="py-10 bg-[#fff7fb] border-y border-rose-100 relative">
                         <div className="container relative group/slider">
                             <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6">
@@ -323,10 +301,7 @@ export default function HomePageClient({
                                         <p className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-xs font-bold uppercase tracking-wide text-[#d81b60] shadow-sm">
                                             <Sparkles className="h-3.5 w-3.5" /> Live product discounts
                                         </p>
-                                        <div className="inline-flex items-center gap-2 rounded-full bg-slate-900 px-4 py-1.5 text-sm md:text-base font-bold tracking-wider text-white shadow-md">
-                                            <Clock className="h-4 w-4 md:h-5 md:w-5 text-rose-400" />
-                                            <span>Ends in: {String(timeLeft.hours).padStart(2, '0')}:{String(timeLeft.minutes).padStart(2, '0')}:{String(timeLeft.seconds).padStart(2, '0')}</span>
-                                        </div>
+                                        <CountdownTimer />
                                     </div>
                                     <h2 className="mt-3 text-2xl md:text-4xl font-extrabold text-slate-950">These are today&apos;s show stopper deals</h2>
                                     <p className="mt-2 text-slate-600">Everyday new product will show up here with better and live deal.</p>

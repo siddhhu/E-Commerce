@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Heart, ShoppingCart, Minus, Plus, Truck, Shield, Loader2, Share2, Check, ChevronLeft, BadgePercent, Sparkles } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -19,6 +20,7 @@ import { useWishlistStore } from '@/store/wishlist-store';
 import { useRecentlyViewedStore } from '@/store/recently-viewed-store';
 import { cn, formatPrice, getDiscountPercentage, resolveImageUrl } from '@/lib/utils';
 import { getProductLabels } from '@/lib/product-labels';
+import { Skeleton } from '@/components/ui/skeleton';
 
 // ── Variant type detection ──────────────────────────────────────────────────
 // Priority order: color/shade → size/weight/volume → name fallback
@@ -77,6 +79,7 @@ export default function ProductDetailPage() {
     const [product, setProduct] = useState<APIProduct | null>(null);
     const [variants, setVariants] = useState<any[]>([]);
     const [relatedProducts, setRelatedProducts] = useState<APIProduct[]>([]);
+    const [relatedLoading, setRelatedLoading] = useState(false);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(false);
 
@@ -119,6 +122,7 @@ export default function ProductDetailPage() {
         setQuantity((q) => Math.min(Math.max(q, minQty), maxQty));
         setActiveImage(null);
 
+        setRelatedLoading(true);
         productsApi.list({
             page: 1,
             page_size: 8,
@@ -152,7 +156,8 @@ export default function ProductDetailPage() {
                         }))
                 );
             })
-            .catch(() => setRelatedProducts([]));
+            .catch(() => setRelatedProducts([]))
+            .finally(() => setRelatedLoading(false));
     }, [product]);
 
     // Track recently viewed
@@ -443,10 +448,13 @@ export default function ProductDetailPage() {
                         <div className="space-y-3">
                             {/* Main Image */}
                             <div className="relative aspect-square rounded-2xl md:rounded-3xl overflow-hidden bg-gradient-to-b from-white to-slate-50 border border-slate-100 shadow-sm">
-                                <img
+                                <Image
                                     src={primaryImage}
                                     alt={product.name}
-                                    className="h-full w-full object-contain p-4 md:p-8"
+                                    fill
+                                    priority
+                                    sizes="(max-width: 1024px) 100vw, 50vw"
+                                    className="object-contain p-4 md:p-8"
                                     onError={() => setImgError(true)}
                                 />
                                 <div className="absolute top-3 left-3 flex flex-wrap gap-1.5 max-w-[70%]">
@@ -665,7 +673,7 @@ export default function ProductDetailPage() {
                         </div>
                     </div>
 
-                    {relatedProducts.length > 0 && (
+                    {(relatedLoading || relatedProducts.length > 0) && (
                         <section className="mt-14">
                             <div className="flex items-end justify-between gap-4 mb-5">
                                 <div>
@@ -674,11 +682,23 @@ export default function ProductDetailPage() {
                                 </div>
                                 <Link href="/products" className="text-sm font-bold text-primary hover:underline">View all</Link>
                             </div>
+                            {relatedLoading ? (
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6">
+                                    {Array.from({ length: 4 }).map((_, i) => (
+                                        <div key={i} className="space-y-3">
+                                            <Skeleton className="aspect-square w-full rounded-xl" />
+                                            <Skeleton className="h-4 w-3/4" />
+                                            <Skeleton className="h-4 w-1/2" />
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6">
                                 {relatedProducts.map((related) => (
                                     <ProductCard key={related.id} product={related} />
                                 ))}
                             </div>
+                            )}
                         </section>
                     )}
                 </div>

@@ -3,6 +3,40 @@
 import { create } from 'zustand';
 import { productsApi, SearchIndexItem } from '@/lib/api';
 
+const SEARCH_INDEX_STORAGE_KEY = 'pranjay-search-index';
+const SEARCH_INDEX_TTL_MS = 5 * 60 * 1000;
+
+interface StoredSearchIndex {
+    savedAt: number;
+    items: SearchIndexItem[];
+}
+
+function readStoredIndex(): SearchIndexItem[] | null {
+    if (typeof window === 'undefined') return null;
+    try {
+        const raw = sessionStorage.getItem(SEARCH_INDEX_STORAGE_KEY);
+        if (!raw) return null;
+        const parsed = JSON.parse(raw) as StoredSearchIndex;
+        if (!parsed?.items || Date.now() - parsed.savedAt > SEARCH_INDEX_TTL_MS) {
+            sessionStorage.removeItem(SEARCH_INDEX_STORAGE_KEY);
+            return null;
+        }
+        return parsed.items;
+    } catch {
+        return null;
+    }
+}
+
+function writeStoredIndex(items: SearchIndexItem[]) {
+    if (typeof window === 'undefined') return;
+    try {
+        const payload: StoredSearchIndex = { savedAt: Date.now(), items };
+        sessionStorage.setItem(SEARCH_INDEX_STORAGE_KEY, JSON.stringify(payload));
+    } catch {
+        // Ignore quota errors — network fetch still works.
+    }
+}
+
 interface SearchStore {
     index: SearchIndexItem[];
     isLoaded: boolean;
@@ -20,9 +54,16 @@ export const useSearchStore = create<SearchStore>((set, get) => ({
         const { isLoaded, isLoading } = get();
         if (isLoaded || isLoading) return;
 
+        const cached = readStoredIndex();
+        if (cached) {
+            set({ index: cached, isLoaded: true });
+            return;
+        }
+
         set({ isLoading: true });
         try {
             const items = await productsApi.getSearchIndex();
+            writeStoredIndex(items);
             set({ index: items, isLoaded: true });
         } catch (err) {
             console.error('Failed to load search index:', err);
@@ -35,7 +76,6 @@ export const useSearchStore = create<SearchStore>((set, get) => ({
         const { index } = get();
         if (!query.trim()) return [];
 
-        // Tokenize query into lowercase words
         const tokens = query
             .toLowerCase()
             .split(/\s+/)
@@ -43,7 +83,6 @@ export const useSearchStore = create<SearchStore>((set, get) => ({
 
         if (tokens.length === 0) return [];
 
-        // For each product, check if ALL tokens match somewhere
         const scored = index
             .map((item) => {
                 const haystack = [
@@ -56,7 +95,6 @@ export const useSearchStore = create<SearchStore>((set, get) => ({
                 const allMatch = tokens.every((token) => haystack.includes(token));
                 if (!allMatch) return null;
 
-                // Score: prefer name matches, then exact prefix matches
                 let score = 0;
                 const nameLower = item.name.toLowerCase();
                 for (const token of tokens) {
@@ -68,7 +106,6 @@ export const useSearchStore = create<SearchStore>((set, get) => ({
             })
             .filter(Boolean) as { item: SearchIndexItem; score: number }[];
 
-        // Sort by score descending, limit to 8 results
         scored.sort((a, b) => b.score - a.score);
         return scored.slice(0, 8).map((s) => s.item);
     },

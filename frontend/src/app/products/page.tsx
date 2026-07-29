@@ -17,6 +17,7 @@ import { categoriesApi, productsApi, ProductSummary, Product as APIProduct, Cate
 import { Product as StoreProduct } from '@/lib/dummy-data';
 import { ProductCard } from '@/components/products/ProductCard';
 import { getProductLabels } from '@/lib/product-labels';
+import { Skeleton } from '@/components/ui/skeleton';
 
 function ProductsContent() {
     const searchParams = useSearchParams();
@@ -31,6 +32,7 @@ function ProductsContent() {
     const router = useRouter();
     const [products, setProducts] = useState<ProductSummary[]>([]);
     const [loading, setLoading] = useState(true);
+    const [filterLoading, setFilterLoading] = useState(false);
     const [loadingMore, setLoadingMore] = useState(false);
     const [page, setPage] = useState(1);
     const [total, setTotal] = useState(0);
@@ -65,13 +67,16 @@ function ProductsContent() {
 
     useEffect(() => {
         setPage(1);
-        setProducts([]);
         fetchProducts(1, true);
     }, [selectedCategory, selectedBrand, selectedDiscount, priceBand, inStockOnly, searchQuery]);
 
     async function fetchProducts(pageNum: number, isInitial: boolean = false) {
         if (isInitial) {
-            setLoading(true);
+            if (products.length === 0) {
+                setLoading(true);
+            } else {
+                setFilterLoading(true);
+            }
         } else {
             setLoadingMore(true);
         }
@@ -101,6 +106,7 @@ function ProductsContent() {
             setError('Failed to load products. Please try again later.');
         } finally {
             setLoading(false);
+            setFilterLoading(false);
             setLoadingMore(false);
         }
     }
@@ -362,15 +368,32 @@ function ProductsContent() {
                 <div>
 
             {/* Loading State */}
-            {loading && (
-                <div className="flex items-center justify-center py-20">
-                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                    <span className="ml-2 text-muted-foreground">Loading products...</span>
+            {loading && products.length === 0 && (
+                <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-6">
+                    {Array.from({ length: 8 }).map((_, i) => (
+                        <div key={i} className="space-y-3">
+                            <Skeleton className="aspect-square w-full rounded-xl" />
+                            <Skeleton className="h-4 w-3/4" />
+                            <Skeleton className="h-4 w-1/2" />
+                        </div>
+                    ))}
                 </div>
             )}
 
             {/* Products Grid */}
             {!loading && products.length > 0 && (
+                <div className="relative">
+                    {filterLoading && (
+                        <div className="absolute inset-0 z-10 grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-6 bg-white/70 backdrop-blur-[1px]">
+                            {Array.from({ length: Math.min(products.length, 8) }).map((_, i) => (
+                                <div key={i} className="space-y-3">
+                                    <Skeleton className="aspect-square w-full rounded-xl" />
+                                    <Skeleton className="h-4 w-3/4" />
+                                    <Skeleton className="h-4 w-1/2" />
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 <div className={viewMode === 'grid'
                     ? "grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-6"
                     : "space-y-4"
@@ -473,6 +496,7 @@ function ProductsContent() {
                             />
                         );
                     })}
+                </div>
                 </div>
             )}
 

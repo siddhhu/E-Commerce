@@ -6,11 +6,22 @@ from typing import Optional
 from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 from sqlmodel import select
 
 from app.core.exceptions import BadRequestException, NotFoundException
 from app.models.cart import CartItem, CartItemWithProduct
 from app.models.product import Product
+
+
+def _primary_image_url(product: Product) -> Optional[str]:
+    """Prefer denormalized image_url; fall back to loaded images relation."""
+    if product.image_url:
+        return product.image_url
+    if product.images:
+        primary = next((img for img in product.images if img.is_primary), None)
+        return primary.image_url if primary else product.images[0].image_url
+    return None
 
 
 class CartService:
@@ -32,7 +43,7 @@ class CartService:
         # Batch-fetch ALL products in a single query instead of N individual queries
         product_ids = [item.product_id for item in cart_items]
         product_result = await self.session.execute(
-            select(Product).where(Product.id.in_(product_ids))
+            select(Product).options(selectinload(Product.images)).where(Product.id.in_(product_ids))
         )
         products = {p.id: p for p in product_result.scalars().all()}
 
@@ -42,13 +53,7 @@ class CartService:
             if not product:
                 continue
 
-            # Get primary image
-            primary_image = None
-            if product.images:
-                primary = next((img for img in product.images if img.is_primary), None)
-                primary_image = primary.image_url if primary else (
-                    product.images[0].image_url if product.images else None
-                )
+            primary_image = _primary_image_url(product)
 
             items_with_products.append(CartItemWithProduct(
                 id=item.id,

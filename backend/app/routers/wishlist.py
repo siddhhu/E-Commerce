@@ -5,6 +5,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 from sqlmodel import select
 
 from app.core.dependencies import get_current_active_user
@@ -15,6 +16,15 @@ from app.models.user import User
 from app.models.wishlist import WishlistItem, WishlistItemCreate, WishlistItemRead, WishlistItemWithProduct
 
 router = APIRouter()
+
+
+def _primary_image_url(product: Product) -> str | None:
+    if product.image_url:
+        return product.image_url
+    if product.images:
+        primary = next((img for img in product.images if img.is_primary), None)
+        return primary.image_url if primary else product.images[0].image_url
+    return None
 
 
 @router.get("", response_model=list[WishlistItemWithProduct])
@@ -34,7 +44,7 @@ async def get_wishlist(
     # Batch-fetch all products in ONE query (was N individual queries)
     product_ids = [item.product_id for item in wishlist_items]
     products_result = await session.execute(
-        select(Product).where(Product.id.in_(product_ids))
+        select(Product).options(selectinload(Product.images)).where(Product.id.in_(product_ids))
     )
     products_map = {p.id: p for p in products_result.scalars().all()}
 
@@ -44,12 +54,7 @@ async def get_wishlist(
         if not product:
             continue
 
-        primary_image = None
-        if product.images:
-            primary = next((img for img in product.images if img.is_primary), None)
-            primary_image = primary.image_url if primary else (
-                product.images[0].image_url if product.images else None
-            )
+        primary_image = _primary_image_url(product)
 
         items.append(WishlistItemWithProduct(
             id=item.id,
