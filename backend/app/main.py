@@ -13,7 +13,7 @@ from starlette.middleware.gzip import GZipMiddleware
 
 from app.config import settings
 from app.database import close_db, init_db, run_startup_migrations
-from app.routers import auth, banners, cart, categories, checkout, orders, products, users, wishlist
+from app.routers import auth, banners, cart, categories, checkout, home, orders, products, users, wishlist
 from app.routers import invoices, promo_codes, contact, checkout_prep
 # from app.routers.admin import banners as admin_banners, bulk_upload, dashboard, migrate_images
 from app.routers.admin import banners as admin_banners, bulk_upload, dashboard
@@ -85,6 +85,7 @@ API_PREFIX = f"/api/{settings.api_version}"
 app.include_router(auth.router, prefix=f"{API_PREFIX}/auth", tags=["Authentication"])
 app.include_router(users.router, prefix=f"{API_PREFIX}/users", tags=["Users"])
 app.include_router(products.router, prefix=f"{API_PREFIX}/products", tags=["Products"])
+app.include_router(home.router, prefix=f"{API_PREFIX}/home", tags=["Home"])
 app.include_router(categories.router, prefix=f"{API_PREFIX}/categories", tags=["Categories"])
 app.include_router(cart.router, prefix=f"{API_PREFIX}/cart", tags=["Cart"])
 app.include_router(wishlist.router, prefix=f"{API_PREFIX}/wishlist", tags=["Wishlist"])

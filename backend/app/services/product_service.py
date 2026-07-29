@@ -33,6 +33,7 @@ class ProductService:
             "catalog_bootstrap",
             "product_detail_bundle",
             "product_slug",
+            "home_bootstrap",
             "categories_list",
             "categories_tree",
             "categories_slug",

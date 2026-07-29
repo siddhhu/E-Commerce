@@ -128,3 +128,90 @@
 .animate-sheet-up {
   animation: sheet-up 0.28s cubic-bezier(0.32, 0.72, 0, 1);
 }
+
+/* ── Native app shell (Capacitor) ── */
+.native-app {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.native-shell {
+  background: linear-gradient(180deg, #fff7fb 0%, #ffffff 28%, #fafafa 100%);
+}
+
+.native-main {
+  background: transparent;
+}
+
+.native-app-bar {
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  border-bottom: 1px solid rgba(236, 72, 153, 0.08);
+  box-shadow: 0 8px 24px rgba(236, 72, 153, 0.06);
+}
+
+.native-bottom-nav {
+  background: transparent;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.native-bottom-nav-inner {
+  margin: 0 12px 10px;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(18px) saturate(180%);
+  -webkit-backdrop-filter: blur(18px) saturate(180%);
+  border: 1px solid rgba(236, 72, 153, 0.12);
+  box-shadow:
+    0 10px 40px rgba(15, 23, 42, 0.08),
+    0 2px 8px rgba(236, 72, 153, 0.08);
+}
+
+.native-page-enter {
+  animation: native-page-enter 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes native-page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.native-app .web-only-section {
+  display: none;
+}
+
+/* Launch promo overlay */
+.launch-overlay-enter {
+  animation: launch-fade-in 0.35s ease-out;
+}
+
+.launch-overlay-ready .launch-card-enter {
+  animation: launch-card-up 0.42s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes launch-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes launch-card-up {
+  from {
+    opacity: 0;
+    transform: translateY(24px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(200%); }
+}

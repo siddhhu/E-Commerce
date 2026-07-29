@@ -8,7 +8,7 @@ const serverUrl = process.env.CAPACITOR_SERVER_URL || 'https://pranjay.com';
 
 const config: CapacitorConfig = {
   appId: 'com.pranjay.shop',
-  appName: 'Pranjay',
+  appName: 'PARLOUR HOUSE',
   webDir: 'www',
   server: {
     url: serverUrl,

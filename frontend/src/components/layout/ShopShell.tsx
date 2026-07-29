@@ -3,8 +3,10 @@
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { MobileBottomNav } from '@/components/layout/MobileBottomNav';
+import { NativeAppBar } from '@/components/layout/NativeAppBar';
 import { OpenInAppBanner } from '@/components/layout/OpenInAppBanner';
 import { cn } from '@/lib/utils';
+import { useIsNativeApp } from '@/hooks/use-is-native-app';
 
 interface ShopShellProps {
     children: React.ReactNode;
@@ -23,22 +25,30 @@ export function ShopShell({
     className,
     mainClassName,
 }: ShopShellProps) {
+    const isNative = useIsNativeApp();
+
     return (
-        <div className={cn('min-h-screen flex flex-col', className)}>
+        <div className={cn('min-h-screen flex flex-col', isNative && 'native-shell', className)}>
             <OpenInAppBanner />
-            <Header />
+            {isNative && <NativeAppBar />}
+            <div className={cn(isNative && 'web-site-header hidden')}>
+                <Header />
+            </div>
             <main
                 className={cn(
-                    'flex-1',
+                    'flex-1 native-page-enter',
                     !hideBottomNav && 'pb-bottom-nav',
                     extraBottomPadding && 'pb-24 md:pb-8',
+                    isNative && 'native-main',
                     mainClassName
                 )}
             >
                 {children}
             </main>
-            <Footer />
-            {!hideBottomNav && <MobileBottomNav />}
+            <div className={cn(isNative && 'web-site-footer hidden')}>
+                <Footer />
+            </div>
+            {!hideBottomNav && <MobileBottomNav native={isNative} />}
         </div>
     );
 }

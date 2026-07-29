@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { ShopShell } from '@/components/layout/ShopShell';
 import { apiService, APIProduct as APIProductSummary } from '@/lib/api-service';
-import { categoriesApi, ProductSummary, CategoryRead } from '@/lib/api';
+import { homeApi, categoriesApi, ProductSummary, CategoryRead } from '@/lib/api';
 import { dummyProducts, getFeaturedProducts as getDummyFeatured, categories, Product as StoreProduct } from '@/lib/dummy-data';
 import { useCartStore } from '@/store/cart-store';
 import { useWishlistStore } from '@/store/wishlist-store';
@@ -46,8 +46,8 @@ export default function HomePageClient({
     const [homeCategories, setHomeCategories] = useState<CategoryRead[]>(
         (initialCategories || []).filter((category) => category.is_active).slice(0, 8)
     );
-    const [discountedProducts] = useState<APIProductSummary[]>(initialDiscountedProducts ?? []);
-    const discountsLoading = initialDiscountedProducts === null;
+    const [discountedProducts, setDiscountedProducts] = useState<APIProductSummary[]>(initialDiscountedProducts ?? []);
+    const [discountsLoading, setDiscountsLoading] = useState(initialDiscountedProducts === null);
 
     const recentlyViewedProducts = useRecentlyViewedStore((state) => state.products);
 
@@ -56,46 +56,55 @@ export default function HomePageClient({
     const { toast } = useToast();
 
     useEffect(() => {
-        if (initialFeaturedProducts !== null) return;
-        
-        async function fetchFeaturedProducts() {
-            try {
-                const products = await apiService.getFeaturedProducts(20);
-                setFeaturedProducts(products);
-            } catch (err) {
-                console.error('Failed to fetch featured products, using dummy data:', err);
-                // Fallback to dummy data
-                const dummyFeatured = getDummyFeatured();
-                setFeaturedProducts(dummyFeatured.map(p => ({
-                    id: p.id,
-                    name: p.name,
-                    slug: p.slug,
-                    sku: p.sku,
-                    short_description: p.short_description,
-                    mrp: p.mrp,
-                    selling_price: p.selling_price,
-                    b2b_price: p.b2b_price,
-                    stock_quantity: p.stock_quantity,
-                    is_featured: p.is_featured,
-                    is_discounted_featured: p.is_discounted_featured ?? false,
-                    primary_image: p.images[0]?.image_url || null,
-                })));
-            } finally {
-                setLoading(false);
-            }
+        const needsBootstrap =
+            initialFeaturedProducts === null ||
+            initialCategories === null ||
+            initialDiscountedProducts === null;
+
+        if (!needsBootstrap) {
+            setLoading(false);
+            return;
         }
 
-        fetchFeaturedProducts();
-    }, [initialFeaturedProducts]);
-
-    // Fetch only data that was not pre-rendered by the homepage server component.
-    useEffect(() => {
-        if (initialCategories === null) {
-            categoriesApi.list()
-                .then(data => setHomeCategories(data.filter((category) => category.is_active).slice(0, 8)))
-                .catch(() => {});
-        }
-    }, [initialCategories]);
+        homeApi.bootstrap({ featured_limit: 20, discounted_limit: 20 })
+            .then((data) => {
+                if (initialFeaturedProducts === null) {
+                    setFeaturedProducts(data.featured as APIProductSummary[]);
+                }
+                if (initialCategories === null) {
+                    setHomeCategories(
+                        data.categories.filter((c) => c.is_active).slice(0, 8)
+                    );
+                }
+                if (initialDiscountedProducts === null) {
+                    setDiscountedProducts(data.discounted as APIProductSummary[]);
+                    setDiscountsLoading(false);
+                }
+            })
+            .catch(async () => {
+                try {
+                    const products = await apiService.getFeaturedProducts(20);
+                    setFeaturedProducts(products);
+                } catch {
+                    const dummyFeatured = getDummyFeatured();
+                    setFeaturedProducts(dummyFeatured.map(p => ({
+                        id: p.id,
+                        name: p.name,
+                        slug: p.slug,
+                        sku: p.sku,
+                        short_description: p.short_description,
+                        mrp: p.mrp,
+                        selling_price: p.selling_price,
+                        b2b_price: p.b2b_price,
+                        stock_quantity: p.stock_quantity,
+                        is_featured: p.is_featured,
+                        is_discounted_featured: p.is_discounted_featured ?? false,
+                        primary_image: p.images[0]?.image_url || null,
+                    })));
+                }
+            })
+            .finally(() => setLoading(false));
+    }, [initialFeaturedProducts, initialCategories, initialDiscountedProducts]);
 
     const handleAddToCart = (product: APIProductSummary) => {
         const storeProduct: StoreProduct = {
@@ -436,7 +445,7 @@ export default function HomePageClient({
                 </section>
 
                 {/* The Wholesale Advantage */}
-                <section className="py-16 bg-[#fdfaf3] border-y border-[#f0e6d2]">
+                <section className="web-only-section py-16 bg-[#fdfaf3] border-y border-[#f0e6d2]">
                     <div className="container text-center max-w-5xl">
                         <h3 className="text-sm font-bold tracking-widest uppercase text-slate-500 mb-2">The Wholesale Advantage</h3>
                         <h2 className="text-3xl md:text-4xl font-extrabold text-slate-900 mb-4">
@@ -483,8 +492,10 @@ export default function HomePageClient({
 
 
 
-                <Testimonials />
-                <UGCSection />
+                <div className="web-only-section">
+                    <Testimonials />
+                    <UGCSection />
+                </div>
                 
                 {recentlyViewedProducts.length > 0 && (
                     <TrendingSlider 

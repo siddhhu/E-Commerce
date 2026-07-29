@@ -22,7 +22,7 @@ const NAV_ITEMS: Array<{
 
 const HIDDEN_PREFIXES = ['/checkout', '/login', '/admin', '/seller', '/profile/setup'];
 
-export function MobileBottomNav() {
+export function MobileBottomNav({ native = false }: { native?: boolean }) {
     const pathname = usePathname();
     const cartCount = useCartStore((state) =>
         state.items.reduce((sum, item) => sum + item.quantity, 0)
@@ -34,19 +34,29 @@ export function MobileBottomNav() {
 
     return (
         <nav
-            className="md:hidden fixed bottom-0 inset-x-0 z-50 border-t border-pink-100 bg-white/95 backdrop-blur-xl pb-safe shadow-[0_-8px_30px_rgba(236,72,153,0.08)]"
+            className={cn(
+                'md:hidden fixed bottom-0 inset-x-0 z-50 pb-safe',
+                native
+                    ? 'native-bottom-nav border-t-0'
+                    : 'border-t border-pink-100 bg-white/95 backdrop-blur-xl shadow-[0_-8px_30px_rgba(236,72,153,0.08)]'
+            )}
             aria-label="Main navigation"
         >
-            <div className="grid grid-cols-5 h-16">
+            <div className={cn('grid grid-cols-5', native ? 'native-bottom-nav-inner h-[4.25rem]' : 'h-16')}>
                 {NAV_ITEMS.map(({ href, label, icon: Icon, match, showBadge }) => {
                     const active = match(pathname);
                     return (
                         <Link
                             key={href}
                             href={href}
+                            prefetch
                             className={cn(
-                                'relative flex flex-col items-center justify-center gap-0.5 min-h-[44px] transition-colors',
-                                active ? 'text-[#e91e63]' : 'text-slate-500 hover:text-slate-800'
+                                'relative flex flex-col items-center justify-center gap-0.5 min-h-[44px] transition-all active:scale-95',
+                                active
+                                    ? native
+                                        ? 'text-[#e91e63]'
+                                        : 'text-[#e91e63]'
+                                    : 'text-slate-500'
                             )}
                         >
                             <span className="relative">

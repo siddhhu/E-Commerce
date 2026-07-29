@@ -183,6 +183,22 @@ async function postMultipart<T>(endpoint: string, formData: FormData): Promise<T
     return response.json();
 }
 
+// Home API — single bootstrap for fast homepage load
+export const homeApi = {
+    bootstrap: (params?: { featured_limit?: number; discounted_limit?: number }) => {
+        const searchParams = new URLSearchParams();
+        if (params?.featured_limit) searchParams.set('featured_limit', String(params.featured_limit));
+        if (params?.discounted_limit) searchParams.set('discounted_limit', String(params.discounted_limit));
+        const qs = searchParams.toString();
+        return api.get<{
+            featured: ProductSummary[];
+            discounted: ProductSummary[];
+            categories: CategoryRead[];
+            promos: PromoCode[];
+        }>(`/home/bootstrap${qs ? `?${qs}` : ''}`);
+    },
+};
+
 // Promo Codes API
 export const promoCodesApi = {
     active: () => api.get<PromoCode[]>('/promo-codes/active'),
