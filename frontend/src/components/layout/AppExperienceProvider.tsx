@@ -3,24 +3,12 @@
 import { useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import { LaunchPromoModal } from '@/components/layout/LaunchPromoModal';
+import { NativeAppController } from '@/components/native/NativeAppController';
+import { NetworkStatusBanner } from '@/components/native/NetworkStatusBanner';
 import { useIsNativeApp } from '@/hooks/use-is-native-app';
+import { getCapacitorPlugins } from '@/lib/native/capacitor-bridge';
 
 const PREFETCH_ROUTES = ['/', '/products', '/cart', '/orders', '/profile'];
-
-type CapacitorPlugins = {
-    StatusBar?: {
-        setStyle: (opts: { style: string }) => Promise<void>;
-        setBackgroundColor: (opts: { color: string }) => Promise<void>;
-    };
-    SplashScreen?: {
-        hide: (opts?: { fadeOutDuration?: number }) => Promise<void>;
-    };
-};
-
-function getCapacitorPlugins(): CapacitorPlugins | undefined {
-    if (typeof window === 'undefined') return undefined;
-    return (window as Window & { Capacitor?: { Plugins?: CapacitorPlugins } }).Capacitor?.Plugins;
-}
 
 /**
  * Global app polish: native shell setup, launch promo, route prefetch.
@@ -65,6 +53,8 @@ export function AppExperienceProvider({ children }: { children: React.ReactNode 
 
     return (
         <>
+            <NativeAppController />
+            <NetworkStatusBanner />
             {children}
             <LaunchPromoModal />
         </>

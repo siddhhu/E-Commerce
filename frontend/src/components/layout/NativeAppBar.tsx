@@ -2,11 +2,14 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Search, ShoppingCart, Sparkles } from 'lucide-react';
+import { ChevronLeft, Search, ShoppingCart, Sparkles } from 'lucide-react';
 import { useCartStore } from '@/store/cart-store';
 import { cn } from '@/lib/utils';
+import { hapticLight } from '@/lib/haptics';
 
 const BRAND = 'Pranjay';
+
+const ROOT_TABS = new Set(['/', '/products', '/cart', '/orders', '/profile', '/search', '/wishlist']);
 
 const TITLE_BY_PATH: Record<string, string> = {
     '/': 'Home',
@@ -34,17 +37,38 @@ export function NativeAppBar() {
 
     const title = pageTitle(pathname);
     const isHome = pathname === '/';
+    const showBack = !ROOT_TABS.has(pathname);
+
+    const handleBack = () => {
+        void hapticLight();
+        if (typeof window !== 'undefined' && window.history.length > 1) {
+            router.back();
+        } else {
+            router.push('/products');
+        }
+    };
 
     return (
         <header className="native-app-bar sticky top-0 z-50 md:hidden">
             <div className="native-app-bar-inner pt-safe">
                 <div className="flex h-14 items-center justify-between gap-3 px-4">
                     <div className="flex min-w-0 items-center gap-2.5">
-                        <Link href="/" className="flex shrink-0 items-center gap-2">
-                            <span className="grid h-9 w-9 place-items-center rounded-2xl bg-gradient-to-br from-[#e91e63] via-[#d81b60] to-[#ad1457] text-sm font-black text-white shadow-lg shadow-pink-300/40">
-                                P
-                            </span>
-                        </Link>
+                        {showBack ? (
+                            <button
+                                type="button"
+                                onClick={handleBack}
+                                className="grid h-9 w-9 shrink-0 place-items-center rounded-xl text-slate-700 active:scale-95 active:bg-pink-50 transition-transform"
+                                aria-label="Go back"
+                            >
+                                <ChevronLeft className="h-6 w-6" />
+                            </button>
+                        ) : (
+                            <Link href="/" className="flex shrink-0 items-center gap-2">
+                                <span className="grid h-9 w-9 place-items-center rounded-2xl bg-gradient-to-br from-[#e91e63] via-[#d81b60] to-[#ad1457] text-sm font-black text-white shadow-lg shadow-pink-300/40">
+                                    P
+                                </span>
+                            </Link>
+                        )}
                         <div className="min-w-0">
                             {!isHome && (
                                 <p className="truncate text-[11px] font-bold uppercase tracking-[0.14em] text-pink-400">

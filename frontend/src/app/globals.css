@@ -186,6 +186,17 @@
   display: none;
 }
 
+.native-app.keyboard-open .native-bottom-nav {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(110%);
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.native-app.keyboard-open .pb-bottom-nav {
+  padding-bottom: 0;
+}
+
 /* Launch promo overlay */
 .launch-overlay-enter {
   animation: launch-fade-in 0.35s ease-out;

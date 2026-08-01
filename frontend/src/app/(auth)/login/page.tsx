@@ -15,6 +15,9 @@ import { useToast } from '@/hooks/use-toast';
 import { authApi } from '@/lib/api';
 import { useAuthStore } from '@/store/auth-store';
 import { isNativeApp } from '@/lib/is-native-app';
+import { ShopShell } from '@/components/layout/ShopShell';
+import { useIsNativeApp } from '@/hooks/use-is-native-app';
+import { cn } from '@/lib/utils';
 
 declare global {
     interface Window {
@@ -29,6 +32,7 @@ function LoginForm() {
     const router = useRouter();
     const { toast } = useToast();
     const { setUser, setTokens } = useAuthStore();
+    const isNative = useIsNativeApp();
 
     const searchParams = useSearchParams();
     const redirectUrl = searchParams.get('redirect') || '/';
@@ -237,9 +241,8 @@ function LoginForm() {
         }
     };
 
-    return (
-        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/10 via-background to-pink-100 p-4">
-            <Card className="w-full max-w-md">
+    const card = (
+        <Card className="w-full max-w-md">
                 <CardHeader className="space-y-1 text-center">
                     <Link href="/" className="inline-block mb-4">
                         <span className="text-3xl font-bold bg-gradient-to-r from-primary to-pink-500 bg-clip-text text-transparent">
@@ -335,8 +338,22 @@ function LoginForm() {
                     </div>
                 </CardFooter>
             </Card>
+    );
+
+    const shell = (
+        <div className={cn(
+            'flex min-h-[70vh] items-center justify-center p-4',
+            !isNative && 'min-h-screen bg-gradient-to-br from-primary/10 via-background to-pink-100'
+        )}>
+            {card}
         </div>
     );
+
+    if (isNative) {
+        return <ShopShell hideBottomNav mainClassName="flex items-center justify-center">{shell}</ShopShell>;
+    }
+
+    return shell;
 }
 
 export default function LoginPage() {
