@@ -17,7 +17,8 @@ Vercel → Project → **Settings → Environment Variables** → **Production**
 
 | Variable | Example value | Notes |
 |----------|---------------|-------|
-| `NEXT_PUBLIC_API_URL` | `https://e-commerce-p21z.vercel.app` | Backend **production** URL (no `/api/v1`) |
+| `NEXT_PUBLIC_API_URL` | `https://e-commerce-p21z.vercel.app` | Backend production URL (no `/api/v1`) — used by browser JS |
+| `BACKEND_URL` | `https://e-commerce-p21z.vercel.app` | Optional; server/build fetches prefer this over `NEXT_PUBLIC_API_URL` |
 | `NEXT_PUBLIC_APP_URL` | `https://e-commerce-dun-three-84.vercel.app` | Later: `https://www.pranjay.com` |
 | `NEXT_PUBLIC_RAZORPAY_KEY_ID` | `rzp_live_...` | Same as old project |
 | `NEXT_PUBLIC_FIREBASE_*` | (all 6 vars) | Copy from old frontend project |
@@ -101,6 +102,7 @@ Add:
 | Symptom | Cause |
 |---------|-------|
 | Browser calls `localhost:8000` | `NEXT_PUBLIC_API_URL` missing at **build** time → redeploy frontend |
+| Build fails: `Unexpected token '<'` on `/` | `NEXT_PUBLIC_API_URL` points to the **frontend** URL (returns HTML) — set it to the **backend** URL |
 | `/api/v1/...` 404 on frontend domain | Same — rewrites only enabled when env is set at build |
 | Backend 302 to Vercel login | Deployment Protection on preview URL — use production `.vercel.app` URL |
 | CORS error in browser console | Add frontend origin to backend `CORS_ORIGINS` and redeploy backend |
