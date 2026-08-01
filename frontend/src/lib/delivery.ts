@@ -1,4 +1,4 @@
-export const FREE_DELIVERY_MIN_ORDER_VALUE = 1500;
+export const FREE_DELIVERY_MIN_ORDER_VALUE = 3000;
 export const STANDARD_DELIVERY_FEE = 50;
 
 export function getPayableProductValue(subtotal: number, discount: number = 0): number {

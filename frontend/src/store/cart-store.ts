@@ -6,6 +6,7 @@ import {
     getDeliveryFee as calculateDeliveryFee,
     getFreeDeliveryShortfall as calculateFreeDeliveryShortfall,
 } from '@/lib/delivery';
+import { getBulkDiscount } from '@/lib/pricing';
 
 export interface CartItem {
     id: string;
@@ -35,6 +36,8 @@ interface CartState {
     getItemCount: () => number;
     getSubtotal: () => number;
     getDiscount: () => number;
+    getPromoDiscount: () => number;
+    getBulkDiscountAmount: () => number;
     getDeliveryFee: () => number;
     getFreeDeliveryShortfall: () => number;
     getTax: () => number;
@@ -123,13 +126,19 @@ export const useCartStore = create<CartState>()(
                 );
             },
 
-            getDiscount: () => {
+            getPromoDiscount: () => {
                 const subtotal = get().getSubtotal();
                 const discount = get().promo_discount || 0;
-                if (subtotal <= 0 || discount >= subtotal) {
-                    return 0;
-                }
+                if (subtotal <= 0 || discount >= subtotal) return 0;
                 return Math.max(0, discount);
+            },
+
+            getBulkDiscountAmount: () => {
+                return getBulkDiscount(get().getSubtotal(), get().getPromoDiscount());
+            },
+
+            getDiscount: () => {
+                return get().getPromoDiscount() + get().getBulkDiscountAmount();
             },
 
             getDeliveryFee: () => {

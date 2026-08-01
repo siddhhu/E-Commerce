@@ -25,6 +25,7 @@ from app.services.promo_code_service import PromoCodeService
 from app.models.user import UserType
 from app.core.cache import response_cache
 from app.core.delivery import calculate_delivery_fee
+from app.core.pricing import calculate_bulk_discount, calculate_checkout_amounts
 from app.services.storage_service import storage_service
 
 
@@ -54,8 +55,18 @@ class OrderService:
         active_items = [item for item in order.items if not getattr(item, "is_cancelled", False)]
         subtotal = sum((Decimal(str(item.total_price)) for item in active_items), Decimal("0"))
 
-        discount_amount = min(Decimal(str(order.discount_amount or 0)), subtotal)
-        shipping_amount = calculate_delivery_fee(subtotal, discount_amount) if active_items else Decimal("0")
+        promo_discount = min(Decimal(str(order.discount_amount or 0)), subtotal)
+        if order.promo_code:
+            promo_service = PromoCodeService(self.session)
+            try:
+                promo = await promo_service.validate_for_subtotal(order.promo_code, subtotal)
+                promo_discount = promo_service.compute_valid_discount(promo, subtotal)
+            except Exception:
+                promo_discount = Decimal("0")
+
+        amounts = calculate_checkout_amounts(subtotal, promo_discount)
+        discount_amount = amounts["discount_amount"]
+        shipping_amount = amounts["shipping_amount"] if active_items else Decimal("0")
 
         raw_tax_total = Decimal("0")
         product_ids = [item.product_id for item in active_items if item.product_id]
@@ -87,6 +98,12 @@ class OrderService:
             Decimal("0"),
             order.subtotal - order.discount_amount + order.shipping_amount,
         ).quantize(Decimal("0.01"))
+        bulk_discount = calculate_bulk_discount(subtotal, promo_discount)
+        order.order_metadata = {
+            **(order.order_metadata or {}),
+            "promo_discount": str(promo_discount.quantize(Decimal("0.01"))),
+            "bulk_discount": str(bulk_discount),
+        }
         order.updated_at = datetime.utcnow()
     
     def _generate_order_number(self) -> str:
@@ -235,17 +252,18 @@ class OrderService:
             })
 
         # Apply promo code (discount is applied on GST-inclusive subtotal)
-        discount_amount = Decimal("0")
+        promo_discount = Decimal("0")
         normalized_promo_code: Optional[str] = None
         if promo_code:
             promo_service = PromoCodeService(self.session)
             promo = await promo_service.validate_for_subtotal(promo_code, subtotal)
-            discount_amount = promo_service.compute_valid_discount(promo, subtotal)
+            promo_discount = promo_service.compute_valid_discount(promo, subtotal)
             normalized_promo_code = promo.code
 
-        # Calculate order totals (GST-inclusive pricing model).
-        shipping_amount = calculate_delivery_fee(subtotal, discount_amount)
-        total_amount = max(Decimal("0"), subtotal - discount_amount + shipping_amount)
+        amounts = calculate_checkout_amounts(subtotal, promo_discount)
+        discount_amount = amounts["discount_amount"]
+        shipping_amount = amounts["shipping_amount"]
+        total_amount = amounts["total_amount"]
         
         # Proportionally reduce tax if there's a discount
         if subtotal > 0 and discount_amount > 0:
@@ -283,7 +301,11 @@ class OrderService:
                 shipping_amount=shipping_amount,
                 tax_amount=tax_amount,
                 total_amount=total_amount,
-                placed_at=datetime.utcnow()
+                placed_at=datetime.utcnow(),
+                order_metadata={
+                    "promo_discount": str(promo_discount.quantize(Decimal("0.01"))),
+                    "bulk_discount": str(amounts["bulk_discount"]),
+                },
             )
 
             print(f"Creating order: {order.order_number}, Method: {payment_method}, Total: {total_amount}")

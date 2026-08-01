@@ -3,7 +3,7 @@
 from decimal import Decimal
 
 
-FREE_DELIVERY_MIN_ORDER_VALUE = Decimal("1500")
+FREE_DELIVERY_MIN_ORDER_VALUE = Decimal("3000")
 STANDARD_DELIVERY_FEE = Decimal("50")
 
 

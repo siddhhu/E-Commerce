@@ -22,6 +22,7 @@ import {
     COD_RESTRICTED_MESSAGE,
     isCodAllowedForState,
 } from '@/lib/payment-rules';
+import { ShoppingOffersBar } from '@/components/shop/ShoppingOffersBar';
 
 // Official Indian GST Number regex: 2-digit state + PAN (10 chars) + 1 entity digit + Z + 1 checksum
 const GST_REGEX = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
@@ -44,6 +45,8 @@ export default function CheckoutPage() {
         items,
         getSubtotal,
         getDiscount,
+        getPromoDiscount,
+        getBulkDiscountAmount,
         getDeliveryFee,
         getFreeDeliveryShortfall,
         getTax,
@@ -736,6 +739,11 @@ export default function CheckoutPage() {
                             <Card className="sticky top-24">
                                 <CardHeader><CardTitle>Order Summary</CardTitle></CardHeader>
                                 <CardContent className="space-y-4">
+                                    <ShoppingOffersBar
+                                        subtotal={getSubtotal()}
+                                        promoDiscount={getPromoDiscount()}
+                                        compact
+                                    />
                                     <div className="space-y-3 max-h-56 overflow-auto pr-1">
                                         {items.map((item) => (
                                             <div key={item.id} className="flex gap-3">
@@ -760,6 +768,18 @@ export default function CheckoutPage() {
                                             <span className="text-muted-foreground">Subtotal</span>
                                             <span>{formatPrice(getSubtotal())}</span>
                                         </div>
+                                        {getPromoDiscount() > 0 && (
+                                            <div className="flex justify-between text-green-600">
+                                                <span className="text-muted-foreground">Promo discount</span>
+                                                <span>-{formatPrice(getPromoDiscount())}</span>
+                                            </div>
+                                        )}
+                                        {getBulkDiscountAmount() > 0 && (
+                                            <div className="flex justify-between text-green-600">
+                                                <span className="text-muted-foreground">Extra 1% off (₹10K+)</span>
+                                                <span>-{formatPrice(getBulkDiscountAmount())}</span>
+                                            </div>
+                                        )}
                                         <div className="flex justify-between">
                                             <span className="text-muted-foreground">Delivery Fee</span>
                                             {getDeliveryFee() === 0 ? (
@@ -798,7 +818,7 @@ export default function CheckoutPage() {
                                         </div>
                                         <div className="flex items-center gap-2">
                                             <Truck className="h-4 w-4 text-primary" />
-                                            <span>Free delivery above ₹1,500 and fast dispatch</span>
+                                            <span>Free delivery above ₹3,000 · Extra 1% off on ₹10,000+</span>
                                         </div>
                                     </div>
 

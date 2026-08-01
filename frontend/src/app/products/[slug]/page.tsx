@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Heart, ShoppingCart, Minus, Plus, Truck, Shield, Loader2, Share2, Check, ChevronLeft, BadgePercent, Sparkles } from 'lucide-react';
+import { shareContent } from '@/lib/native/share';
 
 import { Button } from '@/components/ui/button';
 import { ShopShell } from '@/components/layout/ShopShell';
@@ -252,14 +253,14 @@ export default function ProductDetailPage() {
 
     const handleShare = async () => {
         if (!product) return;
-        try {
-            if (navigator.share) {
-                await navigator.share({ title: product.name, text: product.short_description || `Check out ${product.name}`, url: window.location.href });
-            } else {
-                await navigator.clipboard.writeText(window.location.href);
-                toast({ title: 'Link Copied', description: 'Product link copied to clipboard' });
-            }
-        } catch { /* user cancelled */ }
+        const result = await shareContent({
+            title: product.name,
+            text: product.short_description || `Check out ${product.name}`,
+            url: window.location.href,
+        });
+        if (result === 'copied') {
+            toast({ title: 'Link Copied', description: 'Product link copied to clipboard' });
+        }
     };
 
     // ── Variant UI logic ──────────────────────────────────────────────────────
@@ -613,7 +614,11 @@ export default function ProductDetailPage() {
                             <div className="flex flex-wrap items-center gap-x-6 gap-y-2 py-2 border-t border-slate-100">
                                 <div className="flex items-center gap-2 text-sm font-medium text-slate-700">
                                     <Truck className="h-4 w-4 text-primary" />
-                                    <span>Free delivery above ₹1,500</span>
+                                    <span>Free delivery above ₹3,000</span>
+                                </div>
+                                <div className="flex items-center gap-2 text-sm font-medium text-slate-700">
+                                    <Sparkles className="h-4 w-4 text-primary" />
+                                    <span>Extra 1% off on ₹10,000+</span>
                                 </div>
                                 <div className="flex items-center gap-2 text-sm font-medium text-slate-700">
                                     <Shield className="h-4 w-4 text-primary" />

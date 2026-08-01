@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ArrowRight, Sparkles, Truck, Shield, Clock, Heart, ShoppingCart, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
@@ -20,6 +20,7 @@ import { BannerSlider } from '@/components/shop/BannerSlider';
 import { ProductCard } from '@/components/products/ProductCard';
 import { Product as APIProduct } from '@/lib/api';
 import { PromoBanner } from '@/components/layout/PromoBanner';
+import { ShoppingOffersBar } from '@/components/shop/ShoppingOffersBar';
 import { TrendingSlider } from '@/components/shop/TrendingSlider';
 import { CheckCircle2, Phone } from 'lucide-react';
 import { Input } from '@/components/ui/input';
@@ -27,6 +28,8 @@ import { Testimonials } from '@/components/home/Testimonials';
 import { UGCSection } from '@/components/home/UGCSection';
 import { CountdownTimer } from '@/components/home/CountdownTimer';
 import { useRecentlyViewedStore } from '@/store/recently-viewed-store';
+import { PullToRefresh } from '@/components/native/PullToRefresh';
+import { invalidateApiCache } from '@/lib/api-cache';
 
 export default function HomePageClient({ 
     initialFeaturedProducts = null,
@@ -193,17 +196,17 @@ export default function HomePageClient({
         {
             icon: Truck,
             title: 'Free Delivery',
-            description: 'On orders ₹1,500+',
+            description: 'On orders ₹3,000+',
+        },
+        {
+            icon: Sparkles,
+            title: 'Extra 1% Off',
+            description: 'On shopping ₹10,000+',
         },
         {
             icon: Shield,
             title: '100% Genuine',
             description: 'Authentic products only',
-        },
-        {
-            icon: Sparkles,
-            title: 'Wholesale Pricing',
-            description: 'Exclusive dealer rates',
         },
     ];
 
@@ -242,9 +245,24 @@ export default function HomePageClient({
         updated_at: ''
     } as APIProduct);
 
+    const refreshHome = useCallback(async () => {
+        invalidateApiCache('/api/v1/home');
+        const data = await homeApi.bootstrap({ featured_limit: 20, discounted_limit: 20 });
+        setFeaturedProducts(data.featured as APIProductSummary[]);
+        setHomeCategories(data.categories.filter((c) => c.is_active).slice(0, 8));
+        setDiscountedProducts(data.discounted as APIProductSummary[]);
+        setLoading(false);
+        setDiscountsLoading(false);
+    }, []);
+
     return (
         <ShopShell>
+            <PullToRefresh onRefresh={refreshHome}>
             <PromoBanner />
+
+            <div className="container py-3">
+                <ShoppingOffersBar />
+            </div>
 
             <div className="flex-1">
                 <div className="container py-4">
@@ -539,6 +557,7 @@ export default function HomePageClient({
                     </div>
                 </section>
             </div>
+            </PullToRefresh>
         </ShopShell>
     );
 }

@@ -11,6 +11,7 @@ import { ShopShell } from '@/components/layout/ShopShell';
 import { useCartStore } from '@/store/cart-store';
 import { formatPrice, resolveImageUrl } from '@/lib/utils';
 import { promoCodesApi } from '@/lib/api';
+import { ShoppingOffersBar } from '@/components/shop/ShoppingOffersBar';
 import { useAuthStore } from '@/store/auth-store';
 
 export default function CartPage() {
@@ -21,6 +22,8 @@ export default function CartPage() {
         updateQuantity,
         getSubtotal,
         getDiscount,
+        getPromoDiscount,
+        getBulkDiscountAmount,
         getDeliveryFee,
         getFreeDeliveryShortfall,
         getTax,
@@ -168,6 +171,11 @@ export default function CartPage() {
                                     <CardTitle>Order Summary</CardTitle>
                                 </CardHeader>
                                 <CardContent className="space-y-4">
+                                    <ShoppingOffersBar
+                                        subtotal={getSubtotal()}
+                                        promoDiscount={getPromoDiscount()}
+                                        compact
+                                    />
                                     {/* Promo Code */}
                                     <div className="border rounded-lg p-3 bg-white">
                                         <div className="font-semibold mb-2">Promo Code</div>
@@ -224,10 +232,16 @@ export default function CartPage() {
                                         <span className="text-muted-foreground">Subtotal ({items.length} items)</span>
                                         <span>{formatPrice(getSubtotal())}</span>
                                     </div>
-                                    {getDiscount() > 0 && (
+                                    {getPromoDiscount() > 0 && (
                                         <div className="flex justify-between text-green-600">
-                                            <span className="text-muted-foreground">Discount</span>
-                                            <span>-{formatPrice(getDiscount())}</span>
+                                            <span className="text-muted-foreground">Promo discount</span>
+                                            <span>-{formatPrice(getPromoDiscount())}</span>
+                                        </div>
+                                    )}
+                                    {getBulkDiscountAmount() > 0 && (
+                                        <div className="flex justify-between text-green-600">
+                                            <span className="text-muted-foreground">Extra 1% off (₹10K+)</span>
+                                            <span>-{formatPrice(getBulkDiscountAmount())}</span>
                                         </div>
                                     )}
                                     <div className="flex justify-between">

@@ -18,6 +18,9 @@ import { ProductCard } from '@/components/products/ProductCard';
 import { getProductLabels } from '@/lib/product-labels';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ProductFiltersPanel } from '@/components/products/ProductFiltersPanel';
+import { ShoppingOffersBar } from '@/components/shop/ShoppingOffersBar';
+import { PullToRefresh } from '@/components/native/PullToRefresh';
+import { invalidateApiCache } from '@/lib/api-cache';
 
 function ProductsContent() {
     const searchParams = useSearchParams();
@@ -114,6 +117,12 @@ function ProductsContent() {
         const nextPage = page + 1;
         setPage(nextPage);
         loadCatalog(nextPage);
+    };
+
+    const refreshProducts = async () => {
+        invalidateApiCache('/api/v1/products');
+        setPage(1);
+        await loadCatalog(1, true);
     };
 
     const updateQuery = (key: string, value: string) => {
@@ -248,6 +257,7 @@ function ProductsContent() {
     };
 
     return (
+        <PullToRefresh onRefresh={refreshProducts}>
         <div className="container">
             <div className="mb-8 rounded-3xl bg-gradient-to-br from-[#321527] via-[#5b1b40] to-[#e91e63] p-6 md:p-9 text-white overflow-hidden relative">
                 <div className="absolute -right-16 -top-16 h-44 w-44 rounded-full bg-white/15 blur-2xl" />
@@ -262,6 +272,10 @@ function ProductsContent() {
                         Filter by brand, category, discount, price and stock to find the right product faster.
                     </p>
                 </div>
+            </div>
+
+            <div className="mb-6">
+                <ShoppingOffersBar />
             </div>
 
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-5">
@@ -493,6 +507,7 @@ function ProductsContent() {
                 </div>
             </div>
         </div>
+        </PullToRefresh>
     );
 }
 
