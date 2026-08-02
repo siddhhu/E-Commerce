@@ -2,6 +2,7 @@
 
 import { Instagram } from 'lucide-react';
 import Link from 'next/link';
+import { INSTAGRAM_HANDLE, INSTAGRAM_URL } from '@/lib/social';
 
 const UGC_IMAGES = [
     { id: 1, src: 'https://images.unsplash.com/photo-1586495777744-4413f21062fa?w=500&auto=format&fit=crop&q=60', alt: 'Makeup flatlay' },
@@ -21,8 +22,21 @@ export function UGCSection() {
                     </div>
                     <h2 className="text-2xl md:text-4xl font-extrabold text-slate-900 tracking-tight">Shop the Look</h2>
                     <p className="mt-3 text-slate-600 max-w-2xl mx-auto">
-                        Tag us <span className="font-bold text-slate-900">@pranjaybeauty</span> on Instagram to be featured on our homepage. See how our community styles their favorite picks!
+                        Follow{' '}
+                        <a href={INSTAGRAM_URL} target="_blank" rel="noopener noreferrer" className="font-bold text-[#e91e63] hover:underline">
+                            {INSTAGRAM_HANDLE}
+                        </a>{' '}
+                        on Instagram for beauty inspo, live deals, and exclusive follower discounts.
                     </p>
+                    <a
+                        href={INSTAGRAM_URL}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-4 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[#e91e63] to-[#d81b60] px-5 py-2.5 text-sm font-bold text-white shadow-md hover:opacity-95 transition-opacity"
+                    >
+                        <Instagram className="h-4 w-4" />
+                        Follow on Instagram
+                    </a>
                 </div>
 
                 <div className="grid grid-cols-2 md:grid-cols-5 gap-3 md:gap-4">

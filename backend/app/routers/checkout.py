@@ -22,7 +22,7 @@ from sqlmodel import select
 
 from app.core.dependencies import get_current_active_user
 from app.core.pricing import calculate_checkout_amounts
-from app.core.payment_rules import COD_RESTRICTED_MESSAGE, is_cod_allowed_for_state
+from app.core.payment_rules import COD_RESTRICTED_MESSAGE, is_cod_allowed
 from app.database import get_session
 from app.models.order import OrderRead, build_order_read
 from app.models.user import User
@@ -216,7 +216,7 @@ async def complete_checkout(
     if not data.cart_items:
         raise BadRequestException("Cart is empty")
 
-    if data.payment_method == "cod" and not is_cod_allowed_for_state(data.state):
+    if data.payment_method == "cod" and not is_cod_allowed(data.postal_code, data.state):
         raise BadRequestException(COD_RESTRICTED_MESSAGE)
 
     # ── ONLINE: verify Razorpay signature BEFORE touching the DB ─────────────
@@ -367,7 +367,7 @@ async def checkout(
     if not shipping_address:
         raise NotFoundException("Shipping address not found")
 
-    if data.payment_method == "cod" and not is_cod_allowed_for_state(shipping_address.state):
+    if data.payment_method == "cod" and not is_cod_allowed(shipping_address.postal_code, shipping_address.state):
         raise BadRequestException(COD_RESTRICTED_MESSAGE)
 
     order_service = OrderService(session)

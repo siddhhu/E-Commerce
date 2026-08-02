@@ -20,7 +20,7 @@ import { cartApi, usersApi, ordersApi, authApi } from '@/lib/api';
 import { formatPrice, cn, resolveImageUrl } from '@/lib/utils';
 import {
     COD_RESTRICTED_MESSAGE,
-    isCodAllowedForState,
+    isCodAllowedForPostalCode,
 } from '@/lib/payment-rules';
 import { ShoppingOffersBar } from '@/components/shop/ShoppingOffersBar';
 
@@ -57,7 +57,7 @@ export default function CheckoutPage() {
     const { addOrder } = useOrderStore();
     const { isAuthenticated, isLoading: isAuthLoading, _hasHydrated, user, setUser } = useAuthStore();
 
-    const [paymentMethod, setPaymentMethod] = useState<'cod' | 'online'>('cod');
+    const [paymentMethod, setPaymentMethod] = useState<'cod' | 'online'>('online');
     const [isProcessing, setIsProcessing] = useState(false);
     const [orderPlaced, setOrderPlaced] = useState<Order | null>(null);
     const [isRazorpayReady, setIsRazorpayReady] = useState(false);
@@ -142,8 +142,8 @@ export default function CheckoutPage() {
         setAddress({ ...address, [e.target.name]: e.target.value });
     };
 
-    const codRestricted = Boolean(address.state) && !isCodAllowedForState(address.state);
-    const codAllowed = !codRestricted;
+    const codAllowed = isCodAllowedForPostalCode(address.postal_code);
+    const codRestricted = address.postal_code.trim().length >= 6 && !codAllowed;
 
     useEffect(() => {
         if (codRestricted && paymentMethod === 'cod') {
@@ -316,7 +316,7 @@ export default function CheckoutPage() {
             return;
         }
 
-        if (paymentMethod === 'cod' && !isCodAllowedForState(address.state)) {
+        if (paymentMethod === 'cod' && !isCodAllowedForPostalCode(address.postal_code)) {
             toast({
                 title: 'COD not available',
                 description: COD_RESTRICTED_MESSAGE,

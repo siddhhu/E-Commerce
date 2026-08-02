@@ -19,6 +19,8 @@ export default function AdminProductsPage() {
     const [filters, setFilters] = useState({ page: 1, page_size: 10, search: '' });
     const [isInitialized, setIsInitialized] = useState(false);
     const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+    const [isBulkDeleting, setIsBulkDeleting] = useState(false);
     const { toast } = useToast();
     const { user } = useAuthStore();
     
@@ -30,6 +32,7 @@ export default function AdminProductsPage() {
         try {
             const data = await adminApi.listProducts(currentFilters);
             setProductsData(data);
+            setSelectedIds(new Set());
         } catch (error: any) {
              toast({
                 title: "Error fetching products",
@@ -42,14 +45,14 @@ export default function AdminProductsPage() {
     };
 
     const handleDeleteProduct = async (id: string, name: string) => {
-        if (!confirm(`Are you sure you want to delete "${name}"?`)) {
+        if (!confirm(`Are you sure you want to delete "${name}"? This removes the product and any linked variants from the store.`)) {
             return;
         }
         try {
             await adminApi.deleteProduct(id);
             toast({
                 title: "Product deleted",
-                description: `"${name}" has been deleted successfully.`,
+                description: `"${name}" has been removed from the catalog.`,
             });
             fetchProducts(filters);
         } catch (error: any) {
@@ -59,6 +62,51 @@ export default function AdminProductsPage() {
                 variant: "destructive"
             });
         }
+    };
+
+    const handleBulkDelete = async () => {
+        const ids = Array.from(selectedIds);
+        if (ids.length === 0) return;
+        if (!confirm(`Delete ${ids.length} selected product(s)? Linked variants will also be removed.`)) {
+            return;
+        }
+        setIsBulkDeleting(true);
+        try {
+            const result = await adminApi.bulkDeleteProducts(ids);
+            toast({
+                title: 'Products deleted',
+                description: `${result.deleted_count} product record(s) removed from the catalog.`,
+            });
+            fetchProducts(filters);
+        } catch (error: any) {
+            toast({
+                title: 'Bulk delete failed',
+                description: error.message,
+                variant: 'destructive',
+            });
+        } finally {
+            setIsBulkDeleting(false);
+        }
+    };
+
+    const toggleSelectAll = () => {
+        if (!productsData?.items.length) return;
+        const pageIds = productsData.items.map((p) => p.id);
+        const allSelected = pageIds.every((id) => selectedIds.has(id));
+        if (allSelected) {
+            setSelectedIds(new Set());
+        } else {
+            setSelectedIds(new Set(pageIds));
+        }
+    };
+
+    const toggleSelect = (id: string) => {
+        setSelectedIds((prev) => {
+            const next = new Set(prev);
+            if (next.has(id)) next.delete(id);
+            else next.add(id);
+            return next;
+        });
     };
 
     // Restore state from sessionStorage on mount
@@ -93,6 +141,10 @@ export default function AdminProductsPage() {
         return `${baseUrl}${url}`;
     };
 
+    const pageIds = productsData?.items.map((p) => p.id) ?? [];
+    const allPageSelected = pageIds.length > 0 && pageIds.every((id) => selectedIds.has(id));
+    const someSelected = selectedIds.size > 0;
+
     return (
         <div className="space-y-4 md:space-y-6">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
@@ -101,6 +153,18 @@ export default function AdminProductsPage() {
                     <p className="text-slate-500 text-sm mt-1">Manage your catalog, pricing, and inventory.</p>
                 </div>
                 <div className="flex gap-2 flex-wrap">
+                    {someSelected && (
+                        <Button
+                            variant="destructive"
+                            size="sm"
+                            className="gap-1.5"
+                            disabled={isBulkDeleting}
+                            onClick={handleBulkDelete}
+                        >
+                            <Trash2 className="h-3.5 w-3.5" />
+                            Delete selected ({selectedIds.size})
+                        </Button>
+                    )}
                     <Button variant="outline" size="sm" className="gap-1.5 bg-white" onClick={() => setIsUploadModalOpen(true)}>
                         <Upload className="h-3.5 w-3.5" /> Bulk Upload
                     </Button>
@@ -136,6 +200,15 @@ export default function AdminProductsPage() {
                                 <table className="w-full text-sm text-left">
                                     <thead className="text-xs text-slate-500 uppercase bg-slate-50 border-b">
                                         <tr>
+                                            <th className="px-4 py-4 w-10">
+                                                <input
+                                                    type="checkbox"
+                                                    aria-label="Select all on this page"
+                                                    checked={allPageSelected}
+                                                    onChange={toggleSelectAll}
+                                                    className="h-4 w-4 rounded border-slate-300"
+                                                />
+                                            </th>
                                             <th className="px-6 py-4">Product</th>
                                             <th className="px-6 py-4">HSN Code</th>
                                             <th className="px-6 py-4">Price</th>
@@ -146,7 +219,16 @@ export default function AdminProductsPage() {
                                     </thead>
                                     <tbody>
                                         {productsData.items.map((product) => (
-                                            <tr key={product.id} className="bg-white border-b hover:bg-slate-50">
+                                            <tr key={product.id} className={`bg-white border-b hover:bg-slate-50 ${selectedIds.has(product.id) ? 'bg-pink-50/40' : ''}`}>
+                                                <td className="px-4 py-4">
+                                                    <input
+                                                        type="checkbox"
+                                                        aria-label={`Select ${product.name}`}
+                                                        checked={selectedIds.has(product.id)}
+                                                        onChange={() => toggleSelect(product.id)}
+                                                        className="h-4 w-4 rounded border-slate-300"
+                                                    />
+                                                </td>
                                                 <td className="px-6 py-4 flex items-center gap-4">
                                                     <div className="h-12 w-12 flex-shrink-0 bg-slate-100 rounded-md overflow-hidden relative border flex items-center justify-center">
                                                         {product.primary_image ? (
@@ -218,8 +300,25 @@ export default function AdminProductsPage() {
 
                             {/* ── Mobile Card List ────────────────────────── */}
                             <div className="md:hidden divide-y divide-slate-100">
+                                <div className="flex items-center gap-3 px-4 py-3 bg-slate-50 border-b">
+                                    <input
+                                        type="checkbox"
+                                        aria-label="Select all on this page"
+                                        checked={allPageSelected}
+                                        onChange={toggleSelectAll}
+                                        className="h-4 w-4 rounded border-slate-300"
+                                    />
+                                    <span className="text-sm font-medium text-slate-600">Select all on page</span>
+                                </div>
                                 {productsData.items.map((product) => (
-                                    <div key={product.id} className="p-4 flex gap-3">
+                                    <div key={product.id} className={`p-4 flex gap-3 ${selectedIds.has(product.id) ? 'bg-pink-50/40' : ''}`}>
+                                        <input
+                                            type="checkbox"
+                                            aria-label={`Select ${product.name}`}
+                                            checked={selectedIds.has(product.id)}
+                                            onChange={() => toggleSelect(product.id)}
+                                            className="mt-1 h-4 w-4 shrink-0 rounded border-slate-300"
+                                        />
                                         <div className="h-16 w-16 flex-shrink-0 bg-slate-100 rounded-lg overflow-hidden relative border flex items-center justify-center">
                                             {product.primary_image ? (
                                                 <Image
@@ -280,11 +379,7 @@ export default function AdminProductsPage() {
                 {productsData && productsData.total > productsData.page_size && (
                     <div className="flex items-center justify-between px-4 md:px-6 py-4 border-t flex-wrap gap-3">
                         <div className="text-sm text-slate-500">
-                            <span className="font-medium">{((filters.page - 1) * filters.page_size) + 1}</span>
-                            {' – '}
-                            <span className="font-medium">{Math.min(filters.page * filters.page_size, productsData.total)}</span>
-                            {' of '}
-                            <span className="font-medium">{productsData.total}</span>
+                            Page {filters.page}
                         </div>
                         <div className="flex gap-2">
                             <Button

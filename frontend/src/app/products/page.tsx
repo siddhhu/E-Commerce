@@ -282,7 +282,7 @@ function ProductsContent() {
                 <div>
                     <h2 className="text-2xl font-bold">All Products</h2>
                     <p className="text-muted-foreground mt-1">
-                        {loading ? 'Loading...' : `${total} products found`}
+                        {loading ? 'Loading products...' : 'Browse our catalog'}
                     </p>
                 </div>
                 <div className="flex items-center gap-2 w-full sm:w-auto">
@@ -323,7 +323,7 @@ function ProductsContent() {
                         <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-slate-200" />
                         <ProductFiltersPanel {...filterProps} />
                         <Button className="w-full mt-6 min-h-[48px]" onClick={() => setFilterSheetOpen(false)}>
-                            Show {total} products
+                            Apply filters
                         </Button>
                     </div>
                 </div>

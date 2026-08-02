@@ -27,6 +27,10 @@ class PaginatedProductsAdmin(BaseModel):
     page_size: int
 
 
+class BulkDeleteProductsRequest(BaseModel):
+    product_ids: list[UUID]
+
+
 @router.get("", response_model=PaginatedProductsAdmin)
 async def list_products_admin(
     page: int = Query(1, ge=1),
@@ -150,6 +154,28 @@ async def delete_product(
         raise ForbiddenException("Not authorized to delete this product")
         
     await product_service.delete_product(product_id)
+
+
+@router.post("/bulk-delete")
+async def bulk_delete_products(
+    data: BulkDeleteProductsRequest,
+    current_user: User = Depends(get_current_admin),
+    session: AsyncSession = Depends(get_session),
+):
+    """Soft delete multiple products (and their variant groups)."""
+    from app.models.user import UserRole
+
+    product_service = ProductService(session)
+    is_admin = current_user.role in [UserRole.ADMIN, UserRole.SUPER_ADMIN]
+
+    if not is_admin:
+        for product_id in data.product_ids:
+            product = await product_service.get_product_by_id(product_id)
+            if product.seller_id != current_user.id:
+                raise ForbiddenException("Not authorized to delete one or more products")
+
+    deleted_count = await product_service.bulk_delete_products(data.product_ids)
+    return {"deleted_count": deleted_count}
 
 
 @router.post("/{product_id}/images", status_code=201)

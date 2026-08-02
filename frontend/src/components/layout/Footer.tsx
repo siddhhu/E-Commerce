@@ -1,5 +1,6 @@
 import Link from 'next/link';
-import { Clock, Mail, Phone, ShieldCheck, Sparkles, Truck } from 'lucide-react';
+import { Clock, Instagram, Mail, Phone, ShieldCheck, Sparkles, Truck } from 'lucide-react';
+import { INSTAGRAM_HANDLE, INSTAGRAM_URL } from '@/lib/social';
 
 export function Footer() {
     const quickLinks = [
@@ -90,6 +91,12 @@ export function Footer() {
                     <div className="space-y-4">
                         <h3 className="text-sm font-black uppercase tracking-[0.18em] text-slate-950">Contact</h3>
                         <ul className="space-y-3 text-sm font-medium text-slate-600">
+                            <li className="flex items-center gap-2">
+                                <Instagram className="h-4 w-4 text-primary" />
+                                <a href={INSTAGRAM_URL} target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">
+                                    {INSTAGRAM_HANDLE}
+                                </a>
+                            </li>
                             <li className="flex items-center gap-2">
                                 <Mail className="h-4 w-4 text-primary" />
                                 support@pranjay.com

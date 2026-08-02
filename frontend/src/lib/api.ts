@@ -567,6 +567,8 @@ export const adminApi = {
     createProduct: (data: Partial<Product>) => api.post<Product>('/admin/products', data),
     updateProduct: (id: string, data: Partial<Product>) => api.patch<Product>(`/admin/products/${id}`, data),
     deleteProduct: (id: string) => api.delete(`/admin/products/${id}`),
+    bulkDeleteProducts: (productIds: string[]) =>
+        api.post<{ deleted_count: number }>('/admin/products/bulk-delete', { product_ids: productIds }),
     
     // Banners
     listBanners: (params?: { page?: number; page_size?: number; is_active?: boolean }) => {

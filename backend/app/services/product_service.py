@@ -403,13 +403,48 @@ class ProductService:
         return result.scalar_one()
     
     async def delete_product(self, product_id: UUID) -> None:
-        """Delete a product (soft delete by setting is_active=False)."""
+        """Soft delete a product and its variant group (parent + siblings)."""
         product = await self.get_product_by_id(product_id)
-        product.is_active = False
-        
-        self.session.add(product)
+        root_id = product.parent_id or product.id
+
+        result = await self.session.execute(
+            select(Product).where(
+                or_(Product.id == root_id, Product.parent_id == root_id)
+            )
+        )
+        for item in result.scalars().all():
+            item.is_active = False
+            self.session.add(item)
+
         await self.session.commit()
         self._clear_public_product_cache()
+
+    async def bulk_delete_products(self, product_ids: list[UUID]) -> int:
+        """Soft delete multiple products, expanding each to its variant group."""
+        if not product_ids:
+            return 0
+
+        root_ids: set[UUID] = set()
+        for product_id in product_ids:
+            product = await self.get_product_by_id(product_id)
+            root_ids.add(product.parent_id or product.id)
+
+        deactivated = 0
+        for root_id in root_ids:
+            result = await self.session.execute(
+                select(Product).where(
+                    or_(Product.id == root_id, Product.parent_id == root_id)
+                )
+            )
+            for item in result.scalars().all():
+                if item.is_active:
+                    deactivated += 1
+                item.is_active = False
+                self.session.add(item)
+
+        await self.session.commit()
+        self._clear_public_product_cache()
+        return deactivated
     
     async def add_product_image(
         self,

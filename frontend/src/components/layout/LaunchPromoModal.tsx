@@ -13,15 +13,17 @@ import {
     ChevronRight,
     ChevronLeft,
     ShoppingBag,
+    Instagram,
 } from 'lucide-react';
 import { homeApi, PromoCode } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { INSTAGRAM_HANDLE, INSTAGRAM_URL } from '@/lib/social';
 
 const SESSION_KEY = 'pranjay-launch-promo-seen';
 const SKIP_PREFIXES = ['/admin', '/checkout', '/login', '/seller', '/profile/setup'];
 const BRAND = 'Pranjay';
-const SLIDE_COUNT = 3;
+const SLIDE_COUNT = 4;
 
 function describePromo(promo: PromoCode): string {
     if (promo.discount_type === 'percent') {
@@ -243,6 +245,32 @@ export function LaunchPromoModal() {
 
                                 {slide === 2 && (
                                     <>
+                                        <div className="mb-4 inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-[#e91e63] to-purple-600 px-3 py-1 text-[11px] font-black uppercase tracking-wider text-white shadow-sm">
+                                            <Instagram className="h-3.5 w-3.5" /> Follow &amp; save
+                                        </div>
+                                        <h2 className="text-2xl font-black tracking-tight text-slate-900">
+                                            Follow us for an extra discount
+                                        </h2>
+                                        <p className="mt-2 text-sm text-slate-600">
+                                            Join {INSTAGRAM_HANDLE} on Instagram for beauty deals, new arrivals, and exclusive follower-only offers.
+                                        </p>
+                                        <a
+                                            href={INSTAGRAM_URL}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#e91e63] via-purple-600 to-[#d81b60] px-4 py-3 text-sm font-bold text-white shadow-lg shadow-pink-200 active:scale-[0.98]"
+                                        >
+                                            <Instagram className="h-5 w-5" />
+                                            Follow {INSTAGRAM_HANDLE}
+                                        </a>
+                                        <p className="mt-3 text-center text-xs font-medium text-slate-500">
+                                            DM us &quot;PRANJAY&quot; after following to claim your extra discount.
+                                        </p>
+                                    </>
+                                )}
+
+                                {slide === 3 && (
+                                    <>
                                         <div className="mb-4 inline-flex items-center gap-1.5 rounded-full bg-emerald-500 px-3 py-1 text-[11px] font-black uppercase tracking-wider text-white shadow-sm">
                                             <Truck className="h-3.5 w-3.5" /> Ready to shop
                                         </div>
@@ -250,7 +278,7 @@ export function LaunchPromoModal() {
                                             Fast checkout. Easy orders.
                                         </h2>
                                         <p className="mt-2 text-sm text-slate-600">
-                                            COD in select states, secure online pay, and GST-ready invoices — everything you need to stock up quickly.
+                                            COD on select PIN codes, secure online pay, and GST-ready invoices — everything you need to stock up quickly.
                                         </p>
                                         <div className="mt-5 grid grid-cols-2 gap-3">
                                             <div className="rounded-xl bg-pink-50 p-3 text-center">
