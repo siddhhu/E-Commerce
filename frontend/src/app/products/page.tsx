@@ -364,7 +364,7 @@ function ProductsContent() {
                         </div>
                     )}
                 <div className={viewMode === 'grid'
-                    ? "grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-6"
+                    ? "grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-6 items-stretch"
                     : "space-y-4"
                 }>
                     {products.map((product) => {
