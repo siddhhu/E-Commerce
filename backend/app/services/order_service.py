@@ -17,7 +17,7 @@ from app.models.product import Product
 from app.models.cart import CartItem
 from app.models.address import Address
 from app.models.user import User
-from app.services.email_service import email_service
+from app.services.email_service import email_service, is_deliverable_email
 from app.services.payment_service import PaymentService
 from app.models.order import PaymentMethod
 from fastapi import BackgroundTasks
@@ -46,9 +46,67 @@ class OrderService:
     def __init__(self, session: AsyncSession):
         self.session = session
 
-    def _get_notification_email(self, user: User) -> str:
+    def _get_notification_email(self, user: User) -> str | None:
         """Prefer the real contact email over phone-generated placeholder emails."""
-        return (user.contact_email or user.email).strip().lower()
+        for candidate in (user.contact_email, user.email):
+            if is_deliverable_email(candidate):
+                return candidate.strip().lower()
+        return None
+
+    async def _send_new_order_emails(self, order: Order, user: User, items_count: int) -> None:
+        """Send customer confirmation and admin alert — awaited so Vercel completes delivery."""
+        customer_email = self._get_notification_email(user)
+        customer_contact = customer_email or user.phone or "No email on file"
+
+        if customer_email:
+            await email_service.send_order_confirmation_email(
+                customer_email,
+                order.order_number,
+                float(order.total_amount),
+                items_count,
+            )
+        else:
+            print(f"[Email] No deliverable email for user {user.id} — skipping customer confirmation")
+
+        await email_service.send_order_notification_to_admin(
+            order.order_number,
+            customer_contact,
+            user.full_name or user.email or "Customer",
+            float(order.total_amount),
+            items_count,
+            order_id=str(order.id),
+        )
+
+    async def _send_status_email(self, order_result: Order, status: OrderStatus) -> None:
+        """Send customer email when order status changes to shipped or delivered."""
+        if not order_result.user:
+            return
+
+        customer_email = self._get_notification_email(order_result.user)
+        if not customer_email:
+            print(f"[Email] No deliverable email for order {order_result.order_number}")
+            return
+
+        customer_name = order_result.user.full_name or "Customer"
+
+        if status == OrderStatus.SHIPPED:
+            await email_service.send_order_shipped_email(
+                customer_email,
+                order_result.order_number,
+            )
+        elif status == OrderStatus.DELIVERED:
+            await email_service.send_order_delivered_email(
+                customer_email,
+                order_result.order_number,
+                customer_name,
+            )
+        elif status in (OrderStatus.CONFIRMED, OrderStatus.PROCESSING, OrderStatus.CANCELLED):
+            await email_service.send_order_status_update(
+                customer_email,
+                order_result.order_number,
+                status.value,
+                customer_name,
+            )
 
     async def _recalculate_order_totals(self, order: Order) -> None:
         """Recalculate totals from active order items using GST-inclusive pricing."""
@@ -393,38 +451,20 @@ class OrderService:
             await self.session.rollback()
             raise e
 
-        # Send notification emails + generate invoice — ALL offloaded to background tasks
-        # so the HTTP response is returned immediately after commit (~2-3s total).
+        # Send order emails before returning — awaited so Vercel serverless completes delivery.
+        try:
+            from app.models.user import User as _User
+            user_result = await self.session.execute(
+                select(_User).where(_User.id == user_id)
+            )
+            user = user_result.scalar_one()
+            await self._send_new_order_emails(order, user, len(order_items))
+        except Exception as e:
+            print(f"Error sending order emails: {e}")
+
+        # Generate invoice in background — non-blocking for checkout response.
         if background_tasks:
             try:
-                # Fetch user for email (one extra query but non-blocking since we already committed)
-                from app.models.user import User as _User
-                user_result = await self.session.execute(
-                    select(_User).where(_User.id == user_id)
-                )
-                user = user_result.scalar_one()
-
-                background_tasks.add_task(
-                    email_service.send_order_confirmation_email,
-                    self._get_notification_email(user),
-                    order.order_number,
-                    float(order.total_amount),
-                    len(order_items)
-                )
-
-                background_tasks.add_task(
-                    email_service.send_order_notification_to_admin,
-                    order.order_number,
-                    self._get_notification_email(user),
-                    user.full_name or user.email,
-                    float(order.total_amount),
-                    len(order_items)
-                )
-
-                # Generate invoice in background — non-blocking.
-                # Note: On Vercel serverless the background task runs as long as the
-                # connection is alive. The invoice may occasionally miss on very short-lived
-                # functions, but the user gets their order confirmation instantly.
                 from app.services.invoice_service import InvoiceService
                 from app.database import get_session as _get_session
                 async def _generate_invoice_bg():
@@ -437,9 +477,8 @@ class OrderService:
                         print(f"[BG] Invoice generation failed for {order.order_number}: {e}")
 
                 background_tasks.add_task(_generate_invoice_bg)
-
             except Exception as e:
-                print(f"Error scheduling order tasks: {e}")
+                print(f"Error scheduling invoice task: {e}")
 
         return order
 
@@ -477,28 +516,16 @@ class OrderService:
         )
         order_result = result.scalar_one()
         
-        async def _send_status_email() -> None:
-            """Send status email after DB commit without blocking admin response."""
-            if status == OrderStatus.SHIPPED:
-                await email_service.send_order_shipped_email(
-                    self._get_notification_email(order_result.user),
-                    order.order_number
-                )
-            else:
-                await email_service.send_order_status_update(
-                    self._get_notification_email(order_result.user),
-                    order.order_number,
-                    status.value,
-                    order_result.user.full_name or "Customer"
-                )
-
-        # Send status update notification.
+        # Send status update notification — always awaited for reliable delivery on Vercel.
         try:
-            if order_result.user:
-                if background_tasks:
-                    background_tasks.add_task(_send_status_email)
-                else:
-                    await _send_status_email()
+            if status in (
+                OrderStatus.SHIPPED,
+                OrderStatus.DELIVERED,
+                OrderStatus.CONFIRMED,
+                OrderStatus.PROCESSING,
+                OrderStatus.CANCELLED,
+            ):
+                await self._send_status_email(order_result, status)
         except Exception as e:
             print(f"Error sending order status email: {e}")
         

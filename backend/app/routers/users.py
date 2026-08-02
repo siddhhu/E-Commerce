@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic import BaseModel as _PydanticModel
 
 from app.core.dependencies import get_current_active_user
+from app.core.exceptions import BadRequestException
 from app.core.security import verify_password, hash_password
 from app.database import get_session
 from app.models.user import User, UserRead, UserUpdate
@@ -235,6 +236,55 @@ async def delete_address(
     
     await session.delete(address)
     await session.commit()
+
+
+# ── One-time KYC verification (checkout) ───────────────────────────────────────
+
+class KycSubmitRequest(_PydanticModel):
+    document_type: str
+    document_number: str
+    document_url: str
+
+
+@router.post("/me/kyc", response_model=UserRead, status_code=200)
+async def submit_kyc_verification(
+    data: KycSubmitRequest,
+    current_user: User = Depends(get_current_active_user),
+    session: AsyncSession = Depends(get_session),
+):
+    """
+    Save one-time business/identity verification for checkout.
+    Once submitted, the customer is not asked again on future orders.
+    """
+    from app.core.kyc import (
+        KYC_DOCUMENT_TYPES,
+        apply_kyc_to_user,
+        is_kyc_complete,
+        validate_kyc_document_number,
+    )
+
+    if is_kyc_complete(current_user):
+        return current_user
+
+    document_type = data.document_type.strip().lower()
+    if document_type not in KYC_DOCUMENT_TYPES:
+        raise BadRequestException("Invalid document type")
+
+    document_number = data.document_number.strip()
+    document_url = data.document_url.strip()
+    if not document_number:
+        raise BadRequestException("Document number is required")
+    if not document_url:
+        raise BadRequestException("Document upload is required")
+
+    if not validate_kyc_document_number(document_type, document_number):
+        raise BadRequestException(f"Invalid {document_type.replace('_', ' ')} format")
+
+    apply_kyc_to_user(current_user, document_type, document_number, document_url)
+    session.add(current_user)
+    await session.commit()
+    await session.refresh(current_user)
+    return current_user
 
 
 # ── Seller Application ────────────────────────────────────────────────────────

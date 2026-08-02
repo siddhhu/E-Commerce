@@ -195,6 +195,32 @@ async def run_startup_migrations() -> None:
                 await conn.execute(sa.text("ALTER TABLE users ADD COLUMN IF NOT EXISTS bank_name VARCHAR(255);"))
                 await conn.execute(sa.text("ALTER TABLE users ADD COLUMN IF NOT EXISTS seller_bank_proof_url VARCHAR(1024);"))
 
+        print("Database: Running KYC document schema migrations...")
+        async with engine.connect() as conn:
+            conn = await conn.execution_options(isolation_level="AUTOCOMMIT")
+            if "sqlite" in db_url:
+                for sql in [
+                    "ALTER TABLE users ADD COLUMN voter_id VARCHAR(20);",
+                    "ALTER TABLE users ADD COLUMN msme_number VARCHAR(50);",
+                    "ALTER TABLE users ADD COLUMN udyog_aadhar VARCHAR(20);",
+                    "ALTER TABLE users ADD COLUMN shop_establishment_license VARCHAR(50);",
+                    "ALTER TABLE users ADD COLUMN kyc_document_type VARCHAR(50);",
+                    "ALTER TABLE users ADD COLUMN kyc_document_url TEXT;",
+                    "ALTER TABLE users ADD COLUMN kyc_verified_at TIMESTAMP;",
+                ]:
+                    try:
+                        await conn.execute(sa.text(sql))
+                    except Exception:
+                        pass
+            else:
+                await conn.execute(sa.text("ALTER TABLE users ADD COLUMN IF NOT EXISTS voter_id VARCHAR(20);"))
+                await conn.execute(sa.text("ALTER TABLE users ADD COLUMN IF NOT EXISTS msme_number VARCHAR(50);"))
+                await conn.execute(sa.text("ALTER TABLE users ADD COLUMN IF NOT EXISTS udyog_aadhar VARCHAR(20);"))
+                await conn.execute(sa.text("ALTER TABLE users ADD COLUMN IF NOT EXISTS shop_establishment_license VARCHAR(50);"))
+                await conn.execute(sa.text("ALTER TABLE users ADD COLUMN IF NOT EXISTS kyc_document_type VARCHAR(50);"))
+                await conn.execute(sa.text("ALTER TABLE users ADD COLUMN IF NOT EXISTS kyc_document_url TEXT;"))
+                await conn.execute(sa.text("ALTER TABLE users ADD COLUMN IF NOT EXISTS kyc_verified_at TIMESTAMP;"))
+
         print("Database: Running order item cancellation schema migrations...")
         async with engine.connect() as conn:
             conn = await conn.execution_options(isolation_level="AUTOCOMMIT")

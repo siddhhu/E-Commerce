@@ -34,6 +34,7 @@ class Settings(BaseSettings):
     resend_api_key: Optional[str] = None
     email_from: str = "support@pranjay.com"
     admin_email: str = "support@pranjay.com"
+    frontend_url: str = "https://www.pranjay.com"
     
     # Supabase Storage - Optional for deployment without storage
     supabase_url: Optional[str] = None

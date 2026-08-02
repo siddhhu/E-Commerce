@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { CreditCard, Banknote, MapPin, ArrowLeft, CheckCircle2, ShoppingBag, FileText, AlertCircle, CheckCircle, Building2, Shield, Truck } from 'lucide-react';
+import { CreditCard, Banknote, MapPin, ArrowLeft, CheckCircle2, ShoppingBag, FileText, AlertCircle, CheckCircle, Building2, Shield, Truck, Upload } from 'lucide-react';
 
 import Script from 'next/script';
 
@@ -28,14 +28,55 @@ import { ShoppingOffersBar } from '@/components/shop/ShoppingOffersBar';
 const GST_REGEX = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
 const PAN_REGEX = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
 const AADHAAR_REGEX = /^[0-9]{12}$/;
+const VOTER_ID_REGEX = /^[A-Z0-9]{10,20}$/;
+const UDYAM_REGEX = /^UDYAM-[A-Z]{2}-\d{2}-\d{7}$/;
+
+type DocType =
+    | 'gst'
+    | 'pan'
+    | 'aadhaar'
+    | 'voter_id'
+    | 'shop_license'
+    | 'msme'
+    | 'shop_establishment'
+    | 'udyog_aadhar';
+
+const DOC_TYPE_LABELS: Record<DocType, string> = {
+    gst: 'GST Certificate',
+    pan: 'PAN Card',
+    aadhaar: 'Aadhaar Card',
+    voter_id: 'Voter ID',
+    shop_license: 'Shop License',
+    msme: 'MSME Certificate',
+    shop_establishment: 'Shop & Establishment License',
+    udyog_aadhar: 'UDyog Aadhar (Udyam)',
+};
 
 function validateDoc(type: string, value: string): boolean {
-    const v = value.toUpperCase().trim();
+    const v = value.toUpperCase().trim().replace(/\s/g, '');
     if (type === 'gst') return GST_REGEX.test(v);
     if (type === 'pan') return PAN_REGEX.test(v);
-    if (type === 'aadhaar') return AADHAAR_REGEX.test(v);
-    if (type === 'shop_license') return v.length >= 5; // Basic length check
+    if (type === 'aadhaar') return AADHAAR_REGEX.test(v.replace(/-/g, ''));
+    if (type === 'voter_id') return VOTER_ID_REGEX.test(v);
+    if (type === 'msme' || type === 'udyog_aadhar') return UDYAM_REGEX.test(v) || v.length >= 5;
+    if (type === 'shop_license' || type === 'shop_establishment') return v.length >= 5;
     return true;
+}
+
+function getDocNumberFromUser(user: { kyc_document_type?: string | null; gst_number?: string; pan?: string; aadhaar?: string; voter_id?: string; shop_license?: string; msme_number?: string; shop_establishment_license?: string; udyog_aadhar?: string }): string {
+    const type = user.kyc_document_type as DocType | undefined;
+    const fieldMap: Record<DocType, string | undefined> = {
+        gst: user.gst_number,
+        pan: user.pan,
+        aadhaar: user.aadhaar,
+        voter_id: user.voter_id,
+        shop_license: user.shop_license,
+        msme: user.msme_number,
+        shop_establishment: user.shop_establishment_license,
+        udyog_aadhar: user.udyog_aadhar,
+    };
+    if (type && fieldMap[type]) return fieldMap[type]!;
+    return user.gst_number || user.pan || user.aadhaar || user.voter_id || user.shop_license || user.msme_number || user.shop_establishment_license || user.udyog_aadhar || '';
 }
 
 export default function CheckoutPage() {
@@ -78,63 +119,81 @@ export default function CheckoutPage() {
         postal_code: '',
     });
 
-    // Business Verification — mandatory for Sellers, optional for Customers
-    const [docType, setDocType] = useState<'gst' | 'pan' | 'aadhaar' | 'shop_license'>('gst');
+    // Business Verification — one-time KYC with document upload
+    const [docType, setDocType] = useState<DocType>('gst');
     const [docNumber, setDocNumber] = useState('');
     const [docError, setDocError] = useState('');
     const [docValid, setDocValid] = useState(false);
-    const [docSavedToProfile, setDocSavedToProfile] = useState(false);
+    const [docFile, setDocFile] = useState<File | null>(null);
+    const [docFileUrl, setDocFileUrl] = useState('');
+    const [docUploading, setDocUploading] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
-    const savedGst = user?.gst_number;
-    const savedPan = user?.pan;
-    const savedAadhaar = user?.aadhaar;
-    const savedShopLicense = user?.shop_license;
+    const kycComplete = Boolean(user?.kyc_verified_at && user?.kyc_document_url);
+    const verifiedDocType = (user?.kyc_document_type as DocType | undefined) || docType;
+    const verifiedDocLabel = DOC_TYPE_LABELS[verifiedDocType] || verifiedDocType.toUpperCase();
+    const verifiedDocNumber = user ? getDocNumberFromUser(user) : docNumber;
 
-    // Auto-fill from profile on load
+    // Auto-fill from profile on load (only if KYC not yet complete)
     useEffect(() => {
-        if (user) {
-            if (user.gst_number) {
-                setDocType('gst');
-                setDocNumber(user.gst_number);
-                setDocValid(true);
-                setDocSavedToProfile(true);
-            } else if (user.pan) {
-                setDocType('pan');
-                setDocNumber(user.pan);
-                setDocValid(true);
-                setDocSavedToProfile(true);
-            } else if (user.aadhaar) {
-                setDocType('aadhaar');
-                setDocNumber(user.aadhaar);
-                setDocValid(true);
-                setDocSavedToProfile(true);
-            } else if (user.shop_license) {
-                setDocType('shop_license');
-                setDocNumber(user.shop_license);
-                setDocValid(true);
-                setDocSavedToProfile(true);
-            }
-        }
-    }, [user]);
+        if (!user || kycComplete) return;
 
-    const handleDocChange = (type: typeof docType, value: string) => {
+        const preferredType = (user.kyc_document_type as DocType | undefined)
+            || (user.gst_number ? 'gst'
+                : user.pan ? 'pan'
+                : user.aadhaar ? 'aadhaar'
+                : user.voter_id ? 'voter_id'
+                : user.shop_license ? 'shop_license'
+                : user.msme_number ? 'msme'
+                : user.shop_establishment_license ? 'shop_establishment'
+                : user.udyog_aadhar ? 'udyog_aadhar'
+                : 'gst');
+
+        const savedNumber = getDocNumberFromUser({ ...user, kyc_document_type: preferredType });
+        if (savedNumber) {
+            setDocType(preferredType);
+            setDocNumber(savedNumber);
+            setDocValid(validateDoc(preferredType, savedNumber));
+        }
+    }, [user, kycComplete]);
+
+    const handleDocChange = (type: DocType, value: string) => {
         const upper = value.toUpperCase().replace(/\s/g, '');
         setDocNumber(upper);
-        setDocSavedToProfile(false);
 
         if (upper.length === 0) {
             setDocValid(false);
-            if (user?.user_type === 'seller') {
-                setDocError(`${type.toUpperCase()} is required for sellers`);
-            } else {
-                setDocError('');
-            }
+            setDocError(`${DOC_TYPE_LABELS[type]} number is required`);
         } else if (!validateDoc(type, upper)) {
-            setDocError(`Invalid ${type.toUpperCase()} format`);
+            setDocError(`Invalid ${DOC_TYPE_LABELS[type]} format`);
             setDocValid(false);
         } else {
             setDocError('');
             setDocValid(true);
+        }
+    };
+
+    const handleDocFileSelect = async (file: File | null) => {
+        if (!file) return;
+        setDocFile(file);
+        setDocUploading(true);
+        try {
+            const { document_url } = await usersApi.uploadKycDocument(file);
+            setDocFileUrl(document_url);
+            toast({
+                title: 'Document uploaded',
+                description: 'Your document is ready. You can proceed to place the order.',
+            });
+        } catch (error: any) {
+            setDocFile(null);
+            setDocFileUrl('');
+            toast({
+                title: 'Upload failed',
+                description: error.message || 'Could not upload document. Please try again.',
+                variant: 'destructive',
+            });
+        } finally {
+            setDocUploading(false);
         }
     };
 
@@ -164,21 +223,19 @@ export default function CheckoutPage() {
             }
         }
 
-        // If seller, validation is mandatory
-        if (user?.user_type === 'seller') {
-            if (!docNumber) {
+        if (!kycComplete) {
+            if (!docNumber || !docValid) {
                 toast({
                     title: 'Verification Required',
-                    description: 'Sellers must provide a valid business document to proceed.',
+                    description: 'Please select a document type and enter a valid number to proceed.',
                     variant: 'destructive',
                 });
                 return false;
             }
-
-            if (!docValid) {
+            if (!docFileUrl) {
                 toast({
-                    title: 'Invalid Document',
-                    description: `Please enter a valid ${docType.toUpperCase()} number.`,
+                    title: 'Upload Required',
+                    description: 'Please upload your document. This is a one-time verification.',
                     variant: 'destructive',
                 });
                 return false;
@@ -287,18 +344,26 @@ export default function CheckoutPage() {
         return () => window.clearTimeout(timer);
     }, [paymentMethod, cartPayload, promo_code, isAuthenticated]);
 
-    const saveProfileDocIfNeeded = useCallback(async () => {
-        if (!docValid || !docNumber || docSavedToProfile) return;
-        const updateData: Record<string, string> = {};
-        updateData[docType === 'shop_license' ? 'shop_license' : docType] = docNumber;
+    const ensureKycSubmitted = useCallback(async () => {
+        if (kycComplete) return true;
+        if (!docValid || !docNumber || !docFileUrl) return false;
         try {
-            const updated = await authApi.updateProfile(updateData);
+            const updated = await authApi.submitKyc({
+                document_type: docType,
+                document_number: docNumber,
+                document_url: docFileUrl,
+            });
             setUser(updated);
-            setDocSavedToProfile(true);
-        } catch {
-            // Non-blocking — checkout already succeeded
+            return true;
+        } catch (error: any) {
+            toast({
+                title: 'Verification failed',
+                description: error.message || 'Could not save your document verification.',
+                variant: 'destructive',
+            });
+            return false;
         }
-    }, [docValid, docNumber, docSavedToProfile, docType, setUser]);
+    }, [kycComplete, docValid, docNumber, docFileUrl, docType, setUser, toast]);
 
     const handlePlaceOrder = async () => {
         if (!validateForm()) return;
@@ -336,13 +401,18 @@ export default function CheckoutPage() {
         setIsProcessing(true);
 
         try {
+            const kycReady = await ensureKycSubmitted();
+            if (!kycReady) {
+                setIsProcessing(false);
+                return;
+            }
+
             if (paymentMethod === 'cod') {
                 const createdOrder = await ordersApi.completeCheckout({
                     ...checkoutPayloadBase,
                     payment_method: 'cod',
                 });
                 completeOrderDisplay(createdOrder.id, createdOrder.order_number, 'cod', 'Cash on Delivery');
-                void saveProfileDocIfNeeded();
 
             } else {
                 const prepKey = JSON.stringify({ cart: cartPayload, promo: promo_code || '' });
@@ -390,7 +460,6 @@ export default function CheckoutPage() {
                                 razorpay_signature: response.razorpay_signature,
                             });
                             completeOrderDisplay(createdOrder.id, createdOrder.order_number, 'paid', 'Online Payment');
-                            void saveProfileDocIfNeeded();
                         } catch (err: any) {
                             setIsProcessing(false);
                             toast({
@@ -469,10 +538,10 @@ export default function CheckoutPage() {
                                 <span className="text-muted-foreground">Payment Method</span>
                                 <span className="font-medium">{orderPlaced.payment_method}</span>
                             </div>
-                            {docNumber && (
+                            {verifiedDocNumber && (
                                 <div className="flex justify-between text-sm">
-                                    <span className="text-muted-foreground">{docType.toUpperCase()} Number</span>
-                                    <span className="font-mono font-medium text-slate-700">{docNumber}</span>
+                                    <span className="text-muted-foreground">{verifiedDocLabel}</span>
+                                    <span className="font-mono font-medium text-slate-700">{verifiedDocNumber}</span>
                                 </div>
                             )}
                             <div className="pt-2 border-t">
@@ -525,58 +594,62 @@ export default function CheckoutPage() {
                         {/* ── Left Column ── */}
                         <div className="lg:col-span-2 space-y-6">
 
-                            {/* 1. Business Verification */}
-                            <Card className={cn("border-2", docValid ? "border-green-300 bg-green-50/30" : (user?.user_type === 'seller' ? "border-orange-200 bg-orange-50/20" : "border-slate-200"))}>
+                            {/* 1. Business Verification — one-time KYC */}
+                            <Card className={cn("border-2", kycComplete || docValid ? "border-green-300 bg-green-50/30" : "border-orange-200 bg-orange-50/20")}>
                                 <CardHeader className="pb-3">
                                     <CardTitle className="flex items-center gap-2 text-base">
                                         <Building2 className="h-5 w-5 text-primary" />
                                         Business Verification
-                                        {user?.user_type === 'seller' && (
-                                            <span className="ml-auto text-xs font-normal bg-primary/10 text-primary px-2 py-0.5 rounded-full">Mandatory for Sellers</span>
-                                        )}
+                                        <span className="ml-auto text-xs font-normal bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+                                            One-time only
+                                        </span>
                                     </CardTitle>
+                                    <p className="text-xs text-muted-foreground">
+                                        Upload your business or identity document once. You won&apos;t be asked again on future orders.
+                                    </p>
                                 </CardHeader>
                                 <CardContent className="space-y-4">
-                                    {/* Auto-fill banner */}
-                                    {docSavedToProfile && docNumber && (
-                                        <div className="flex items-start gap-2 bg-blue-50 border border-blue-100 rounded-lg p-3 text-sm">
-                                            <CheckCircle className="h-4 w-4 text-blue-500 mt-0.5 shrink-0" />
+                                    {kycComplete ? (
+                                        <div className="flex items-start gap-2 bg-green-50 border border-green-200 rounded-lg p-4 text-sm">
+                                            <CheckCircle className="h-5 w-5 text-green-600 mt-0.5 shrink-0" />
                                             <div>
-                                                <p className="font-semibold text-blue-800">{docType.toUpperCase()} auto-filled from your profile</p>
-                                                <button
-                                                    type="button"
-                                                    className="text-xs text-blue-600 underline mt-0.5"
-                                                    onClick={() => { setDocSavedToProfile(false); setDocNumber(''); setDocValid(false); }}
-                                                >
-                                                    Use a different document
-                                                </button>
+                                                <p className="font-semibold text-green-800">Verification complete</p>
+                                                <p className="text-green-700 mt-1">
+                                                    {verifiedDocLabel}
+                                                    {verifiedDocNumber ? ` · ${verifiedDocNumber}` : ''}
+                                                </p>
+                                                <p className="text-xs text-green-600 mt-1">Saved to your profile — no need to upload again.</p>
                                             </div>
                                         </div>
-                                    )}
-
-                                    {!docSavedToProfile && (
+                                    ) : (
                                         <div className="space-y-4">
                                             <div className="space-y-2">
                                                 <Label>Select Document Type</Label>
-                                                <select 
+                                                <select
                                                     className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm focus:ring-2 focus:ring-primary outline-none"
                                                     value={docType}
                                                     onChange={(e) => {
-                                                        const newType = e.target.value as any;
+                                                        const newType = e.target.value as DocType;
                                                         setDocType(newType);
                                                         handleDocChange(newType, '');
+                                                        setDocFile(null);
+                                                        setDocFileUrl('');
                                                     }}
                                                 >
-                                                    <option value="gst">GST (Goods and Services Tax)</option>
-                                                    <option value="pan">PAN (Permanent Account Number)</option>
-                                                    <option value="aadhaar">Aadhaar Card (12-digit)</option>
-                                                    <option value="shop_license">Shop License Number</option>
+                                                    <option value="gst">GST Certificate</option>
+                                                    <option value="pan">PAN Card</option>
+                                                    <option value="aadhaar">Aadhaar Card</option>
+                                                    <option value="voter_id">Voter ID</option>
+                                                    <option value="shop_license">Shop License</option>
+                                                    <option value="msme">MSME Certificate</option>
+                                                    <option value="shop_establishment">Shop &amp; Establishment License</option>
+                                                    <option value="udyog_aadhar">UDyog Aadhar (Udyam)</option>
                                                 </select>
                                             </div>
 
                                             <div className="space-y-1.5">
                                                 <Label htmlFor="doc_number">
-                                                    {docType.toUpperCase()} Number {user?.user_type === 'seller' && <span className="text-red-500">*</span>}
+                                                    {DOC_TYPE_LABELS[docType]} Number <span className="text-red-500">*</span>
                                                 </Label>
                                                 <div className="relative">
                                                     <FileText className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
@@ -586,7 +659,7 @@ export default function CheckoutPage() {
                                                             "pl-10 pr-10 font-mono tracking-wider text-sm",
                                                             docError ? "border-red-400 focus-visible:ring-red-300" : docValid ? "border-green-400 focus-visible:ring-green-300" : ""
                                                         )}
-                                                        placeholder={`Enter ${docType.toUpperCase()} Number`}
+                                                        placeholder={`Enter ${DOC_TYPE_LABELS[docType]} number`}
                                                         value={docNumber}
                                                         onChange={(e) => handleDocChange(docType, e.target.value)}
                                                         autoComplete="off"
@@ -597,7 +670,41 @@ export default function CheckoutPage() {
                                                     </div>
                                                 </div>
                                                 {docError && <p className="text-[11px] text-red-500 font-medium">{docError}</p>}
-                                                {docValid && <p className="text-[11px] text-green-600 font-medium flex items-center gap-1"><CheckCircle className="h-3 w-3" />Verified — will be saved to your profile.</p>}
+                                            </div>
+
+                                            <div className="space-y-2">
+                                                <Label>Upload Document <span className="text-red-500">*</span></Label>
+                                                <div
+                                                    className={cn(
+                                                        "border-2 border-dashed rounded-xl p-5 text-center cursor-pointer transition-all",
+                                                        docFileUrl ? "border-green-400 bg-green-50" : "border-muted hover:border-primary/50",
+                                                        docUploading && "opacity-60 pointer-events-none"
+                                                    )}
+                                                    onClick={() => fileInputRef.current?.click()}
+                                                >
+                                                    <input
+                                                        ref={fileInputRef}
+                                                        type="file"
+                                                        accept="application/pdf,image/jpeg,image/png"
+                                                        className="hidden"
+                                                        onChange={(e) => handleDocFileSelect(e.target.files?.[0] || null)}
+                                                    />
+                                                    {docUploading ? (
+                                                        <p className="text-sm text-muted-foreground">Uploading...</p>
+                                                    ) : docFile ? (
+                                                        <div className="flex flex-col items-center gap-2">
+                                                            <FileText className="h-8 w-8 text-green-600" />
+                                                            <p className="font-medium text-green-700 text-sm">{docFile.name}</p>
+                                                            <p className="text-xs text-green-600">Uploaded — ready to proceed</p>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="flex flex-col items-center gap-2">
+                                                            <Upload className="h-8 w-8 text-muted-foreground" />
+                                                            <p className="text-sm font-medium">Click to upload your document</p>
+                                                            <p className="text-xs text-muted-foreground">PDF, JPG, or PNG · Max 10MB</p>
+                                                        </div>
+                                                    )}
+                                                </div>
                                             </div>
                                         </div>
                                     )}
@@ -794,9 +901,9 @@ export default function CheckoutPage() {
                                             </p>
                                         )}
                                         <p className="text-xs text-muted-foreground pt-1">Inclusive of all taxes</p>
-                                        {docValid && docNumber && (
+                                        {docValid && docNumber && !kycComplete && (
                                             <div className="flex justify-between text-xs bg-blue-50 text-blue-700 px-2 py-1.5 rounded-lg">
-                                                <span className="font-medium">{docType.toUpperCase()} Applied</span>
+                                                <span className="font-medium">{DOC_TYPE_LABELS[docType]} ready</span>
                                                 <span className="font-mono">{docNumber}</span>
                                             </div>
                                         )}
@@ -822,10 +929,10 @@ export default function CheckoutPage() {
                                         </div>
                                     </div>
 
-                                    {!docValid && user?.user_type === 'seller' && (
+                                    {!kycComplete && (!docValid || !docFileUrl) && (
                                         <div className="flex items-start gap-2 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-3">
                                             <AlertCircle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
-                                            <span>Enter your business verification details above to place your order</span>
+                                            <span>Complete one-time verification above — enter document number and upload file to proceed.</span>
                                         </div>
                                     )}
 
@@ -833,7 +940,7 @@ export default function CheckoutPage() {
                                         className="w-full"
                                         size="lg"
                                         onClick={handlePlaceOrder}
-                                        disabled={isProcessing || (user?.user_type === 'seller' && !docValid)}
+                                        disabled={isProcessing || docUploading || (!kycComplete && (!docValid || !docFileUrl))}
                                     >
                                         {isProcessing ? 'Processing...' : (paymentMethod === 'online' ? 'Pay Now' : 'Place Order')}
                                     </Button>

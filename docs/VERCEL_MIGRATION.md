@@ -53,6 +53,23 @@ Copy **all** env vars from the old backend project. Minimum required:
 | `SUPABASE_URL` / `SUPABASE_KEY` | Yes (images) |
 | `RAZORPAY_KEY_ID` / `RAZORPAY_KEY_SECRET` | Yes |
 | `RESEND_API_KEY` | Yes (order emails) |
+| `EMAIL_FROM` | `support@pranjay.com` — must be verified in Resend |
+| `ADMIN_EMAIL` | Email that receives new-order alerts (e.g. `support@pranjay.com`) |
+| `FRONTEND_URL` | `https://www.pranjay.com` — used in order email links |
+
+### Order email notifications
+
+When `RESEND_API_KEY` is set, the backend sends:
+
+| Event | Recipient |
+|-------|-----------|
+| Order placed | Customer (confirmation) + admin (new order alert with admin link) |
+| Status → Shipped | Customer |
+| Status → Delivered | Customer |
+
+Phone-only users need a real **contact email** on their profile (`/profile/setup`) to receive customer emails; admin always gets the new-order alert.
+
+Verify your domain in [Resend](https://resend.com) and add `RESEND_API_KEY` to the backend project, then redeploy backend.
 
 ### CORS example
 

@@ -272,10 +272,20 @@ export const authApi = {
         gst_number?: string; 
         pan?: string;
         aadhaar?: string;
+        voter_id?: string;
         shop_license?: string;
+        msme_number?: string;
+        udyog_aadhar?: string;
+        shop_establishment_license?: string;
         user_type?: 'seller' | 'customer' 
     }) =>
         api.patch<User>('/users/me', data),
+
+    submitKyc: (data: {
+        document_type: string;
+        document_number: string;
+        document_url: string;
+    }) => api.post<User>('/users/me/kyc', data),
 
     /** Change password — requires current password for verification. */
     changePassword: (data: { current_password: string; new_password: string }) =>
@@ -297,6 +307,16 @@ export const usersApi = {
         api.post<Address>('/users/me/addresses', data),
     /** Single round-trip: returns addresses + cart together for the checkout page. */
     getCheckoutPrep: () => api.get<{ addresses: Address[]; cart: any }>('/checkout-prep'),
+    uploadKycDocument: (file: File) => {
+        const formData = new FormData();
+        formData.append('file', file);
+        return postMultipart<{ document_url: string }>('/documents/kyc-upload', formData);
+    },
+    submitKyc: (data: {
+        document_type: string;
+        document_number: string;
+        document_url: string;
+    }) => api.post<User>('/users/me/kyc', data),
     submitSellerApplication: async (
         file: File,
         bankProofFile: File,
@@ -672,7 +692,14 @@ export interface User {
     gst_number?: string;
     pan?: string;
     aadhaar?: string;
+    voter_id?: string;
     shop_license?: string;
+    msme_number?: string;
+    udyog_aadhar?: string;
+    shop_establishment_license?: string;
+    kyc_document_type?: string | null;
+    kyc_document_url?: string | null;
+    kyc_verified_at?: string | null;
     user_type: 'seller' | 'customer';
     role: 'customer' | 'admin' | 'super_admin' | 'CUSTOMER' | 'ADMIN' | 'SUPER_ADMIN';
     is_active: boolean;

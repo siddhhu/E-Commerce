@@ -51,7 +51,14 @@ class UserBase(SQLModel):
     gst_number: Optional[str] = Field(default=None, max_length=15)
     pan: Optional[str] = Field(default=None, max_length=10)
     aadhaar: Optional[str] = Field(default=None, max_length=12)
+    voter_id: Optional[str] = Field(default=None, max_length=20)
     shop_license: Optional[str] = Field(default=None, max_length=50)
+    msme_number: Optional[str] = Field(default=None, max_length=50)
+    udyog_aadhar: Optional[str] = Field(default=None, max_length=20)
+    shop_establishment_license: Optional[str] = Field(default=None, max_length=50)
+    kyc_document_type: Optional[str] = Field(default=None, max_length=50)
+    kyc_document_url: Optional[str] = Field(default=None)
+    kyc_verified_at: Optional[datetime] = Field(default=None)
     # Default to 'customer' — new phone-registered users are customers by default
     user_type: UserType = Field(default=UserType.customer)
     role: UserRole = Field(default=UserRole.CUSTOMER)
@@ -103,7 +110,11 @@ class UserCreate(SQLModel):
     gst_number: Optional[str] = None
     pan: Optional[str] = None
     aadhaar: Optional[str] = None
+    voter_id: Optional[str] = None
     shop_license: Optional[str] = None
+    msme_number: Optional[str] = None
+    udyog_aadhar: Optional[str] = None
+    shop_establishment_license: Optional[str] = None
     user_type: UserType = UserType.customer
     bank_account_holder_name: Optional[str] = None
     bank_account_number: Optional[str] = None
@@ -120,7 +131,11 @@ class UserUpdate(SQLModel):
     gst_number: Optional[str] = None
     pan: Optional[str] = None
     aadhaar: Optional[str] = None
+    voter_id: Optional[str] = None
     shop_license: Optional[str] = None
+    msme_number: Optional[str] = None
+    udyog_aadhar: Optional[str] = None
+    shop_establishment_license: Optional[str] = None
     user_type: Optional[UserType] = None
 
 

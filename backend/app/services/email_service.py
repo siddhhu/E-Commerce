@@ -7,12 +7,26 @@ To enable email sending you need:
   3. Verify your sending domain (or use Resend's sandbox domain for testing)
   4. Set EMAIL_FROM to your verified sender (e.g. noreply@pranjay.com)
 
-Without RESEND_API_KEY all email methods are silently skipped (no errors).
+Without RESEND_API_KEY all email methods are silently skipped (logged, no errors).
 """
-import resend
+import asyncio
 from html import escape
 
+import resend
+
 from app.config import settings
+
+
+def is_deliverable_email(email: str | None) -> bool:
+    """Return False for phone-generated placeholder addresses that cannot receive mail."""
+    if not email or "@" not in email:
+        return False
+    normalized = email.strip().lower()
+    if normalized.endswith("@pranjay.com") and (
+        normalized.startswith("phone_") or normalized.startswith("parlar_dummy_")
+    ):
+        return False
+    return True
 
 
 class EmailService:
@@ -23,11 +37,25 @@ class EmailService:
             resend.api_key = settings.resend_api_key
         self.from_email = settings.email_from
         self.admin_email = settings.admin_email
+        self.frontend_url = settings.frontend_url.rstrip("/")
         self._enabled = bool(settings.resend_api_key)
 
     def _log_skip(self, method: str, to: str):
         """Log that email was skipped because Resend is not configured."""
         print(f"[Email] SKIPPED {method} → {to}  (RESEND_API_KEY not set)")
+
+    async def _send(self, params: dict) -> bool:
+        if not self._enabled:
+            recipients = params.get("to") or ["unknown"]
+            self._log_skip("send", recipients[0] if recipients else "unknown")
+            return False
+        try:
+            await asyncio.to_thread(resend.Emails.send, params)
+            print(f"[Email] Sent → {params.get('to')} | {params.get('subject')}")
+            return True
+        except Exception as e:
+            print(f"[Email] Send failed → {params.get('to')}: {e}")
+            return False
 
     async def send_otp_email(self, to_email: str, otp: str) -> bool:
         """Send OTP verification email."""
@@ -58,8 +86,7 @@ class EmailService:
                     </div>
                 """
             }
-            resend.Emails.send(params)
-            return True
+            return await self._send(params)
         except Exception as e:
             print(f"Error sending OTP email: {e}")
             return False
@@ -95,8 +122,7 @@ class EmailService:
                     </div>
                 """
             }
-            resend.Emails.send(params)
-            return True
+            return await self._send(params)
         except Exception as e:
             print(f"Error sending welcome email: {e}")
             return False
@@ -132,8 +158,7 @@ class EmailService:
                     </div>
                 """
             }
-            resend.Emails.send(params)
-            return True
+            return await self._send(params)
         except Exception as e:
             print(f"Error sending contact email: {e}")
             return False
@@ -150,6 +175,7 @@ class EmailService:
             self._log_skip("send_order_confirmation_email", to_email)
             return False
         try:
+            orders_url = f"{self.frontend_url}/orders"
             params = {
                 "from": self.from_email,
                 "to": [to_email],
@@ -157,13 +183,14 @@ class EmailService:
                 "html": f"""
                     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
                         <h2 style="color: #1a1a1a;">Order Confirmed!</h2>
-                        <p>Thank you for your order.</p>
+                        <p>Thank you for shopping with Pranjay. We've received your order.</p>
                         <div style="background: #f5f5f5; padding: 20px; margin: 20px 0;">
                             <p><strong>Order Number:</strong> {order_number}</p>
                             <p><strong>Items:</strong> {items_count}</p>
                             <p><strong>Total:</strong> ₹{total_amount:,.2f}</p>
                         </div>
-                        <p>We'll notify you when your order ships.</p>
+                        <p>We'll email you again when your order ships and when it's delivered.</p>
+                        <p><a href="{orders_url}" style="color: #d81b60;">Track your order</a></p>
                         <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
                         <p style="color: #666; font-size: 12px;">
                             &copy; 2024 Pranjay. All rights reserved.
@@ -171,8 +198,7 @@ class EmailService:
                     </div>
                 """
             }
-            resend.Emails.send(params)
-            return True
+            return await self._send(params)
         except Exception as e:
             print(f"Error sending order confirmation email: {e}")
             return False
@@ -180,16 +206,22 @@ class EmailService:
     async def send_order_notification_to_admin(
         self,
         order_number: str,
-        customer_email: str,
+        customer_contact: str,
         customer_name: str,
         total_amount: float,
-        items_count: int
+        items_count: int,
+        order_id: str | None = None,
     ) -> bool:
         """Send new order notification to admin."""
         if not self._enabled:
             self._log_skip("send_order_notification_to_admin", self.admin_email)
             return False
         try:
+            admin_link = (
+                f"{self.frontend_url}/admin/orders/{order_id}"
+                if order_id
+                else f"{self.frontend_url}/admin/orders"
+            )
             params = {
                 "from": self.from_email,
                 "to": [self.admin_email],
@@ -197,17 +229,22 @@ class EmailService:
                 "html": f"""
                     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
                         <h2 style="color: #1a1a1a;">New Order Received!</h2>
+                        <p>A customer just placed an order. Please review and confirm it in the admin panel.</p>
                         <div style="background: #f5f5f5; padding: 20px; margin: 20px 0;">
                             <p><strong>Order Number:</strong> {order_number}</p>
-                            <p><strong>Customer:</strong> {customer_name} ({customer_email})</p>
+                            <p><strong>Customer:</strong> {escape(customer_name)} ({escape(customer_contact)})</p>
                             <p><strong>Items:</strong> {items_count}</p>
                             <p><strong>Total:</strong> ₹{total_amount:,.2f}</p>
                         </div>
+                        <p>
+                            <a href="{admin_link}" style="display: inline-block; background: #d81b60; color: #fff; padding: 12px 24px; text-decoration: none; border-radius: 6px;">
+                                View order in admin
+                            </a>
+                        </p>
                     </div>
                 """
             }
-            resend.Emails.send(params)
-            return True
+            return await self._send(params)
         except Exception as e:
             print(f"Error sending admin notification: {e}")
             return False
@@ -224,8 +261,9 @@ class EmailService:
             return False
         tracking_section = ""
         if tracking_info:
-            tracking_section = f"<p><strong>Tracking:</strong> {tracking_info}</p>"
+            tracking_section = f"<p><strong>Tracking:</strong> {escape(tracking_info)}</p>"
         try:
+            orders_url = f"{self.frontend_url}/orders"
             params = {
                 "from": self.from_email,
                 "to": [to_email],
@@ -233,12 +271,13 @@ class EmailService:
                 "html": f"""
                     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
                         <h2 style="color: #1a1a1a;">Your Order is Shipped!</h2>
-                        <p>Great news! Your order has been shipped.</p>
+                        <p>Great news! Your order has left our warehouse and is on its way to you.</p>
                         <div style="background: #f5f5f5; padding: 20px; margin: 20px 0;">
                             <p><strong>Order Number:</strong> {order_number}</p>
                             {tracking_section}
                         </div>
-                        <p>You'll receive it soon!</p>
+                        <p>We'll notify you once it's delivered.</p>
+                        <p><a href="{orders_url}" style="color: #d81b60;">Track your order</a></p>
                         <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
                         <p style="color: #666; font-size: 12px;">
                             &copy; 2024 Pranjay. All rights reserved.
@@ -246,10 +285,47 @@ class EmailService:
                     </div>
                 """
             }
-            resend.Emails.send(params)
-            return True
+            return await self._send(params)
         except Exception as e:
             print(f"Error sending shipped email: {e}")
+            return False
+
+    async def send_order_delivered_email(
+        self,
+        to_email: str,
+        order_number: str,
+        customer_name: str = "Customer",
+    ) -> bool:
+        """Send order delivered notification."""
+        if not self._enabled:
+            self._log_skip("send_order_delivered_email", to_email)
+            return False
+        safe_name = escape(customer_name or "Customer")
+        try:
+            orders_url = f"{self.frontend_url}/orders"
+            params = {
+                "from": self.from_email,
+                "to": [to_email],
+                "subject": f"Order Delivered - {order_number}",
+                "html": f"""
+                    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                        <h2 style="color: #1a1a1a;">Your Order is Delivered!</h2>
+                        <p>Hi {safe_name},</p>
+                        <p>Your order <strong>{order_number}</strong> has been delivered. We hope you love your purchase!</p>
+                        <div style="background: #ecfdf5; border-left: 4px solid #059669; padding: 16px; margin: 20px 0;">
+                            <p style="margin: 0;">If anything is missing or damaged, please contact us at <a href="mailto:{self.admin_email}">{self.admin_email}</a>.</p>
+                        </div>
+                        <p><a href="{orders_url}" style="color: #d81b60;">View order details</a></p>
+                        <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+                        <p style="color: #666; font-size: 12px;">
+                            &copy; 2024 Pranjay. All rights reserved.
+                        </p>
+                    </div>
+                """
+            }
+            return await self._send(params)
+        except Exception as e:
+            print(f"Error sending delivered email: {e}")
             return False
 
     async def send_order_status_update(
@@ -297,8 +373,7 @@ class EmailService:
                     </div>
                 """
             }
-            resend.Emails.send(params)
-            return True
+            return await self._send(params)
         except Exception as e:
             print(f"Error sending order status email: {e}")
             return False
@@ -346,8 +421,7 @@ class EmailService:
                     </div>
                 """
             }
-            resend.Emails.send(params)
-            return True
+            return await self._send(params)
         except Exception as e:
             print(f"Error sending order item cancellation email: {e}")
             return False
@@ -381,8 +455,7 @@ class EmailService:
                     </div>
                 """
             }
-            resend.Emails.send(params)
-            return True
+            return await self._send(params)
         except Exception as e:
             print(f"Error sending seller application received email: {e}")
             return False
@@ -424,8 +497,7 @@ class EmailService:
                     </div>
                 """
             }
-            resend.Emails.send(params)
-            return True
+            return await self._send(params)
         except Exception as e:
             print(f"Error sending seller application admin email: {e}")
             return False
@@ -469,8 +541,7 @@ class EmailService:
                     </div>
                 """
             }
-            resend.Emails.send(params)
-            return True
+            return await self._send(params)
         except Exception as e:
             print(f"Error sending seller approved credentials email: {e}")
             return False
