@@ -305,7 +305,11 @@ export default function OrderDetailPage() {
                                                 if (!order) return;
                                                 setIsDownloadingInvoice(true);
                                                 try {
-                                                    await downloadOrderInvoice(order.id, order.order_number);
+                                                    await downloadOrderInvoice(
+                                                        order.id,
+                                                        order.order_number,
+                                                        order.invoice_url
+                                                    );
                                                 } catch (error: any) {
                                                     toast({
                                                         title: 'Invoice download failed',

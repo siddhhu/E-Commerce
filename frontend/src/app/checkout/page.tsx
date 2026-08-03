@@ -24,7 +24,6 @@ import {
 } from '@/lib/payment-rules';
 import { ShoppingOffersBar } from '@/components/shop/ShoppingOffersBar';
 import { NativeFileUploadZone } from '@/components/native/NativeFileUploadZone';
-import { useIsNativeApp } from '@/hooks/use-is-native-app';
 
 // Official Indian GST Number regex: 2-digit state + PAN (10 chars) + 1 entity digit + Z + 1 checksum
 const GST_REGEX = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
@@ -129,8 +128,6 @@ export default function CheckoutPage() {
     const [docFile, setDocFile] = useState<File | null>(null);
     const [docFileUrl, setDocFileUrl] = useState('');
     const [docUploading, setDocUploading] = useState(false);
-
-    const isNative = useIsNativeApp();
 
     const kycComplete = Boolean(user?.kyc_verified_at && user?.kyc_document_url);
     const verifiedDocType = (user?.kyc_document_type as DocType | undefined) || docType;
@@ -683,7 +680,6 @@ export default function CheckoutPage() {
                                                     onSelect={handleDocFileSelect}
                                                     title="Tap to upload your document"
                                                     hint="PDF, JPG, or PNG · Max 10MB"
-                                                    showCameraOption={isNative}
                                                 />
                                             </div>
                                         </div>

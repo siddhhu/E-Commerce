@@ -12,7 +12,6 @@ import { authApi, usersApi } from '@/lib/api';
 import { TERMS_VIEWED_STORAGE_KEY } from '@/lib/legal';
 import { useAuthStore } from '@/store/auth-store';
 import { NativeFileUploadZone } from '@/components/native/NativeFileUploadZone';
-import { useIsNativeApp } from '@/hooks/use-is-native-app';
 
 export default function ProfileSetupPage() {
     const router = useRouter();
@@ -37,8 +36,6 @@ export default function ProfileSetupPage() {
     const [bankIfsc, setBankIfsc] = useState('');
     const [bankName, setBankName] = useState('');
     const [isUploadingInvoice, setIsUploadingInvoice] = useState(false);
-    const isNative = useIsNativeApp();
-
     useEffect(() => {
         if (!isAuthLoading) {
             if (!isAuthenticated) {
@@ -316,7 +313,6 @@ export default function ProfileSetupPage() {
                                     onSelect={setInvoiceFile}
                                     title="Tap to upload your business document"
                                     hint="GST cert / shop license / trade license"
-                                    showCameraOption={isNative}
                                 />
 
                                 <NativeFileUploadZone
@@ -325,7 +321,6 @@ export default function ProfileSetupPage() {
                                     title="Tap to upload bank account proof"
                                     hint="Cancelled cheque / passbook / bank statement"
                                     tone="blue"
-                                    showCameraOption={isNative}
                                 />
 
                                 <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-4 space-y-3">
