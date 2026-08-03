@@ -264,8 +264,10 @@ export default function HomePageClient({
             </div>
 
             <div className="flex-1">
-                <div className="container py-4">
-                    <BannerSlider initialBanners={initialBanners} />
+                <div className="w-full py-3 md:py-4">
+                    <div className="container max-w-[1400px]">
+                        <BannerSlider initialBanners={initialBanners} />
+                    </div>
                 </div>
 
                 {homeCategories.length > 0 && (
