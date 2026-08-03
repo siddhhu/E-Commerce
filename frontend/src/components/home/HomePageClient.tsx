@@ -264,11 +264,10 @@ export default function HomePageClient({
             </div>
 
             <div className="flex-1">
-                <div className="w-full py-3 md:py-4">
-                    <div className="container max-w-[1400px]">
-                        <BannerSlider initialBanners={initialBanners} />
-                    </div>
-                </div>
+                {/* Full viewport width hero — breaks out of page padding */}
+                <section className="relative left-1/2 w-screen max-w-[100vw] -translate-x-1/2 py-3 md:py-4">
+                    <BannerSlider initialBanners={initialBanners} />
+                </section>
 
                 {homeCategories.length > 0 && (
                     <section className="py-8 bg-white">

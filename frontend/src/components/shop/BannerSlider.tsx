@@ -6,7 +6,7 @@ import { ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 import { bannerApi, Banner } from '@/lib/api';
 import { resolveImageUrl, cn } from '@/lib/utils';
 
-/** Upload banners at this size for edge-to-edge display without cropping */
+/** Upload banners at exactly this size for zero crop on desktop */
 export const BANNER_RECOMMENDED_WIDTH = 1920;
 export const BANNER_RECOMMENDED_HEIGHT = 640;
 
@@ -45,8 +45,13 @@ export function BannerSlider({ initialBanners = null }: { initialBanners?: Banne
 
     if (isLoading) {
         return (
-            <div className="w-full aspect-[3/1] min-h-[140px] bg-slate-100 flex items-center justify-center rounded-xl md:rounded-2xl animate-pulse">
-                <Loader2 className="h-8 w-8 animate-spin text-primary/30" />
+            <div
+                className="relative w-full overflow-hidden bg-slate-100 animate-pulse"
+                style={{ aspectRatio: '3 / 1', minHeight: 'clamp(140px, 28vw, 560px)' }}
+            >
+                <div className="absolute inset-0 flex items-center justify-center">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary/30" />
+                </div>
             </div>
         );
     }
@@ -59,7 +64,10 @@ export function BannerSlider({ initialBanners = null }: { initialBanners?: Banne
     const prevSlide = () => setCurrentIndex((prev) => (prev - 1 + banners.length) % banners.length);
 
     return (
-        <div className="relative group w-full overflow-hidden rounded-xl md:rounded-2xl">
+        <div
+            className="relative group w-full overflow-hidden bg-slate-100"
+            style={{ aspectRatio: '3 / 1', minHeight: 'clamp(140px, 28vw, 560px)' }}
+        >
             {banners.map((banner, index) => {
                 const isActive = index === currentIndex;
                 const imageSrc = resolveImageUrl(
@@ -70,20 +78,18 @@ export function BannerSlider({ initialBanners = null }: { initialBanners?: Banne
                     <div
                         key={banner.id}
                         className={cn(
-                            'w-full transition-opacity duration-700 ease-in-out',
-                            isActive
-                                ? 'relative z-10 opacity-100'
-                                : 'absolute inset-0 z-0 opacity-0 pointer-events-none'
+                            'absolute inset-0 transition-opacity duration-700 ease-in-out',
+                            isActive ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'
                         )}
                     >
-                        {/* Full width, natural height — no side gaps when image is 1920×640 (3:1) */}
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                             src={imageSrc}
                             alt={banner.title || 'Promotional banner'}
-                            className="block w-full h-auto"
+                            className="h-full w-full object-cover object-center"
                             loading={index === 0 ? 'eager' : 'lazy'}
                             decoding="async"
+                            draggable={false}
                             onError={() => setFailedImages((prev) => ({ ...prev, [banner.id]: true }))}
                         />
                         {banner.link_url && isActive && (
@@ -102,7 +108,7 @@ export function BannerSlider({ initialBanners = null }: { initialBanners?: Banne
                     <button
                         type="button"
                         onClick={prevSlide}
-                        className="absolute left-3 md:left-4 top-1/2 -translate-y-1/2 z-20 h-9 w-9 md:h-10 md:w-10 rounded-full bg-black/25 backdrop-blur-md text-white flex items-center justify-center md:opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/40"
+                        className="absolute left-3 md:left-5 top-1/2 -translate-y-1/2 z-20 h-9 w-9 md:h-11 md:w-11 rounded-full bg-black/30 backdrop-blur-sm text-white flex items-center justify-center md:opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/45"
                         aria-label="Previous banner"
                     >
                         <ChevronLeft className="h-6 w-6" />
@@ -110,7 +116,7 @@ export function BannerSlider({ initialBanners = null }: { initialBanners?: Banne
                     <button
                         type="button"
                         onClick={nextSlide}
-                        className="absolute right-3 md:right-4 top-1/2 -translate-y-1/2 z-20 h-9 w-9 md:h-10 md:w-10 rounded-full bg-black/25 backdrop-blur-md text-white flex items-center justify-center md:opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/40"
+                        className="absolute right-3 md:right-5 top-1/2 -translate-y-1/2 z-20 h-9 w-9 md:h-11 md:w-11 rounded-full bg-black/30 backdrop-blur-sm text-white flex items-center justify-center md:opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/45"
                         aria-label="Next banner"
                     >
                         <ChevronRight className="h-6 w-6" />
@@ -124,8 +130,8 @@ export function BannerSlider({ initialBanners = null }: { initialBanners?: Banne
                                 onClick={() => setCurrentIndex(i)}
                                 aria-label={`Go to banner ${i + 1}`}
                                 className={cn(
-                                    'h-1.5 rounded-full transition-all',
-                                    i === currentIndex ? 'w-8 bg-primary' : 'w-2 bg-white/80 shadow-sm'
+                                    'h-1.5 rounded-full transition-all shadow-sm',
+                                    i === currentIndex ? 'w-8 bg-primary' : 'w-2 bg-white/90'
                                 )}
                             />
                         ))}
