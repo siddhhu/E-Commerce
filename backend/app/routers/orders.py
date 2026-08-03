@@ -5,7 +5,9 @@ from typing import Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query
+from fastapi.responses import Response
 from sqlalchemy.ext.asyncio import AsyncSession
+import httpx
 from sqlalchemy import func
 from sqlmodel import select
 from pydantic import BaseModel
@@ -91,6 +93,40 @@ async def get_order_details(
         raise NotFoundException("Order")
     
     return build_order_read(order)
+
+
+@router.get("/{order_id}/invoice")
+async def download_order_invoice(
+    order_id: UUID,
+    current_user: User = Depends(get_current_active_user),
+    session: AsyncSession = Depends(get_session),
+):
+    """Stream tax invoice PDF for the order owner (WebView-safe download)."""
+    from app.core.exceptions import NotFoundException
+
+    order_service = OrderService(session)
+    order = await order_service.get_order_by_id(order_id)
+
+    if order.user_id != current_user.id:
+        raise NotFoundException("Order")
+
+    if not order.invoice_url:
+        raise NotFoundException("Invoice")
+
+    try:
+        async with httpx.AsyncClient(timeout=30.0, follow_redirects=True) as client:
+            upstream = await client.get(order.invoice_url)
+            upstream.raise_for_status()
+            pdf_bytes = upstream.content
+    except Exception as exc:
+        raise BadRequestException("Could not fetch invoice file") from exc
+
+    filename = f"{order.order_number}-invoice.pdf"
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
 
 
 @router.post("/{order_id}/cancel", response_model=OrderRead)

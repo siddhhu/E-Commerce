@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Loader2, User as UserIcon, Upload, CheckCircle2, Clock, XCircle, FileText, Mail, Landmark } from 'lucide-react';
+import { Loader2, User as UserIcon, CheckCircle2, Clock, XCircle, Mail, Landmark } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -11,6 +11,8 @@ import { useToast } from '@/hooks/use-toast';
 import { authApi, usersApi } from '@/lib/api';
 import { TERMS_VIEWED_STORAGE_KEY } from '@/lib/legal';
 import { useAuthStore } from '@/store/auth-store';
+import { NativeFileUploadZone } from '@/components/native/NativeFileUploadZone';
+import { useIsNativeApp } from '@/hooks/use-is-native-app';
 
 export default function ProfileSetupPage() {
     const router = useRouter();
@@ -35,8 +37,7 @@ export default function ProfileSetupPage() {
     const [bankIfsc, setBankIfsc] = useState('');
     const [bankName, setBankName] = useState('');
     const [isUploadingInvoice, setIsUploadingInvoice] = useState(false);
-    const fileInputRef = useRef<HTMLInputElement>(null);
-    const bankProofInputRef = useRef<HTMLInputElement>(null);
+    const isNative = useIsNativeApp();
 
     useEffect(() => {
         if (!isAuthLoading) {
@@ -310,77 +311,22 @@ export default function ProfileSetupPage() {
                         {/* No status — show upload form */}
                         {(!sellerStatus || sellerStatus === 'none') && (
                             <div className="space-y-4">
-                                <div
-                                    className={`border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-all ${
-                                        invoiceFile ? 'border-green-400 bg-green-50' : 'border-muted hover:border-primary/50'
-                                    }`}
-                                    onClick={() => fileInputRef.current?.click()}
-                                >
-                                    <input
-                                        ref={fileInputRef}
-                                        type="file"
-                                        accept="application/pdf,image/jpeg,image/png"
-                                        className="hidden"
-                                        onChange={(e) => setInvoiceFile(e.target.files?.[0] || null)}
-                                    />
-                                    {invoiceFile ? (
-                                        <div className="flex flex-col items-center gap-2">
-                                            <FileText className="h-8 w-8 text-green-600" />
-                                            <p className="font-medium text-green-700">{invoiceFile.name}</p>
-                                            <p className="text-xs text-green-600">{(invoiceFile.size / 1024).toFixed(0)} KB</p>
-                                            <button
-                                                type="button"
-                                                className="text-xs text-muted-foreground underline"
-                                                onClick={(e) => { e.stopPropagation(); setInvoiceFile(null); }}
-                                            >
-                                                Change file
-                                            </button>
-                                        </div>
-                                    ) : (
-                                        <div className="flex flex-col items-center gap-2">
-                                            <Upload className="h-8 w-8 text-muted-foreground" />
-                                            <p className="text-sm font-medium">Click to upload your document</p>
-                                            <p className="text-xs text-muted-foreground">GST cert / shop license / trade license</p>
-                                            <p className="text-xs text-muted-foreground">PDF, JPG, or PNG • Max 10MB</p>
-                                        </div>
-                                    )}
-                                </div>
+                                <NativeFileUploadZone
+                                    selectedFile={invoiceFile}
+                                    onSelect={setInvoiceFile}
+                                    title="Tap to upload your business document"
+                                    hint="GST cert / shop license / trade license"
+                                    showCameraOption={isNative}
+                                />
 
-                                <div
-                                    className={`border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-all ${
-                                        bankProofFile ? 'border-blue-400 bg-blue-50' : 'border-muted hover:border-primary/50'
-                                    }`}
-                                    onClick={() => bankProofInputRef.current?.click()}
-                                >
-                                    <input
-                                        ref={bankProofInputRef}
-                                        type="file"
-                                        accept="application/pdf,image/jpeg,image/png"
-                                        className="hidden"
-                                        onChange={(e) => setBankProofFile(e.target.files?.[0] || null)}
-                                    />
-                                    {bankProofFile ? (
-                                        <div className="flex flex-col items-center gap-2">
-                                            <FileText className="h-8 w-8 text-blue-600" />
-                                            <p className="font-medium text-blue-700">{bankProofFile.name}</p>
-                                            <p className="text-xs text-blue-600">{(bankProofFile.size / 1024).toFixed(0)} KB</p>
-                                            <button
-                                                type="button"
-                                                className="text-xs text-muted-foreground underline"
-                                                onClick={(e) => { e.stopPropagation(); setBankProofFile(null); }}
-                                            >
-                                                Change bank proof
-                                            </button>
-                                        </div>
-                                    ) : (
-                                        <div className="flex flex-col items-center gap-2">
-                                            <Landmark className="h-8 w-8 text-muted-foreground" />
-                                            <p className="text-sm font-medium">Upload bank account proof</p>
-                                            <p className="text-xs text-muted-foreground">Cancelled cheque / passbook / bank statement</p>
-                                            <p className="text-xs text-muted-foreground">PDF, JPG, or PNG • Max 10MB</p>
-                                        </div>
-                                    )}
-                                </div>
+                                <NativeFileUploadZone
+                                    selectedFile={bankProofFile}
+                                    onSelect={setBankProofFile}
+                                    title="Tap to upload bank account proof"
+                                    hint="Cancelled cheque / passbook / bank statement"
+                                    tone="blue"
+                                    showCameraOption={isNative}
+                                />
 
                                 <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-4 space-y-3">
                                     <div className="flex items-start gap-2">

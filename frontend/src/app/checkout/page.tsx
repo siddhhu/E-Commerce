@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { CreditCard, Banknote, MapPin, ArrowLeft, CheckCircle2, ShoppingBag, FileText, AlertCircle, CheckCircle, Building2, Shield, Truck, Upload } from 'lucide-react';
+import { CreditCard, Banknote, MapPin, ArrowLeft, CheckCircle2, ShoppingBag, FileText, AlertCircle, CheckCircle, Building2, Shield, Truck } from 'lucide-react';
 
 import Script from 'next/script';
 
@@ -23,6 +23,8 @@ import {
     isCodAllowedForPostalCode,
 } from '@/lib/payment-rules';
 import { ShoppingOffersBar } from '@/components/shop/ShoppingOffersBar';
+import { NativeFileUploadZone } from '@/components/native/NativeFileUploadZone';
+import { useIsNativeApp } from '@/hooks/use-is-native-app';
 
 // Official Indian GST Number regex: 2-digit state + PAN (10 chars) + 1 entity digit + Z + 1 checksum
 const GST_REGEX = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
@@ -127,7 +129,8 @@ export default function CheckoutPage() {
     const [docFile, setDocFile] = useState<File | null>(null);
     const [docFileUrl, setDocFileUrl] = useState('');
     const [docUploading, setDocUploading] = useState(false);
-    const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const isNative = useIsNativeApp();
 
     const kycComplete = Boolean(user?.kyc_verified_at && user?.kyc_document_url);
     const verifiedDocType = (user?.kyc_document_type as DocType | undefined) || docType;
@@ -674,37 +677,14 @@ export default function CheckoutPage() {
 
                                             <div className="space-y-2">
                                                 <Label>Upload Document <span className="text-red-500">*</span></Label>
-                                                <div
-                                                    className={cn(
-                                                        "border-2 border-dashed rounded-xl p-5 text-center cursor-pointer transition-all",
-                                                        docFileUrl ? "border-green-400 bg-green-50" : "border-muted hover:border-primary/50",
-                                                        docUploading && "opacity-60 pointer-events-none"
-                                                    )}
-                                                    onClick={() => fileInputRef.current?.click()}
-                                                >
-                                                    <input
-                                                        ref={fileInputRef}
-                                                        type="file"
-                                                        accept="application/pdf,image/jpeg,image/png"
-                                                        className="hidden"
-                                                        onChange={(e) => handleDocFileSelect(e.target.files?.[0] || null)}
-                                                    />
-                                                    {docUploading ? (
-                                                        <p className="text-sm text-muted-foreground">Uploading...</p>
-                                                    ) : docFile ? (
-                                                        <div className="flex flex-col items-center gap-2">
-                                                            <FileText className="h-8 w-8 text-green-600" />
-                                                            <p className="font-medium text-green-700 text-sm">{docFile.name}</p>
-                                                            <p className="text-xs text-green-600">Uploaded — ready to proceed</p>
-                                                        </div>
-                                                    ) : (
-                                                        <div className="flex flex-col items-center gap-2">
-                                                            <Upload className="h-8 w-8 text-muted-foreground" />
-                                                            <p className="text-sm font-medium">Click to upload your document</p>
-                                                            <p className="text-xs text-muted-foreground">PDF, JPG, or PNG · Max 10MB</p>
-                                                        </div>
-                                                    )}
-                                                </div>
+                                                <NativeFileUploadZone
+                                                    selectedFile={docFile}
+                                                    uploading={docUploading}
+                                                    onSelect={handleDocFileSelect}
+                                                    title="Tap to upload your document"
+                                                    hint="PDF, JPG, or PNG · Max 10MB"
+                                                    showCameraOption={isNative}
+                                                />
                                             </div>
                                         </div>
                                     )}
