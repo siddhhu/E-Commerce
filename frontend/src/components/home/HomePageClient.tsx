@@ -15,7 +15,7 @@ import { useCartStore } from '@/store/cart-store';
 import { useWishlistStore } from '@/store/wishlist-store';
 import { useAuthStore } from '@/store/auth-store';
 import { useToast } from '@/hooks/use-toast';
-import { formatPrice } from '@/lib/utils';
+import { formatPrice, resolveImageUrl } from '@/lib/utils';
 import { BannerSlider } from '@/components/shop/BannerSlider';
 import { ProductCard } from '@/components/products/ProductCard';
 import { Product as APIProduct } from '@/lib/api';
@@ -212,9 +212,8 @@ export default function HomePageClient({
 
     const getImageUrl = (url?: string | null) => {
         if (!url) return null;
-        if (url.startsWith('http')) return url;
-        const baseUrl = process.env.NEXT_PUBLIC_API_URL?.replace('/api/v1', '') || 'http://localhost:8000';
-        return `${baseUrl}${url}`;
+        const resolved = resolveImageUrl(url);
+        return resolved === '/placeholder.jpg' ? null : resolved;
     };
 
     const mapFeaturedToProduct = (product: APIProductSummary): APIProduct => ({
@@ -282,27 +281,36 @@ export default function HomePageClient({
                                 </Link>
                             </div>
                             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-8">
-                                {homeCategories.map((category) => (
+                                {homeCategories.map((category) => {
+                                    const categoryImage = getImageUrl(category.image_url);
+                                    return (
                                     <Link
                                         key={category.id}
                                         href={`/products?category=${category.id}`}
                                         className="group overflow-hidden rounded-2xl border border-rose-100 bg-white text-center shadow-sm transition-all hover:-translate-y-1 hover:shadow-lg"
                                     >
-                                        <div className="relative h-24 w-full overflow-hidden bg-gradient-to-br from-rose-50 to-amber-50 sm:h-28">
-                                            {getImageUrl(category.image_url) ? (
-                                                <img src={getImageUrl(category.image_url)!} alt={category.name} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" loading="lazy" />
+                                        <div className="relative h-28 w-full overflow-hidden bg-gradient-to-br from-rose-50 to-amber-50 sm:h-32 md:h-36">
+                                            {categoryImage ? (
+                                                <img
+                                                    src={categoryImage}
+                                                    alt={category.name}
+                                                    className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                                                    loading="lazy"
+                                                />
                                             ) : (
-                                                <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#e91e63]/15 to-amber-100 text-2xl font-black text-primary/50">
+                                                <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#e91e63]/15 to-amber-100 text-3xl font-black text-primary/50">
                                                     {category.name.slice(0, 1).toUpperCase()}
                                                 </div>
                                             )}
+                                            <div className="absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-black/35 to-transparent" />
                                         </div>
                                         <div className="p-3">
                                             <p className="line-clamp-2 text-xs font-extrabold text-slate-900 group-hover:text-primary">{category.name}</p>
                                             <p className="mt-1 text-[11px] font-semibold text-slate-400">Shop now</p>
                                         </div>
                                     </Link>
-                                ))}
+                                    );
+                                })}
                             </div>
                         </div>
                     </section>

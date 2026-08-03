@@ -3,8 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { ArrowRight, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 import { bannerApi, Banner } from '@/lib/api';
 import { resolveImageUrl } from '@/lib/utils';
 
@@ -43,7 +42,7 @@ export function BannerSlider({ initialBanners = null }: { initialBanners?: Banne
 
     if (isLoading) {
         return (
-            <div className="aspect-[16/10] md:aspect-[16/7] lg:h-[500px] w-full bg-slate-100 flex items-center justify-center rounded-xl md:rounded-2xl animate-pulse">
+            <div className="w-full min-h-[200px] sm:min-h-[260px] md:min-h-[320px] lg:min-h-[380px] bg-slate-100 flex items-center justify-center rounded-xl md:rounded-2xl animate-pulse">
                 <Loader2 className="h-8 w-8 animate-spin text-primary/30" />
             </div>
         );
@@ -59,7 +58,7 @@ export function BannerSlider({ initialBanners = null }: { initialBanners?: Banne
     const indicesToRender = new Set([currentIndex, nextIndex]);
 
     return (
-        <div className="relative group overflow-hidden rounded-xl md:rounded-2xl aspect-[16/10] md:aspect-[16/7] lg:h-[500px] bg-slate-100">
+        <div className="relative group overflow-hidden rounded-xl md:rounded-2xl w-full bg-slate-50 min-h-[200px] sm:min-h-[260px] md:min-h-[320px] lg:min-h-[380px]">
             {banners.map((banner, index) => {
                 if (!indicesToRender.has(index)) return null;
 
@@ -77,34 +76,18 @@ export function BannerSlider({ initialBanners = null }: { initialBanners?: Banne
                     >
                         <Image
                             src={imageSrc}
-                            alt={banner.title}
+                            alt={banner.title || 'Promotional banner'}
                             fill
                             priority={index === 0}
                             sizes="100vw"
-                            className="object-contain object-center md:object-cover"
+                            className="object-contain object-center p-1 sm:p-2"
                             onError={() => setFailedImages((prev) => ({ ...prev, [banner.id]: true }))}
                         />
-                        <div className="absolute inset-x-0 bottom-0 md:inset-0 bg-gradient-to-t md:bg-gradient-to-r from-black/65 via-black/20 to-transparent flex items-end justify-center md:items-center md:justify-start pointer-events-none">
-                            <div className="w-full px-5 pb-6 text-center md:container md:px-16 md:pb-0 md:text-left">
-                                <div className="mx-auto md:mx-0 max-w-xl space-y-3 md:space-y-6 text-white transform transition-all duration-700 translate-y-0 opacity-100 pointer-events-auto">
-                                    <h2 className="text-xl sm:text-2xl md:text-5xl lg:text-6xl font-bold leading-tight drop-shadow-sm">
-                                        {banner.title}
-                                    </h2>
-                                    {banner.link_url && (
-                                        <Link href={banner.link_url} className="inline-block relative z-20">
-                                            <Button size="lg" className="bg-primary hover:bg-primary/90 text-white border-none gap-2 mt-1 md:mt-4 font-bold h-10 md:h-14 px-5 md:px-8 rounded-full shadow-lg hover:shadow-primary/30 transition-all cursor-pointer">
-                                                Shop Now <ArrowRight className="h-5 w-5" />
-                                            </Button>
-                                        </Link>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
                         {banner.link_url && (
                             <Link 
                                 href={banner.link_url} 
                                 className="absolute inset-0 z-10"
-                                aria-label={`Shop ${banner.title}`}
+                                aria-label={banner.title ? `Shop ${banner.title}` : 'View promotion'}
                             />
                         )}
                     </div>
@@ -115,24 +98,27 @@ export function BannerSlider({ initialBanners = null }: { initialBanners?: Banne
                 <>
                     <button
                         onClick={prevSlide}
-                        className="absolute left-3 md:left-4 top-1/2 -translate-y-1/2 z-20 h-9 w-9 md:h-10 md:w-10 rounded-full bg-white/25 backdrop-blur-md text-white flex items-center justify-center md:opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white/40"
+                        className="absolute left-3 md:left-4 top-1/2 -translate-y-1/2 z-20 h-9 w-9 md:h-10 md:w-10 rounded-full bg-black/20 backdrop-blur-md text-white flex items-center justify-center md:opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/35"
+                        aria-label="Previous banner"
                     >
                         <ChevronLeft className="h-6 w-6" />
                     </button>
                     <button
                         onClick={nextSlide}
-                        className="absolute right-3 md:right-4 top-1/2 -translate-y-1/2 z-20 h-9 w-9 md:h-10 md:w-10 rounded-full bg-white/25 backdrop-blur-md text-white flex items-center justify-center md:opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white/40"
+                        className="absolute right-3 md:right-4 top-1/2 -translate-y-1/2 z-20 h-9 w-9 md:h-10 md:w-10 rounded-full bg-black/20 backdrop-blur-md text-white flex items-center justify-center md:opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/35"
+                        aria-label="Next banner"
                     >
                         <ChevronRight className="h-6 w-6" />
                     </button>
 
-                    <div className="absolute bottom-3 md:bottom-6 left-1/2 -translate-x-1/2 z-20 flex gap-2">
+                    <div className="absolute bottom-3 md:bottom-4 left-1/2 -translate-x-1/2 z-20 flex gap-2">
                         {banners.map((_, i) => (
                             <button
                                 key={i}
                                 onClick={() => setCurrentIndex(i)}
+                                aria-label={`Go to banner ${i + 1}`}
                                 className={`h-1.5 rounded-full transition-all ${
-                                    i === currentIndex ? 'w-8 bg-primary' : 'w-2 bg-white/50'
+                                    i === currentIndex ? 'w-8 bg-primary' : 'w-2 bg-black/30'
                                 }`}
                             />
                         ))}

@@ -8,11 +8,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.cache import response_cache
 from app.database import get_session
 from app.models.banner import BannerRead
-from app.models.category import Category, CategoryRead
+from app.models.category import Category
 from app.models.promo_code import PromoCodeRead
 from app.services.banner_service import BannerService
 from app.services.product_service import ProductService
 from app.services.promo_code_service import PromoCodeService
+from app.routers.categories import _category_product_image_map, _read_category
 from sqlmodel import select
 
 router = APIRouter()
@@ -60,9 +61,11 @@ async def home_bootstrap(
         .where(Category.is_active == True)
         .order_by(Category.sort_order, Category.name)
     )
+    category_rows = cat_result.scalars().all()
+    fallback_images = await _category_product_image_map(session, category_rows)
     categories = [
-        CategoryRead.model_validate(c).model_dump(mode="json")
-        for c in cat_result.scalars().all()
+        _read_category(c, fallback_images).model_dump(mode="json")
+        for c in category_rows
     ]
 
     promos = await promo_service.list_active_public(limit=3)

@@ -11,7 +11,7 @@ from sqlmodel import select
 from app.core.cache import response_cache
 from app.database import get_session
 from app.models.category import Category, CategoryRead, CategoryWithChildren
-from app.models.product import Product
+from app.models.product import Product, ProductImage
 from app.core.exceptions import NotFoundException
 
 router = APIRouter()
@@ -36,6 +36,19 @@ async def _category_product_image_map(session: AsyncSession, categories: list[Ca
             image_map[row.category_id] = row.image_url
 
     remaining_ids = category_ids - set(image_map)
+    if remaining_ids:
+        gallery_result = await session.execute(
+            select(Product.category_id, ProductImage.image_url)
+            .join(ProductImage, ProductImage.product_id == Product.id)
+            .where(Product.is_active == True)
+            .where(Product.category_id.in_(remaining_ids))
+            .order_by(Product.is_featured.desc(), ProductImage.is_primary.desc(), ProductImage.sort_order)
+        )
+        for row in gallery_result.all():
+            if row.category_id and row.category_id not in image_map and row.image_url:
+                image_map[row.category_id] = row.image_url
+
+    remaining_ids = category_ids - set(image_map)
     if not remaining_ids:
         return image_map
 
@@ -57,6 +70,24 @@ async def _category_product_image_map(session: AsyncSession, categories: list[Ca
 
             if category_id in remaining_ids and category_id not in image_map and row.image_url:
                 image_map[category_id] = row.image_url
+
+    remaining_ids = category_ids - set(image_map)
+    if remaining_ids:
+        gallery_multi_result = await session.execute(
+            select(Product.category_ids, ProductImage.image_url)
+            .join(ProductImage, ProductImage.product_id == Product.id)
+            .where(Product.is_active == True)
+            .order_by(Product.is_featured.desc(), ProductImage.is_primary.desc(), ProductImage.sort_order)
+            .limit(400)
+        )
+        for row in gallery_multi_result.all():
+            for raw_id in row.category_ids or []:
+                try:
+                    category_id = UUID(str(raw_id))
+                except (TypeError, ValueError):
+                    continue
+                if category_id in remaining_ids and category_id not in image_map and row.image_url:
+                    image_map[category_id] = row.image_url
 
     return image_map
 
