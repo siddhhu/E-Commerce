@@ -13,18 +13,15 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 import { ordersApi, Order } from '@/lib/api';
 import { useAuthStore } from '@/store/auth-store';
-import { formatPrice, formatDate } from '@/lib/utils';
-import { downloadOrderInvoice } from '@/lib/native/open-document';
-import { useToast } from '@/hooks/use-toast';
+import { formatPrice, formatDate, cn } from '@/lib/utils';
+import { buttonVariants } from '@/components/ui/button';
 
 export default function OrderDetailPage() {
     const params = useParams();
     const router = useRouter();
     const [order, setOrder] = useState<Order | null>(null);
     const [isLoading, setIsLoading] = useState(true);
-    const [isDownloadingInvoice, setIsDownloadingInvoice] = useState(false);
     const { isAuthenticated, isLoading: isAuthLoading, _hasHydrated } = useAuthStore();
-    const { toast } = useToast();
 
     useEffect(() => {
         if (_hasHydrated && !isAuthLoading && !isAuthenticated) {
@@ -297,33 +294,21 @@ export default function OrderDetailPage() {
                                         <CardTitle className="text-lg">Tax Invoice</CardTitle>
                                     </CardHeader>
                                     <CardContent>
-                                        <Button
-                                            variant="outline"
-                                            className="w-full gap-2 font-semibold"
-                                            disabled={isDownloadingInvoice}
-                                            onClick={async () => {
-                                                if (!order) return;
-                                                setIsDownloadingInvoice(true);
-                                                try {
-                                                    await downloadOrderInvoice(
-                                                        order.id,
-                                                        order.order_number,
-                                                        order.invoice_url
-                                                    );
-                                                } catch (error: any) {
-                                                    toast({
-                                                        title: 'Invoice download failed',
-                                                        description: error.message || 'Please try again shortly.',
-                                                        variant: 'destructive',
-                                                    });
-                                                } finally {
-                                                    setIsDownloadingInvoice(false);
-                                                }
-                                            }}
+                                        <a
+                                            href={order.invoice_url}
+                                            target="_self"
+                                            rel="noopener noreferrer"
+                                            className={cn(
+                                                buttonVariants({ variant: 'outline' }),
+                                                'w-full gap-2 font-semibold no-underline inline-flex'
+                                            )}
                                         >
                                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
-                                            {isDownloadingInvoice ? 'Opening invoice...' : 'Download Invoice'}
-                                        </Button>
+                                            View / Download Invoice
+                                        </a>
+                                        <p className="text-xs text-muted-foreground mt-2 text-center">
+                                            Opens the PDF in your phone&apos;s viewer
+                                        </p>
                                     </CardContent>
                                 </Card>
                             )}
