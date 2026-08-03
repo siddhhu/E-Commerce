@@ -241,6 +241,10 @@ export default function AdminBannersPage() {
                                     Use this so the banner fills the homepage edge-to-edge without cropping or empty side gaps.
                                     Keep important text in the center safe zone.
                                 </p>
+                                <div className="mt-2">
+                                    <label className="block text-xs font-medium text-slate-500 mb-1">
+                                        Or upload image (JPG/PNG/WEBP, max 10MB)
+                                    </label>
                                     <input
                                         type="file"
                                         accept="image/jpeg,image/png,image/webp"
