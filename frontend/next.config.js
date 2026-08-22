@@ -4,6 +4,8 @@ const nextConfig = {
         optimizePackageImports: ['lucide-react'],
     },
     images: {
+        // Vercel Image Optimization returns 402 on free/exceeded plans — load Supabase URLs directly
+        unoptimized: true,
         remotePatterns: [
             {
                 protocol: 'https',

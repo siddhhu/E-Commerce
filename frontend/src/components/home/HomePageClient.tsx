@@ -21,6 +21,7 @@ import { ProductCard } from '@/components/products/ProductCard';
 import { Product as APIProduct } from '@/lib/api';
 import { PromoBanner } from '@/components/layout/PromoBanner';
 import { ShoppingOffersBar } from '@/components/shop/ShoppingOffersBar';
+import { SHOPPING_OFFERS } from '@/lib/pricing';
 import { TrendingSlider } from '@/components/shop/TrendingSlider';
 import { CheckCircle2, Phone } from 'lucide-react';
 import { Input } from '@/components/ui/input';
@@ -196,7 +197,7 @@ export default function HomePageClient({
         {
             icon: Truck,
             title: 'Free Delivery',
-            description: 'On orders ₹3,000+',
+            description: `On orders ${formatPrice(SHOPPING_OFFERS.freeDeliveryFrom)}+`,
         },
         {
             icon: Sparkles,

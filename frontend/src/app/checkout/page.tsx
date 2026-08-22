@@ -23,6 +23,7 @@ import {
     isCodAllowedForPostalCode,
 } from '@/lib/payment-rules';
 import { ShoppingOffersBar } from '@/components/shop/ShoppingOffersBar';
+import { SHOPPING_OFFERS } from '@/lib/pricing';
 import { NativeFileUploadZone } from '@/components/native/NativeFileUploadZone';
 
 // Official Indian GST Number regex: 2-digit state + PAN (10 chars) + 1 entity digit + Z + 1 checksum
@@ -901,7 +902,7 @@ export default function CheckoutPage() {
                                         </div>
                                         <div className="flex items-center gap-2">
                                             <Truck className="h-4 w-4 text-primary" />
-                                            <span>Free delivery above ₹3,000 · Extra 1% off on ₹10,000+</span>
+                                            <span>Free delivery above {formatPrice(SHOPPING_OFFERS.freeDeliveryFrom)} · Extra 1% off on {formatPrice(SHOPPING_OFFERS.bulkDiscountFrom)}+</span>
                                         </div>
                                     </div>
 

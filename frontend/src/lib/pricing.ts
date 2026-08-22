@@ -20,7 +20,7 @@ export function getBulkDiscountShortfall(subtotal: number, promoDiscount = 0): n
 }
 
 export const SHOPPING_OFFERS = {
-    freeDeliveryFrom: 3000,
+    freeDeliveryFrom: 1000,
     deliveryFee: 50,
     bulkDiscountFrom: 10_000,
     bulkDiscountPercent: 1,
