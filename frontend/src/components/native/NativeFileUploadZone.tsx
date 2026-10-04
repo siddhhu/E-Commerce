@@ -1,11 +1,8 @@
 'use client';
 
-import { useState } from 'react';
-import { FileText, Upload, Camera } from 'lucide-react';
+import { FileText, Upload } from 'lucide-react';
 import { useId } from 'react';
 import { cn } from '@/lib/utils';
-import { MobileCameraCapture } from '@/components/native/MobileCameraCapture';
-import { Button } from '@/components/ui/button';
 
 type NativeFileUploadZoneProps = {
     accept?: string;
@@ -20,8 +17,10 @@ type NativeFileUploadZoneProps = {
 };
 
 /**
- * Touch-first upload for Play Store WebView wrappers.
- * Uses visible native inputs + getUserMedia camera (no hidden/opacity-0 tricks).
+ * Phone and WebView upload.
+ * The control the user taps is a real file input, so Android opens the
+ * system camera or file picker. An in-page camera (getUserMedia) is not used:
+ * Play Store WebViews block it and only show a permission error.
  */
 export function NativeFileUploadZone({
     accept = 'application/pdf,image/jpeg,image/png,image/*',
@@ -34,8 +33,6 @@ export function NativeFileUploadZone({
     showCameraOption = true,
     tone = 'default',
 }: NativeFileUploadZoneProps) {
-    const [cameraOpen, setCameraOpen] = useState(false);
-    const cameraInputId = useId().replace(/:/g, '');
     const fileInputId = useId().replace(/:/g, '');
 
     const borderClass =
@@ -75,7 +72,6 @@ export function NativeFileUploadZone({
 
     return (
         <>
-            {/* Touch / phone / WebView — always in DOM, shown via CSS (no JS detection delay) */}
             <div className="upload-touch-first space-y-3">
                 {selectedBanner}
 
@@ -84,52 +80,30 @@ export function NativeFileUploadZone({
                 ) : (
                     <>
                         {showCameraOption && (
-                            <div className="space-y-2">
-                                <Button
-                                    type="button"
-                                    variant="default"
-                                    className="w-full gap-2 min-h-[52px] text-base touch-manipulation"
+                            <div className={cn('rounded-xl border border-slate-200 bg-white px-3 py-3', disabled && 'pointer-events-none opacity-60')}>
+                                <p className="text-sm font-semibold text-slate-900 mb-2">Take photo with camera</p>
+                                <input
+                                    type="file"
+                                    accept="image/*"
+                                    capture="environment"
                                     disabled={disabled}
-                                    onClick={() => setCameraOpen(true)}
-                                >
-                                    <Camera className="h-5 w-5 shrink-0" />
-                                    Open camera to photograph document
-                                </Button>
-
-                                <p className="text-xs text-center text-muted-foreground">
-                                    Or use one of the options below
-                                </p>
-
-                                <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
-                                    <p className="text-xs font-medium text-slate-700 mb-2">
-                                        Take photo (native camera app)
-                                    </p>
-                                    <input
-                                        id={cameraInputId}
-                                        type="file"
-                                        accept="image/*"
-                                        capture="environment"
-                                        disabled={disabled}
-                                        className="block w-full min-h-[48px] text-base text-slate-800 touch-manipulation cursor-pointer"
-                                        onChange={(e) => {
-                                            handleChange(e.target.files?.[0] ?? null);
-                                            e.target.value = '';
-                                        }}
-                                    />
-                                </div>
+                                    className="pranjay-visible-file"
+                                    onChange={(e) => {
+                                        handleChange(e.target.files?.[0] ?? null);
+                                        e.target.value = '';
+                                    }}
+                                />
                             </div>
                         )}
 
-                        <div className="rounded-xl border border-slate-200 bg-white px-3 py-3 space-y-2">
-                            <p className="text-xs font-medium text-slate-700">
-                                Choose PDF or image from your phone
-                            </p>
+                        <div className={cn('rounded-xl border border-slate-200 bg-white px-3 py-3', disabled && 'pointer-events-none opacity-60')}>
+                            <p className="text-sm font-semibold text-slate-900 mb-2">Choose PDF or image</p>
                             <input
                                 id={fileInputId}
                                 type="file"
                                 accept={accept}
                                 disabled={disabled}
-                                className="block w-full min-h-[48px] text-base text-slate-800 touch-manipulation cursor-pointer file:mr-3 file:rounded-lg file:border-0 file:bg-slate-900 file:px-4 file:py-2.5 file:text-sm file:font-semibold file:text-white"
+                                className="pranjay-visible-file"
                                 onChange={(e) => {
                                     handleChange(e.target.files?.[0] ?? null);
                                     e.target.value = '';
@@ -142,7 +116,6 @@ export function NativeFileUploadZone({
                 )}
             </div>
 
-            {/* Desktop drag zone */}
             <div className="upload-desktop-only space-y-2">
                 <label
                     htmlFor={`desktop-${fileInputId}`}
@@ -201,12 +174,6 @@ export function NativeFileUploadZone({
                     </div>
                 </label>
             </div>
-
-            <MobileCameraCapture
-                open={cameraOpen}
-                onClose={() => setCameraOpen(false)}
-                onCapture={(file) => handleChange(file)}
-            />
         </>
     );
 }

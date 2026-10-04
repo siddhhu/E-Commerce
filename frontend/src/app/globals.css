@@ -205,6 +205,28 @@
   }
 }
 
+/* Fully visible file control. WebViews open the system camera from this, and ignore hidden inputs. */
+.pranjay-visible-file {
+  display: block;
+  width: 100%;
+  min-height: 48px;
+  font-size: 16px;
+  color: #0f172a;
+}
+
+.pranjay-visible-file::file-selector-button,
+.pranjay-visible-file::-webkit-file-upload-button {
+  margin-right: 12px;
+  border: 0;
+  border-radius: 10px;
+  background: #e91e63;
+  color: #fff;
+  min-height: 44px;
+  padding: 0 16px;
+  font-size: 15px;
+  font-weight: 700;
+}
+
 .native-app.keyboard-open .native-bottom-nav {
   opacity: 0;
   pointer-events: none;
