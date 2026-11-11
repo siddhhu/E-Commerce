@@ -46,6 +46,11 @@ export default function PrivacyPage() {
                     <p>
                         You may request access, correction, or deletion of your account data by contacting us at{' '}
                         <a href="mailto:support@pranjay.com" className="text-primary hover:underline">support@pranjay.com</a>.
+                        To delete your account, follow the steps on our{' '}
+                        <Link href="/account-deletion" className="text-primary hover:underline">
+                            account deletion page
+                        </Link>
+                        .
                     </p>
 
                     <h2 className="text-lg font-bold text-slate-900">6. Contact</h2>

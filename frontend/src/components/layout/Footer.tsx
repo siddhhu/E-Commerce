@@ -127,6 +127,9 @@ export function Footer() {
                         <Link href="/terms" className="hover:text-primary transition-colors">
                             Terms of Service
                         </Link>
+                        <Link href="/account-deletion" className="hover:text-primary transition-colors">
+                            Delete Account
+                        </Link>
                     </div>
                 </div>
             </div>
