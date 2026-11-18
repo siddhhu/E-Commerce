@@ -1,7 +1,12 @@
 #!/usr/bin/env bash
 # Build the Play Store artefacts for Pranjay:
-#   • dist/Pranjay-<version>.aab  → the file you upload to Google Play
-#   • dist/Pranjay-<version>.apk  → the same code, installable for a final check
+#   • dist/Pranjay-<version>-vc<versionCode>.aab  → the file you upload to Google Play
+#   • dist/Pranjay-<version>-vc<versionCode>-release.apk → same code, installable for a check
+#
+# The version code is in the filename because Play rejects a reused code, and two
+# builds with the same name are impossible to tell apart in the console's upload list.
+# Set versionCode in app.json BEFORE building; Play reserves a code permanently once
+# a bundle carrying it is uploaded, so it can only ever go up.
 #
 # The AAB is signed with the upload key in keystore/pranjay-test.jks. Google Play
 # re-signs every install with the Play App Signing key, so the SHA-1/SHA-256 of
@@ -170,13 +175,13 @@ if [ ! -f "$AAB" ]; then
   exit 1
 fi
 
-OUT_AAB="$ROOT/dist/Pranjay-$VERSION.aab"
+OUT_AAB="$ROOT/dist/Pranjay-$VERSION-vc$VERSION_CODE.aab"
 cp "$AAB" "$OUT_AAB"
 echo ""
 echo "✅ Play Store upload file: $OUT_AAB ($(du -h "$OUT_AAB" | cut -f1))"
 
 if [ -n "${APK:-}" ] && [ -f "$APK" ]; then
-  OUT_APK="$ROOT/dist/Pranjay-$VERSION-release.apk"
+  OUT_APK="$ROOT/dist/Pranjay-$VERSION-vc$VERSION_CODE-release.apk"
   cp "$APK" "$OUT_APK"
   echo "✅ Same build as APK (for a final device check): $OUT_APK ($(du -h "$OUT_APK" | cut -f1))"
   echo "   Install over USB: adb install -r \"$OUT_APK\""
